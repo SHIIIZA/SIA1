@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const user = JSON.parse(localStorage.getItem('tripmate_user') || 'null');
     const session = JSON.parse(localStorage.getItem('tripmate_session') || 'null');
-    if (!user || !session || (user.role || user.type) !== 'host') {
+    if (!user || !session || !['host', 'admin'].includes(user.role || user.type)) {
         window.location.href = '../login.html?type=host&redirect=host/listings.html';
         return;
     }

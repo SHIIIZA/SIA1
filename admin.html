@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripMate Admin</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="dashboard-page">
+    <main class="dashboard-main">
+        <section class="dashboard-content" style="max-width: 900px; margin: 0 auto;">
+            <div class="content-header">
+                <div>
+                    <h1>TripMate Admin</h1>
+                    <p class="content-subtitle">Administrator access is active.</p>
+                </div>
+                <button class="btn-primary" id="logoutBtn" type="button">Log out</button>
+            </div>
+            <div class="profile-section">
+                <h2>Management</h2>
+                <p>Use the host dashboard to review listings and booking activity.</p>
+                <div class="form-actions">
+                    <a class="btn-primary" href="host/dashboard.html">Open host dashboard</a>
+                    <a class="btn-secondary" href="homepage.html">Open public site</a>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+        if (!user || user.role !== "admin") window.location.replace("login.html");
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+            apiLogout();
+            window.location.replace("homepage.html");
+        });
+    </script>
+</body>
+</html>

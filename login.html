@@ -45,14 +45,14 @@
 
       <form id="login-form" novalidate>
         <div class="field" id="f-email">
-          <label for="email">Email Address</label>
+          <label for="email">Email or username</label>
           <span class="field-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 6 12 13 2 6" />
               <path d="M2 6h20v12H2z" />
             </svg>
           </span>
-          <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required />
+          <input type="text" id="email" placeholder="you@example.com or admin" autocomplete="username" required />
           <div class="error-msg">Enter a valid email address.</div>
         </div>
 
@@ -130,8 +130,8 @@
       const password = pwInput.value;
 
       let hasError = false;
-      if (!isValidEmail(email)) {
-        setFieldError(emailField, "Enter a valid email address.");
+      if (!email || (email.includes("@") && !isValidEmail(email))) {
+        setFieldError(emailField, "Enter a valid email or username.");
         hasError = true;
       }
       if (!password) {
@@ -143,10 +143,10 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "Logging in…";
       try {
-        const user = await apiLogin({ email, password, role: mode });
+        const user = await apiLogin({ identifier: email, password, role: mode });
         showToast(`Welcome back, ${user.name.split(" ")[0]}!`);
         const redirectParam = new URLSearchParams(location.search).get("redirect");
-        const destination = redirectParam || (user.role === "host" ? "host/dashboard.html" : "dashboard.html");
+        const destination = redirectParam || (user.role === "admin" ? "admin.html" : user.role === "host" ? "host/dashboard.html" : "dashboard.html");
         setTimeout(() => { window.location.href = destination; }, 700);
       } catch (error) {
         setFieldError(emailField, error.message || "Unable to log in.");

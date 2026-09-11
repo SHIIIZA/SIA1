@@ -15,6 +15,15 @@ npm start
 
 The Node server serves the HTML files and exposes the browser-safe API routes under `/api`. Authentication, users, listings, bookings, wishlists, profile updates, and host booking data are routed through Neon. The browser token is not a Neon secret.
 
+The server creates or refreshes the Neon admin account on startup:
+
+```text
+Username: admin
+Password: admin1234
+```
+
+Change these values in `server.js` before production if this is more than a school/demo deployment.
+
 ## Production deployment
 
 Netlify hosts the static frontend. The Node API must run separately because Netlify does not keep `server.js` running as a normal server.

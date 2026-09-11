@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     name varchar(150) NOT NULL,
+    username varchar(80),
     email varchar(250) NOT NULL UNIQUE,
     password_hash text NOT NULL,
     role varchar(20) NOT NULL DEFAULT 'guest',
@@ -10,6 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username varchar(80);
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique_idx ON users (lower(username)) WHERE username IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS listings (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,

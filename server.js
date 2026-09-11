@@ -23,6 +23,9 @@ const config = {
     port: Number(process.env.PORT || env.PORT || 3000)
 };
 
+const ADMIN_USERNAME = "admin";
+const ADMIN_PASSWORD = "admin1234";
+
 if (!config.apiUrl || !config.apiKey) {
     console.warn("Missing NEON_API_URL or NEON_API_KEY. Add them to .env before starting the server.");
 }
@@ -83,6 +86,24 @@ async function verifyPassword(password, stored) {
     return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
+async function ensureAdminAccount() {
+    if (!config.apiUrl || !config.apiKey) return;
+    const existing = await neon(`/users?username=eq.${ADMIN_USERNAME}&select=*`);
+    const password_hash = await hashPassword(ADMIN_PASSWORD);
+    const payload = {
+        name: "Administrator",
+        username: ADMIN_USERNAME,
+        email: "admin@tripmate.local",
+        password_hash,
+        role: "admin"
+    };
+    if (existing[0]) {
+        await neon(`/users?id=eq.${existing[0].id}`, { method: "PATCH", body: JSON.stringify(payload) });
+    } else {
+        await neon("/users", { method: "POST", body: JSON.stringify(payload) });
+    }
+}
+
 function signToken(user) {
     const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + 7 * 86400000 })).toString("base64url");
     const signature = createHmac("sha256", config.jwtSecret).update(payload).digest("base64url");
@@ -111,7 +132,7 @@ async function routeApi(req, res, url) {
     const body = ["POST", "PATCH", "PUT"].includes(req.method) ? await readBody(req) : {};
     const user = authUser(req);
     const requireAuth = () => { if (!user) throw Object.assign(new Error("Authentication required"), { status: 401 }); return user; };
-    const requireHost = () => { const current = requireAuth(); if (current.role !== "host") throw Object.assign(new Error("Host access required"), { status: 403 }); return current; };
+    const requireHost = () => { const current = requireAuth(); if (current.role !== "host" && current.role !== "admin") throw Object.assign(new Error("Host access required"), { status: 403 }); return current; };
 
     if (req.method === "GET" && url.pathname === "/api/health") {
         return json(res, 200, { ok: true, databaseConfigured: Boolean(config.apiUrl && config.apiKey) });
@@ -129,9 +150,11 @@ async function routeApi(req, res, url) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
-        const rows = await neon(`/users?email=eq.${encodeURIComponent(String(body.email || "").trim().toLowerCase())}&select=*`);
+        const identifier = String(body.identifier || body.email || "").trim().toLowerCase();
+        const field = identifier.includes("@") ? "email" : "username";
+        const rows = await neon(`/users?${field}=eq.${encodeURIComponent(identifier)}&select=*`);
         const found = rows[0];
-        if (!found || !(await verifyPassword(body.password, found.password_hash)) || (body.role && found.role !== body.role)) return json(res, 401, { error: "Invalid email, password, or account type." });
+        if (!found || !(await verifyPassword(body.password, found.password_hash)) || (body.role && found.role !== body.role && found.role !== "admin")) return json(res, 401, { error: "Invalid username/email, password, or account type." });
         return json(res, 200, { token: signToken(found), user: safeUser(found) });
     }
 
@@ -274,7 +297,7 @@ function serveStatic(req, res, url) {
     createReadStream(file).pipe(res);
 }
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     try {
         if (req.method === "OPTIONS") {
@@ -292,4 +315,7 @@ createServer(async (req, res) => {
         console.error(error);
         json(res, error.status || 500, { error: error.message || "Server error" });
     }
-}).listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
+});
+
+server.listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
+ensureAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
