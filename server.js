@@ -133,9 +133,75 @@ async function routeApi(req, res, url) {
     const user = authUser(req);
     const requireAuth = () => { if (!user) throw Object.assign(new Error("Authentication required"), { status: 401 }); return user; };
     const requireHost = () => { const current = requireAuth(); if (current.role !== "host" && current.role !== "admin") throw Object.assign(new Error("Host access required"), { status: 403 }); return current; };
+    const requireAdmin = () => { const current = requireAuth(); if (current.role !== "admin") throw Object.assign(new Error("Admin access required"), { status: 403 }); return current; };
 
     if (req.method === "GET" && url.pathname === "/api/health") {
         return json(res, 200, { ok: true, databaseConfigured: Boolean(config.apiUrl && config.apiKey) });
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/data") {
+        const admin = requireAdmin();
+        const [listingRows, bookingRows] = await Promise.all([
+            neon("/listings?select=*&order=created_at.desc"),
+            neon("/bookings?select=*,listings(title),users(name,email,phone)&order=created_at.desc")
+        ]);
+        return json(res, 200, {
+            listings: listingRows.map((item) => ({
+                id: String(item.id), name: item.title, description: item.description || "",
+                type: item.property_type, location: item.location, price: Number(item.price_per_night),
+                maxGuests: item.max_guests, bedrooms: item.bedrooms, bathrooms: item.bathrooms,
+                cleaningFee: Number(item.cleaning_fee), status: item.status === "published" ? "Verified" : item.status === "action_required" ? "Action Required" : "Pending Review",
+                images: item.images || [], amenities: item.amenities || [], host: String(item.host_id), hostId: item.host_id, createdAt: new Date(item.created_at).getTime()
+            })),
+            bookings: bookingRows.map((item) => ({
+                id: String(item.id), guestName: item.users?.name || String(item.guest_id), guestEmail: item.users?.email || "",
+                guestPhone: item.users?.phone || "", listingId: String(item.listing_id), checkIn: item.check_in,
+                checkOut: item.check_out, guests: item.guest_count, amount: Number(item.subtotal),
+                status: item.status === "confirmed" ? "Confirmed" : item.status === "cancelled" ? "Cancelled" : "Pending",
+                createdAt: new Date(item.created_at).getTime()
+            }))
+        });
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/sync") {
+        const admin = requireAdmin();
+        const listings = Array.isArray(body.listings) ? body.listings : [];
+        const bookings = Array.isArray(body.bookings) ? body.bookings : [];
+        const users = await neon("/users?role=eq.host&select=id");
+        const defaultHostId = users[0]?.id || admin.id;
+        const existingListings = await neon("/listings?select=id");
+        const existingBookings = await neon("/bookings?select=id");
+        const listingIds = new Set(listings.filter((item) => /^\d+$/.test(String(item.id))).map((item) => Number(item.id)));
+        const bookingIds = new Set(bookings.filter((item) => /^\d+$/.test(String(item.id))).map((item) => Number(item.id)));
+
+        for (const item of existingBookings) if (!bookingIds.has(item.id)) await neon(`/bookings?id=eq.${item.id}`, { method: "DELETE" });
+        for (const item of existingListings) if (!listingIds.has(item.id)) await neon(`/listings?id=eq.${item.id}`, { method: "DELETE" });
+        for (const item of listings) {
+            const payload = {
+                title: item.name, description: item.description || "", property_type: item.type || "House Rental",
+                location: item.location, price_per_night: Number(item.price) || 0, max_guests: Number(item.maxGuests) || 1,
+                bedrooms: Number(item.bedrooms) || 1, bathrooms: Number(item.bathrooms) || 1,
+                cleaning_fee: Number(item.cleaningFee) || 0, status: item.status === "Verified" ? "published" : item.status === "Action Required" ? "action_required" : "pending",
+                images: item.images || [], amenities: item.amenities || [], host_id: Number(item.hostId || defaultHostId)
+            };
+            if (!payload.host_id) continue;
+            const path = /^\d+$/.test(String(item.id)) ? `/listings?id=eq.${item.id}` : "/listings";
+            await neon(path, { method: /^\d+$/.test(String(item.id)) ? "PATCH" : "POST", body: JSON.stringify(payload) });
+        }
+        for (const item of bookings) {
+            if (!/^\d+$/.test(String(item.listingId))) continue;
+            const payload = {
+                listing_id: Number(item.listingId), check_in: item.checkIn, check_out: item.checkOut,
+                guest_count: Number(item.guests) || 1, subtotal: Number(item.amount) || 0,
+                total_amount: Number(item.amount) || 0, status: item.status === "Confirmed" ? "confirmed" : item.status === "Cancelled" ? "cancelled" : "pending"
+            };
+            const guest = await neon(`/users?email=eq.${encodeURIComponent(String(item.guestEmail || "admin@tripmate.local"))}&select=id`);
+            payload.guest_id = guest[0]?.id || (await neon("/users?role=eq.guest&select=id"))[0]?.id;
+            if (!payload.guest_id) continue;
+            const path = /^\d+$/.test(String(item.id)) ? `/bookings?id=eq.${item.id}` : "/bookings";
+            await neon(path, { method: /^\d+$/.test(String(item.id)) ? "PATCH" : "POST", body: JSON.stringify(payload) });
+        }
+        return json(res, 200, { ok: true });
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/register") {
@@ -290,6 +356,8 @@ async function routeApi(req, res, url) {
 
 function serveStatic(req, res, url) {
     const requested = url.pathname === "/" ? "/homepage.html" : url.pathname;
+    const blocked = new Set(["/.env", "/.env.example", "/server.js", "/schema.sql"]);
+    if (blocked.has(requested) || requested.split("/").some(segment => segment.startsWith("."))) return json(res, 404, { error: "Not found" });
     const file = normalize(join(root, requested));
     if (!file.startsWith(root) || !existsSync(file) || statSync(file).isDirectory()) return json(res, 404, { error: "Not found" });
     const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml" };

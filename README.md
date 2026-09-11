@@ -38,13 +38,8 @@ JWT_SECRET=<long random secret>
 FRONTEND_URL=https://<your-site>.netlify.app
 ```
 
-3. Copy the Render service URL, then update `TRIPMATE_API_BASE` in `js/api.js` to:
-
-```js
-const TRIPMATE_API_BASE = "https://<your-render-service>.onrender.com/api";
-```
-
-4. Push the change and deploy the repository to Netlify. `netlify.toml` publishes the project root.
+3. Push the repository and deploy the project to Netlify. `netlify.toml` proxies `/api/*` to the Render service, so the browser continues using the same `/api` paths locally and in production.
+4. If Render assigns a different service URL than `https://tripmate-api.onrender.com`, update the `to` value for the `/api/*` redirect in `netlify.toml` before deploying Netlify.
 5. Run `schema.sql` in Neon before registering users or creating listings.
 
 Check the API deployment at `https://<your-render-service>.onrender.com/api/health`.
