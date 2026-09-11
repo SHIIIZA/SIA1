@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS username varchar(80);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'guest';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS business_name varchar(200);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone varchar(40);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar text;
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique_idx ON users (lower(username)) WHERE username IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS listings (
