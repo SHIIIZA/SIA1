@@ -11,12 +11,18 @@ async function apiRequest(path, options = {}) {
     const text = await response.text();
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = { error: text }; }
-    if (!response.ok) throw new Error(data?.error || "Request failed");
+    if (!response.ok) {
+        const isHTML = /^\s*<!doctype html|^\s*<html/i.test(text);
+        throw new Error(isHTML
+            ? `API server unavailable (${response.status}). Deploy the Render API and check the Netlify API proxy URL.`
+            : data?.error || data?.message || "Request failed");
+    }
     return data;
 }
 
 async function apiRegister(payload) {
     const result = await apiRequest("/auth/register", { method: "POST", body: JSON.stringify(payload) });
+    if (!result?.token || !result?.user) throw new Error("The API returned an incomplete registration response.");
     localStorage.setItem(TRIPMATE_TOKEN_KEY, result.token);
     localStorage.setItem("tripmate_user", JSON.stringify(result.user));
     return result.user;
@@ -24,6 +30,7 @@ async function apiRegister(payload) {
 
 async function apiLogin(payload) {
     const result = await apiRequest("/auth/login", { method: "POST", body: JSON.stringify(payload) });
+    if (!result?.token || !result?.user) throw new Error("The API returned an incomplete login response.");
     localStorage.setItem(TRIPMATE_TOKEN_KEY, result.token);
     localStorage.setItem("tripmate_user", JSON.stringify(result.user));
     localStorage.setItem("tripmate_session", "true");
