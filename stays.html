@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stays — TripMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="css/homepage.css">
+    <link rel="stylesheet" href="css/stays.css">
+</head>
+
+<body class="stays-page">
+
+
+    <div class="hero stays-hero">
+       <nav>
+            <a href="homepage.html" class="logo">
+                <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+            </a>
+            <div class="nav-links">
+                <a href="stays.html">Stays</a>
+                <a href="homepage.html#how">How it works</a>
+                <a href="signup.html?type=host">Become a Host</a>
+            </div>
+            <div class="nav-auth" id="navAuth">
+                <!-- Guest state -->
+                <a href="signup.html" class="nav-cta" id="navGetStarted">Get started</a>
+                <a href="login.html" class="nav-login" id="navLogin">Log in</a>
+                <!-- Logged-in state (hidden by default) -->
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-avatar-btn" id="userAvatarBtn" aria-label="User menu">
+                        <span class="avatar-placeholder" id="avatarPlaceholder">JD</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-header">
+                            <span class="dropdown-name" id="dropdownName">Juan Dela Cruz</span>
+                            <span class="dropdown-email" id="dropdownEmail">juan@example.com</span>
+                        </div>
+                        <hr class="dropdown-divider">
+                        <a href="dashboard.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            <span>My Trips</span>
+                        </a>
+                        <a href="wishlist.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span>Wishlist</span>
+                        </a>
+                        <a href="profile.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span>Profile</span>
+                        </a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" id="logoutBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            <span>Log out</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="stays-hero-body">
+            <h1>Every kind of stay, one search.</h1>
+            <p>Hotels, house rentals, cabins, villas and resorts — filter by what actually matters to your trip.</p>
+
+            <div class="hero-search">
+                <div class="hero-search-field">
+                    <label for="searchInput">Search</label>
+                    <input type="text" id="searchInput" placeholder="Try 'Siargao' or 'Driftwood House'">
+                </div>
+                <button class="search-btn" id="heroSearchBtn" type="button">
+                    Search
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="M21 21l-4.3-4.3" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ BROWSE LAYOUT ============ -->
+    <main class="stays-main">
+        <button class="filters-toggle" id="filtersToggle" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            Filters
+        </button>
+
+        <div class="stays-layout">
+
+            <!-- ============ FILTER SIDEBAR ============ -->
+            <aside class="filters" id="filtersPanel">
+                <div class="filters-head">
+                    <h2>Filters</h2>
+                    <button class="filters-close" id="filtersClose" type="button" aria-label="Close filters">&times;</button>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Price per night</h3>
+                    <div class="price-range">
+                        <div class="price-track">
+                            <div class="price-fill" id="priceFill"></div>
+                        </div>
+                        <input type="range" id="priceMin" min="800" max="6000" step="100" value="800">
+                        <input type="range" id="priceMax" min="800" max="6000" step="100" value="6000">
+                    </div>
+                    <div class="price-values">
+                        <span>&#8369;<span id="priceMinLabel">800</span></span>
+                        <span>&#8369;<span id="priceMaxLabel">6,000</span></span>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Property type</h3>
+                    <div class="check-list" id="typeList">
+                        <label class="checkbox-row"><input type="checkbox" value="House rental"><span>House rental</span><span class="check-count"></span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Hotel"><span>Hotel</span><span class="check-count"></span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Cabin"><span>Cabin</span><span class="check-count"></span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Villa"><span>Villa</span><span class="check-count"></span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Resort"><span>Resort</span><span class="check-count"></span></label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Rating</h3>
+                    <div class="check-list" id="ratingList">
+                        <label class="radio-row"><input type="radio" name="rating" value="0" checked><span>Any rating</span></label>
+                        <label class="radio-row"><input type="radio" name="rating" value="4.5"><span>4.5 &amp; up</span></label>
+                        <label class="radio-row"><input type="radio" name="rating" value="4.8"><span>4.8 &amp; up</span></label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Guests</h3>
+                    <div class="guest-stepper">
+                        <button type="button" class="step-btn" id="filterGuestMinus" aria-label="Fewer guests">&minus;</button>
+                        <span id="filterGuestCount">1</span>
+                        <button type="button" class="step-btn" id="filterGuestPlus" aria-label="More guests">&plus;</button>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <h3>Amenities</h3>
+                    <div class="check-list" id="amenityList">
+                        <label class="checkbox-row"><input type="checkbox" value="Wifi"><span>Wifi</span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Pool"><span>Pool</span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Kitchen"><span>Kitchen</span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Air conditioning"><span>Air conditioning</span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Beachfront"><span>Beachfront</span></label>
+                        <label class="checkbox-row"><input type="checkbox" value="Pet friendly"><span>Pet friendly</span></label>
+                    </div>
+                </div>
+
+                <button class="clear-filters" id="clearFilters" type="button">Clear all filters</button>
+            </aside>
+
+            <!-- ============ RESULTS ============ -->
+            <section class="results">
+                <div class="results-bar">
+                    <p class="results-count" id="resultsCount">12 stays</p>
+                    <div class="sort-field">
+                        <label for="sortSelect">Sort by</label>
+                        <select id="sortSelect">
+                            <option value="recommended">Recommended</option>
+                            <option value="price-asc">Price: low to high</option>
+                            <option value="price-desc">Price: high to low</option>
+                            <option value="rating-desc">Highest rated</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="active-chips" id="activeChips"></div>
+
+                <div class="stays-grid" id="staysGrid"></div>
+
+                <div class="empty-state" id="emptyState" hidden>
+                    <p class="empty-title">No stays match those filters.</p>
+                    <p class="empty-sub">Try widening your price range or clearing a filter.</p>
+                    <button class="btn-ghost" id="emptyClearBtn" type="button">Clear all filters</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- ============ FOOTER (reused from homepage) ============ -->
+     <footer>
+        <div class="footer-top">
+            <div class="footer-brand">
+                <a href="#" class="logo">
+                    <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+                </a>
+                <p>A Filipino-built platform for booking hotels and house rentals across the Philippines.</p>
+            </div>
+            <div class="footer-cols">
+                <div class="footer-col">
+                    <h4>Explore</h4>
+                    <a href="stays.html">Stays</a>
+                    <a href="#how">How it works</a>
+                    <a href="host.html">Become a Host</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <a href="#">Cancellation policy</a>
+                    <a href="#">Contact us</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <a href="#">About</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; 2026 TripMate. Made in Quezon City.</span>
+            <span>Terms &middot; Privacy</span>
+        </div>
+    </footer>
+
+ 
+    <script src="js/auth.js"></script>
+    <script src="js/stays.js"></script>
+    <script>
+        // Initialize user menu on stays page
+        (function() {
+            const user = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+            const session = JSON.parse(localStorage.getItem("tripmate_session") || "null");
+            const isLoggedIn = !!user && !!session;
+
+            const navGetStarted = document.getElementById("navGetStarted");
+            const navLogin = document.getElementById("navLogin");
+            const userMenu = document.getElementById("userMenu");
+            const avatarPlaceholder = document.getElementById("avatarPlaceholder");
+            const dropdownName = document.getElementById("dropdownName");
+            const dropdownEmail = document.getElementById("dropdownEmail");
+            const logoutBtn = document.getElementById("logoutBtn");
+            const userAvatarBtn = document.getElementById("userAvatarBtn");
+            const userDropdown = document.getElementById("userDropdown");
+
+            if (isLoggedIn) {
+                // Show logged-in state
+                if (navGetStarted) navGetStarted.style.display = "none";
+                if (navLogin) navLogin.style.display = "none";
+                if (userMenu) userMenu.style.display = "flex";
+
+                // Populate user info
+                if (dropdownName) dropdownName.textContent = user.name || "Guest";
+                if (dropdownEmail) dropdownEmail.textContent = user.email || "";
+                if (user.name && avatarPlaceholder) {
+                    const initials = user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+                    avatarPlaceholder.textContent = initials;
+                }
+            }
+
+            // Dropdown toggle
+            if (userAvatarBtn && userDropdown) {
+                userAvatarBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle("open");
+                });
+            }
+
+            document.addEventListener("click", (e) => {
+                if (userDropdown && userAvatarBtn && !userAvatarBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.remove("open");
+                }
+            });
+
+            // Logout
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    logoutUser();
+                    window.location.href = "homepage.html";
+                });
+            }
+        })();
+    </script>
+</body>
+
+</html>

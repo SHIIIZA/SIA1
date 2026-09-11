@@ -1,0 +1,173 @@
+```mermaid
+flowchart TD
+    %% ==================== USER FLOWS ====================
+
+    %% STYLES
+    classDef start fill:#e6fff5,stroke:#276749,stroke-width:2px;
+    classDef action fill:#f0f4f8,stroke:#2c5282,stroke-width:2px;
+    classDef decision fill:#fff5e6,stroke:#c05621,stroke-width:2px;
+    classDef success fill:#e6fff5,stroke:#276749,stroke-width:3px;
+    classDef error fill:#fff0f0,stroke:#c53030,stroke-width:2px;
+    classDef external fill:#f0f0f0,stroke:#718096,stroke-width:1px,stroke-dasharray: 5 5;
+
+    %% ==================== FLOW 1: GUEST BOOKING JOURNEY ====================
+    subgraph Flow1["🏠 GUEST BOOKING JOURNEY"]
+        direction TB
+
+        G1["🏠 Start: Homepage"]:::start
+        G2["🔍 Search: destination / dates / guests"]:::action
+        G3{"Results found?"}:::decision
+        G4["📋 Browse Stays page\nfilters: type, price, rating,\namensities, guests"]:::action
+        G5["🏨 Select property"]:::action
+        G6["📖 Property detail page\nview gallery, amenities,\nreviews, house rules"]:::action
+        G7["📅 Pick dates + guests\nin booking panel"]:::action
+        G8["📝 Click 'Reserve'"]:::action
+        G9{"Logged in?"}:::decision
+        G10["🔐 Redirect to login/signup"]:::error
+        G11["📋 Booking wizard Step 1\nReview trip details"]:::action
+        G12["💳 Booking wizard Step 2\nGuest details + payment\nGCash / Maya / Card"]:::action
+        G13{"Payment valid?"}:::decision
+        G14["✅ Booking wizard Step 3\nConfirmation + ref TM-XXXXXX"]:::success
+        G15["📧 Email confirmation\n( simulated )"]:::action
+        G16["📅 View in Dashboard\nUpcoming Trips tab"]:::success
+        G17["💬 Write review after stay"]:::action
+
+        G1 --> G2
+        G2 --> G3
+        G3 -- No --> G2
+        G3 -- Yes --> G4
+        G4 --> G5
+        G5 --> G6
+        G6 --> G7
+        G7 --> G8
+        G8 --> G9
+        G9 -- No --> G10
+        G10 -.-> G2
+        G9 -- Yes --> G11
+        G11 --> G12
+        G12 --> G13
+        G13 -- No --> G12
+        G13 -- Yes --> G14
+        G14 --> G15
+        G15 --> G16
+        G16 -.-> G17
+    end
+
+    %% ==================== FLOW 2: HOST ONBOARDING ====================
+    subgraph Flow2["👑 HOST ONBOARDING & MANAGEMENT"]
+        direction TB
+
+        H1["📝 Signup as Host"]:::start
+        H2["🔐 Login → Host Dashboard"]:::action
+        H3["📊 View stats:\nlistings, bookings, earnings"]:::action
+        H4["➕ Create new listing\nmulti-step wizard"]:::action
+        H5["📸 Upload photos\nset location, type, price"]:::action
+        H6["🏷️ Add amenities\n+ house rules"]:::action
+        H7["✅ Publish listing"]:::success
+        H8["📅 Manage calendar\nblock dates"]:::action
+        H9["📥 Receive booking request\n(pending status)"]:::action
+        H10{"Accept or decline?"}:::decision
+        H11["✅ Accept → confirmed\n📧 Guest notified"]:::success
+        H12["❌ Decline → cancelled"]:::error
+        H13["💰 Track earnings\nconfirmed + completed"]:::action
+
+        H1 --> H2
+        H2 --> H3
+        H3 --> H4
+        H4 --> H5
+        H5 --> H6
+        H6 --> H7
+        H7 --> H8
+        H8 --> H9
+        H9 --> H10
+        H10 -- Accept --> H11
+        H10 -- Decline --> H12
+        H11 --> H13
+        H12 -.-> H9
+    end
+
+    %% ==================== FLOW 3: AUTHENTICATION ====================
+    subgraph Flow3["🔐 AUTHENTICATION FLOWS"]
+        direction TB
+
+        A1["🏠 Any protected page"]:::start
+        A2{"Session valid?"}:::decision
+        A3["🔓 Access granted"]:::success
+        A4["🔐 Redirect to login.html\n?redirect=current"]:::error
+        A5["📧 Email + password"]:::action
+        A6["👤 Guest demo login"]:::action
+        A7{"Credentials valid?"}:::decision
+        A8["✅ Set session + user\nlocalStorage"]:::success
+        A9["❌ Show error toast"]:::error
+        A10["🔙 Redirect to original page"]:::action
+        A11["📝 Signup: Traveler / Host"]:::action
+        A12["✅ Create account\n+ auto-login"]:::success
+        A13["🔑 Forgot password\nemail → reset link"]:::action
+        A14["🔒 Logout → clear session\n→ homepage"]:::action
+
+        A1 --> A2
+        A2 -- Yes --> A3
+        A2 -- No --> A4
+        A4 --> A5
+        A4 --> A6
+        A4 --> A11
+        A4 --> A13
+        A5 --> A7
+        A6 --> A7
+        A11 --> A7
+        A7 -- Yes --> A8
+        A7 -- No --> A9
+        A9 -.-> A5
+        A8 --> A10
+        A10 --> A3
+        A3 -.-> A14
+    end
+
+    %% ==================== FLOW 4: WISHLIST ====================
+    subgraph Flow4["❤️ WISHLIST FLOW"]
+        direction TB
+
+        W1["🏨 On Property or Stays page"]:::start
+        W2["❤️ Click heart icon"]:::action
+        W3{"Logged in?"}:::decision
+        W4["🔐 Prompt login"]:::error
+        W5["💾 Save to localStorage\ntripmate_wishlist"]:::success
+        W6["🔄 Heart fills red"]:::action
+        W7["📖 View Wishlist page"]:::action
+        W8["🗑️ Remove from wishlist"]:::action
+
+        W1 --> W2
+        W2 --> W3
+        W3 -- No --> W4
+        W4 -.-> W1
+        W3 -- Yes --> W5
+        W5 --> W6
+        W6 --> W7
+        W7 --> W8
+        W8 -.-> W5
+    end
+
+    %% ==================== DATA KEYS REFERENCE ====================
+    subgraph DataKeys["💾 LOCALSTORAGE KEYS"]
+        L1["tripmate_users"]
+        L2["tripmate_user"]
+        L3["tripmate_session"]
+        L4["selectedStay"]
+        L5["trip_checkin"]
+        L6["trip_checkout"]
+        L7["tripmate_wishlist"]
+        L8["tripmate_bookings"]
+        L9["tripmate_listings"]
+    end
+
+    %% ==================== CROSS-FLOW LINKS ====================
+    G14 -.->|creates| L8
+    H7 -.->|creates| L9
+    H11 -.->|updates| L8
+    W5 -.->|reads/writes| L7
+    G16 -.->|reads| L8
+    A8 -.->|sets| L2
+    A8 -.->|sets| L3
+    A14 -.->|clears| L2
+    A14 -.->|clears| L3
+```

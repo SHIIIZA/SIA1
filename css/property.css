@@ -1,0 +1,409 @@
+/* ==========================================
+   TripMate — Property Detail Styles
+   ========================================== */
+
+.property-page {
+    background: var(--cream);
+    min-height: 100vh;
+}
+
+.top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--cream-dark);
+}
+
+.top-nav .logo-img {
+    height: 36px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--teal-700);
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: var(--teal-900);
+}
+
+/* Hero Gallery */
+.property-hero {
+    position: relative;
+}
+
+.gallery-main {
+    aspect-ratio: 16 / 9;
+    background: var(--cream-dark);
+    overflow: hidden;
+}
+
+.gallery-main-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.gallery-main:hover .gallery-main-img {
+    transform: scale(1.02);
+}
+
+.gallery-thumbs {
+    display: flex;
+    gap: 8px;
+    padding: 12px 24px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+.gallery-thumbs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.gallery-thumbs::-webkit-scrollbar-thumb {
+    background: var(--teal-300);
+    border-radius: 2px;
+}
+
+.thumb {
+    flex: 0 0 88px;
+    height: 66px;
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    scroll-snap-align: start;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.thumb.active,
+.thumb:hover {
+    border-color: var(--teal-500);
+    transform: scale(1.03);
+}
+
+.thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Property Layout */
+.property-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 32px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (min-width: 960px) {
+    .property-layout {
+        grid-template-columns: 1fr 380px;
+        align-items: start;
+    }
+
+    .booking-panel {
+        position: sticky;
+        top: 100px;
+    }
+}
+
+/* Property Main */
+.property-header {
+    margin-bottom: 24px;
+}
+
+.property-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--teal-50);
+    color: var(--teal-700);
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 999px;
+    text-transform: capitalize;
+    margin-bottom: 8px;
+}
+
+.property-header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    color: var(--teal-900);
+    margin: 0 0 6px;
+    line-height: 1.2;
+}
+
+.property-location {
+    color: var(--ink-light);
+    font-size: 1rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.property-location::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B8E8C' stroke-width='2'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+.property-rating {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.stars {
+    display: flex;
+    gap: 2px;
+    color: #F5A623;
+}
+
+.rating-value {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--teal-900);
+}
+
+.rating-count {
+    color: var(--ink-light);
+    font-size: 0.9rem;
+}
+
+/* Host Card */
+.property-host {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    background: var(--white);
+    border: 1px solid var(--cream-dark);
+    border-radius: 16px;
+    margin-bottom: 32px;
+}
+
+.host-avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--cream-dark);
+}
+
+.host-info h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    color: var(--teal-900);
+}
+
+.host-info p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ink-light);
+}
+
+.host-since {
+    color: var(--teal-600) !important;
+    font-weight: 500;
+}
+
+.host-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--teal-600);
+}
+
+/* Sections */
+.property-section {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--cream-dark);
+}
+
+.property-section:last-of-type {
+    border-bottom: none;
+}
+
+.property-section h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.35rem;
+    color: var(--teal-900);
+    margin: 0 0 14px;
+}
+
+.property-section p {
+    color: var(--ink);
+    line-height: 1.7;
+    margin: 0;
+}
+
+/* Amenities Grid */
+.amenities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+}
+
+.amenity-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--white);
+    border: 1px solid var(--cream-dark);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.amenity-item:hover {
+    border-color: var(--teal-300);
+    box-shadow: 0 2px 8px rgba(6, 43, 39, 0.06);
+}
+
+.amenity-item svg {
+    color: var(--teal-600);
+    flex-shrink: 0;
+}
+
+/* Rules List */
+.rules-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.rules-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--white);
+    border: 1px solid var(--cream-dark);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: var(--ink);
+}
+
+.rules-list li::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2306B8B8' stroke-width='2.5'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
+    flex-shrink: 0;
+}
+
+/* Reviews */
+.reviews-summary {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 20px;
+    background: var(--white);
+    border: 1px solid var(--cream-dark);
+    border-radius: 16px;
+    margin-bottom: 20px;
+}
+
+.reviews-score {
+    text-align: center;
+    padding-right: 20px;
+    border-right: 1px solid var(--cream-dark);
+}
+
+.reviews-score .score {
+    font-family: 'Fraunces', serif;
+    font-size: 3rem;
+    font-weight: 600;
+    color: var(--teal-900);
+    line-height: 1;
+}
+
+.reviews-score .stars {
+    justify-content: center;
+    margin-top: 6px;
+}
+
+.reviews-breakdown {
+    flex: 1;
+}
+
+.review-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0;
+    font-size: 0.85rem;
+}
+
+.review-bar label {
+    width: 50px;
+    color: var(--ink-light);
+}
+
+.review-bar .bar {
+    flex: 1;
+    height: 6px;
+    background: var(--cream-dark);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.review-bar .fill {
+    height: 100%;
+    background: var(--teal-500);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.review-bar .count {
+    color: var(--ink-light);
+    width: 30px;
+    text-align: right;
+}
+
+.reviews-list {
+    display: grid;
+    gap: 16px;
+}
+
+.review-card {
+    padding: 20px;
+    background: var(--white);
+    border: 1px solid var(--cream-dark);
+    border-radius: 16px.
+/* homepage.css's .btn-primary is styled cream-on-dark-hero for the homepage/stays
+   nav CTA. On this light-background page it needs the actual brand coral to be visible. */
+.btn-primary {
+    background: var(--coral);
+    color: var(--white);
+}
+
+.btn-primary:hover {
+    background: #E0512F;
+}

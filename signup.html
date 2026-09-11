@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripMate — Create an Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/signup.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background:
+        linear-gradient(180deg, rgba(6, 43, 39, 0.45) 0%, rgba(6, 43, 39, 0.72) 100%),
+        url("https://images.unsplash.com/photo-1591123720164-a326ff30ce8d?auto=format&fit=crop&w=1800&q=80") center/cover no-repeat fixed;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="top-nav">
+    <a href="homepage.html" class="logo">
+      <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+    </a>
+    <a href="homepage.html" class="back-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to home
+    </a>
+  </header>
+
+  <main>
+    <div class="card" id="signup-card">
+      <div class="tabs" role="tablist">
+        <button type="button" class="active" id="tab-guest" role="tab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21v-1a8 8 0 0 1 16 0v1" />
+          </svg>
+          Guest
+        </button>
+        <button type="button" id="tab-host" role="tab">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 10.5 12 3l9 7.5" />
+            <path d="M5 9.5V21h14V9.5" />
+          </svg>
+          Host
+        </button>
+      </div>
+
+      <h1 id="form-title">Create an Account</h1>
+      <p class="sub">Already have an account? <a href="login.html">Log in</a></p>
+
+      <form id="signup-form" novalidate>
+        <div class="field" id="f-name">
+          <label for="fullName">Full Name</label>
+          <input type="text" id="fullName" placeholder="Juan Dela Cruz" autocomplete="name" required />
+          <div class="error-msg">Enter your full name.</div>
+        </div>
+
+        <div class="field" id="f-email">
+          <label for="email">Email Address</label>
+          <span class="field-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 6 12 13 2 6" />
+              <path d="M2 6h20v12H2z" />
+            </svg>
+          </span>
+          <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required />
+          <div class="error-msg">Enter a valid email address.</div>
+        </div>
+
+        <div class="field host-only" id="f-business">
+          <label for="businessName">Property / Business Name</label>
+          <input type="text" id="businessName" placeholder="e.g. Vessel Hostel & Surf" autocomplete="organization" />
+        </div>
+
+        <div class="field" id="f-password">
+          <label for="password">Password</label>
+          <span class="field-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="10" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+          <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password" required />
+          <button type="button" class="toggle-pw" aria-label="Show password"></button>
+          <div class="error-msg">Password must be at least 8 characters.</div>
+        </div>
+
+        <div class="field" id="f-confirm">
+          <label for="confirmPassword">Confirm Password</label>
+          <span class="field-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="10" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+          <input type="password" id="confirmPassword" placeholder="Re-enter password" autocomplete="new-password" required />
+          <button type="button" class="toggle-pw" aria-label="Show password"></button>
+          <div class="error-msg">Passwords don't match.</div>
+        </div>
+
+        <div class="checkbox-row" id="f-terms">
+          <input type="checkbox" id="terms" />
+          <label for="terms" style="margin:0;">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</label>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">
+          Create Account
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      </form>
+
+      <p class="secure-note">Secure signup powered by TripMate</p>
+    </div>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script>
+    const card = document.getElementById("signup-card");
+    const tabGuest = document.getElementById("tab-guest");
+    const tabHost = document.getElementById("tab-host");
+    const title = document.getElementById("form-title");
+    let mode = "guest";
+
+    function setMode(next) {
+      mode = next;
+      tabGuest.classList.toggle("active", mode === "guest");
+      tabHost.classList.toggle("active", mode === "host");
+      card.classList.toggle("host-mode", mode === "host");
+      title.textContent = mode === "guest" ? "Create an Account" : "Become a Host";
+    }
+    tabGuest.addEventListener("click", () => setMode("guest"));
+    tabHost.addEventListener("click", () => setMode("host"));
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("type") === "host") setMode("host");
+
+    [
+      [document.getElementById("password"), document.querySelectorAll(".toggle-pw")[0]],
+      [document.getElementById("confirmPassword"), document.querySelectorAll(".toggle-pw")[1]],
+    ].forEach(([input, btn]) => {
+      btn.innerHTML = eyeIcon();
+      wirePasswordToggle(btn, input);
+    });
+
+    const form = document.getElementById("signup-form");
+    const nameField = document.getElementById("f-name");
+    const emailField = document.getElementById("f-email");
+    const passwordField = document.getElementById("f-password");
+    const confirmField = document.getElementById("f-confirm");
+    const termsField = document.getElementById("f-terms");
+    const submitBtn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      [nameField, emailField, passwordField, confirmField].forEach(clearFieldError);
+      termsField.classList.remove("has-error");
+
+      const fullName = document.getElementById("fullName").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const agreed = document.getElementById("terms").checked;
+
+      let hasError = false;
+
+      if (!fullName) {
+        setFieldError(nameField, "Enter your full name.");
+        hasError = true;
+      }
+      if (!isValidEmail(email)) {
+        setFieldError(emailField, "Enter a valid email address.");
+        hasError = true;
+      } else if (findUser(email)) {
+        setFieldError(emailField, "An account with this email already exists.");
+        hasError = true;
+      }
+      if (password.length < 8) {
+        setFieldError(passwordField, "Password must be at least 8 characters.");
+        hasError = true;
+      }
+      if (confirmPassword !== password || !confirmPassword) {
+        setFieldError(confirmField, "Passwords don't match.");
+        hasError = true;
+      }
+      if (!agreed) {
+        showToast("Please agree to the Terms of Service to continue.", true);
+        hasError = true;
+      }
+
+      if (hasError) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating account…";
+
+      const businessName = mode === "host" ? document.getElementById("businessName").value.trim() : "";
+      const newUser = createUser({ name: fullName, email, password, type: mode, businessName });
+      loginUser(newUser);
+      showToast(`Welcome to TripMate, ${fullName.split(" ")[0]}!`);
+      const destination = mode === "host" ? "host/dashboard.html" : "dashboard.html";
+      setTimeout(() => { window.location.href = destination; }, 800);
+    });
+  </script>
+</body>
+
+</html>

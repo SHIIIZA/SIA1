@@ -1,0 +1,193 @@
+```mermaid
+graph TD
+    %% ==================== APPLICATION LAYER ====================
+    subgraph Pages["📄 Application Pages"]
+        direction TB
+
+        subgraph Public["🌐 Public Pages"]
+            Home["homepage.html<br/>🏠 Landing + search + how-it-works"]
+            Stays["stays.html<br/>🏨 Listings grid + filters + sort"]
+            Property["property.html<br/>🏠 Property detail + gallery + booking CTA"]
+            Login["login.html<br/>🔐 Email/password + guest demo"]
+            Signup["signup.html<br/>📝 Traveler/Host registration"]
+            Forgot["forgot-password.html<br/>🔑 Password reset flow"]
+            Booking["booking.html<br/>📋 Multi-step booking wizard"]
+        end
+
+        subgraph Protected["🔒 Protected Pages (require auth)"]
+            Dashboard["dashboard.html<br/>📅 My Trips (Upcoming/Pending/Past/Cancelled)"]
+            Wishlist["wishlist.html<br/>❤️ Saved properties"]
+            Profile["profile.html<br/>👤 Profile settings + notifications"]
+        end
+
+        subgraph Host["👑 Host Pages (require host role)"]
+            HostDash["host/dashboard.html<br/>📊 Listings overview + earnings + bookings"]
+            HostList["host/listings.html<br/>📝 Create/edit listings"]
+        end
+    end
+
+    %% ==================== STYLING LAYER ====================
+    subgraph Styles["🎨 Stylesheets (CSS)"]
+        direction TB
+        HomeCSS["homepage.css<br/>Hero, nav, cards, how-it-works, footer"]
+        StaysCSS["stays.css<br/>Filters sidebar, listing grid, map placeholder"]
+        DashCSS["dashboard.css<br/>Sidebar tabs, trip cards, empty states"]
+        WishCSS["wishlist.css<br/>Wishlist grid, remove actions"]
+        ProfCSS["profile.css<br/>Form sections, avatar upload, danger zone"]
+        PropCSS["property.css<br/>Gallery, sticky booking bar, amenities"]
+        BookCSS["booking.css<br/>Stepper, date picker, price breakdown"]
+        HostDashCSS["host-dashboard.css<br/>Stats cards, tables, listings grid"]
+        HostListCSS["host-listings.css<br/>Multi-step form, image upload"]
+        AuthCSS["login.css, signup.css, forgot-password.css<br/>Form layouts, validation states"]
+    end
+
+    %% ==================== LOGIC LAYER ====================
+    subgraph Logic["⚙️ JavaScript Modules"]
+        direction TB
+
+        subgraph Core["🔧 Core Utilities"]
+            AuthJS["auth.js<br/>localStorage user management<br/>login/logout/session helpers"]
+            NavAuth["nav-auth.js<br/>Navbar auth state sync<br/>across all pages"]
+        end
+
+        subgraph PagesJS["📄 Page-Specific Logic"]
+            HomeJS["homepage.js<br/>Search autocomplete, date picker,<br/>hero interactions"]
+            StaysJS["stays.js<br/>Filter/sort, listing render,<br/>localStorage selectedStay"]
+            PropJS["property.js<br/>Gallery, date selection,<br/>guests, save to wishlist, book CTA"]
+            BookJS["booking.js<br/>Stepper wizard, date calc,<br/>price breakdown, promo codes"]
+            DashJS["dashboard.js<br/>Tab switching, trip filtering,<br/>cancel/modal actions"]
+            WishJS["wishlist.js<br/>Heart toggle, grid render,<br/>localStorage sync"]
+            ProfJS["profile.js<br/>Form validation, avatar preview,<br/>password change, notifications"]
+            HostDashJS["host-dashboard.js<br/>Stats, recent bookings table,<br/>listings CRUD"]
+            HostListJS["host-listings.js<br/>Multi-step form wizard,<br/>image upload, validation"]
+        end
+    end
+
+    %% ==================== DATA LAYER ====================
+    subgraph Data["💾 Data & State (localStorage)"]
+        direction TB
+
+        subgraph AuthState["🔐 Auth State"]
+            Users["tripmate_users<br/>[{id, name, email, password, type, businessName, phone}]"]
+            CurrentUser["tripmate_user<br/>{id, name, email, type, businessName, phone}"]
+            Session["tripmate_session<br/>true/false"]
+        end
+
+        subgraph AppState["📱 App State"]
+            SelectedStay["selectedStay<br/>{id, name, location, price, rating, img, ...}"]
+            TripCheckin["trip_checkin<br/>YYYY-MM-DD"]
+            TripCheckout["trip_checkout<br/>YYYY-MM-DD"]
+            Trips["tripmate_trips (demo)<br/>[{id, listingId, checkin, checkout, status, ...}]"]
+            WishlistData["tripmate_wishlist<br/>[listingId, ...]"]
+            Listings["host_listings (demo)<br/>[{id, name, type, price, status, ...}]"]
+        end
+    end
+
+    %% ==================== EXTERNAL ====================
+    subgraph External["🌍 External Dependencies"]
+        Fonts["Google Fonts<br/>Fraunces + Inter"]
+        Images["Unsplash / Booking.com CDN<br/>Property photos"]
+    end
+
+    %% ==================== RELATIONSHIPS ====================
+
+    %% Pages -> CSS
+    Home --> HomeCSS
+    Stays --> HomeCSS
+    Stays --> StaysCSS
+    Dashboard --> DashCSS
+    Wishlist --> DashCSS
+    Wishlist --> WishCSS
+    Profile --> DashCSS
+    Profile --> ProfCSS
+    Property --> HomeCSS
+    Property --> PropCSS
+    Booking --> HomeCSS
+    Booking --> BookCSS
+    Login --> AuthCSS
+    Signup --> AuthCSS
+    Forgot --> AuthCSS
+
+    %% Pages -> JS
+    Home --> HomeJS
+    Stays --> StaysJS
+    Property --> PropJS
+    Booking --> BookJS
+    Dashboard --> DashJS
+    Wishlist --> WishJS
+    Profile --> ProfJS
+    Login --> AuthJS
+    Signup --> AuthJS
+    Forgot --> AuthJS
+
+    %% All pages use nav-auth
+    Home -.-> NavAuth
+    Stays -.-> NavAuth
+    Dashboard -.-> NavAuth
+    Wishlist -.-> NavAuth
+    Profile -.-> NavAuth
+    Property -.-> NavAuth
+    Booking -.-> NavAuth
+    Login -.-> NavAuth
+    Signup -.-> NavAuth
+    Forgot -.-> NavAuth
+
+    %% JS -> Data (localStorage)
+    AuthJS --> Users
+    AuthJS --> CurrentUser
+    AuthJS --> Session
+    NavAuth --> CurrentUser
+    NavAuth --> Session
+
+    StaysJS --> SelectedStay
+    PropJS --> SelectedStay
+    PropJS --> WishlistData
+    PropJS --> TripCheckin
+    PropJS --> TripCheckout
+    BookJS --> SelectedStay
+    BookJS --> TripCheckin
+    BookJS --> TripCheckout
+    DashJS --> Trips
+    WishJS --> WishlistData
+    ProfJS --> CurrentUser
+    HostDashJS --> Listings
+    HostListJS --> Listings
+
+    %% Pages use external
+    Home --> Fonts
+    Stays --> Fonts
+    Dashboard --> Fonts
+    Wishlist --> Fonts
+    Profile --> Fonts
+    Property --> Fonts
+    Booking --> Fonts
+    Login --> Fonts
+    Signup --> Fonts
+    Forgot --> Fonts
+
+    Property --> Images
+    Stays --> Images
+    Booking --> Images
+    HostDash --> Images
+
+    %% Host pages (not yet implemented but referenced)
+    %% HostDash --> HostDashJS
+    %% HostDash --> HostDashCSS
+    %% HostList --> HostListJS
+    %% HostList --> HostListCSS
+
+    %% ==================== STYLING ====================
+    classDef page fill:#f0f4f8,stroke:#2c5282,stroke-width:2px;
+    classDef css fill:#fff5e6,stroke:#c05621,stroke-width:2px;
+    classDef js fill:#e6fff5,stroke:#276749,stroke-width:2px;
+    classDef data fill:#faf0fa,stroke:#805ad5,stroke-width:2px;
+    classDef ext fill:#f0f0f0,stroke:#718096,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef auth fill:#fff0f0,stroke:#c53030,stroke-width:2px;
+
+    class Home,Stays,Property,Booking,Dashboard,Wishlist,Profile page;
+    class HomeCSS,StaysCSS,DashCSS,WishCSS,ProfCSS,PropCSS,BookCSS,HostDashCSS,HostListCSS,AuthCSS css;
+    class AuthJS,NavAuth,HomeJS,StaysJS,PropJS,BookJS,DashJS,WishJS,ProfJS,HostDashJS,HostListJS js;
+    class Users,CurrentUser,Session,SelectedStay,TripCheckin,TripCheckout,Trips,WishlistData,Listings data;
+    class Fonts,Images ext;
+    class Login,Signup,Forgot auth;
+```

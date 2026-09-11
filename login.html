@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripMate — Log In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/login.css" />
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background:
+        linear-gradient(180deg, rgba(6, 43, 39, 0.45) 0%, rgba(6, 43, 39, 0.72) 100%),
+        url("https://images.unsplash.com/photo-1573790387438-4da905039392?auto=format&fit=crop&w=1800&q=80") center/cover no-repeat fixed;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="top-nav">
+    <a href="homepage.html" class="logo">
+      <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+    </a>
+    <a href="homepage.html" class="back-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to home
+    </a>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <button type="button" class="active" id="tab-guest" role="tab">Guest Login</button>
+        <button type="button" id="tab-host" role="tab">Host Login</button>
+      </div>
+
+      <h1 id="form-title">Welcome back</h1>
+      <p class="sub" id="form-sub">Log in to manage your trips and stays.</p>
+
+      <form id="login-form" novalidate>
+        <div class="field" id="f-email">
+          <label for="email">Email Address</label>
+          <span class="field-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 6 12 13 2 6" />
+              <path d="M2 6h20v12H2z" />
+            </svg>
+          </span>
+          <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required />
+          <div class="error-msg">Enter a valid email address.</div>
+        </div>
+
+        <div class="field" id="f-password">
+          <label for="password">Password</label>
+          <span class="field-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="10" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </span>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+          <button type="button" class="toggle-pw" aria-label="Show password"></button>
+          <div class="error-msg">Password is required.</div>
+        </div>
+
+        <div class="checkbox-row remember">
+          <a href="forgot-password.html" style="margin-left:auto;">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submit-btn">
+          Log In
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      </form>
+
+      <p class="foot-link">Don't have an account? <a href="signup.html">Sign Up</a></p>
+    </div>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script>
+    const tabGuest = document.getElementById("tab-guest");
+    const tabHost = document.getElementById("tab-host");
+    const title = document.getElementById("form-title");
+    const sub = document.getElementById("form-sub");
+    let mode = "guest";
+
+    function setMode(next) {
+      mode = next;
+      tabGuest.classList.toggle("active", mode === "guest");
+      tabHost.classList.toggle("active", mode === "host");
+      if (mode === "guest") {
+        title.textContent = "Welcome back";
+        sub.textContent = "Log in to manage your trips and stays.";
+      } else {
+        title.textContent = "Welcome back, Host";
+        sub.textContent = "Log in to manage your listings and bookings.";
+      }
+    }
+    tabGuest.addEventListener("click", () => setMode("guest"));
+    tabHost.addEventListener("click", () => setMode("host"));
+
+    const params = new URLSearchParams(location.search);
+    if (params.get("type") === "host") setMode("host");
+
+    const pwInput = document.getElementById("password");
+    const pwToggle = document.querySelector(".toggle-pw");
+    pwToggle.innerHTML = eyeIcon();
+    wirePasswordToggle(pwToggle, pwInput);
+
+    const form = document.getElementById("login-form");
+    const emailField = document.getElementById("f-email");
+    const passwordField = document.getElementById("f-password");
+    const submitBtn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      [emailField, passwordField].forEach(clearFieldError);
+
+      const email = document.getElementById("email").value.trim();
+      const password = pwInput.value;
+
+      let hasError = false;
+      if (!isValidEmail(email)) {
+        setFieldError(emailField, "Enter a valid email address.");
+        hasError = true;
+      }
+      if (!password) {
+        setFieldError(passwordField, "Password is required.");
+        hasError = true;
+      }
+      if (hasError) return;
+
+      const user = findUser(email);
+      if (!user) {
+        setFieldError(emailField, "No account found with this email.");
+        return;
+      }
+      if (user.type !== mode) {
+        setFieldError(emailField, `This email is registered as a ${user.type}. Use ${user.type === "guest" ? "Guest" : "Host"} Login.`);
+        return;
+      }
+      if (user.password !== password) {
+        setFieldError(passwordField, "Incorrect password.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Logging in…";
+      loginUser(user);
+      showToast(`Welcome back, ${user.name.split(" ")[0]}!`);
+      const redirectParam = new URLSearchParams(location.search).get("redirect");
+      const destination = redirectParam || (user.type === "host" ? "host/dashboard.html" : "dashboard.html");
+      setTimeout(() => { window.location.href = destination; }, 700);
+    });
+  </script>
+</body>
+
+</html>
