@@ -11,3 +11,8 @@
   from = "/home"
   to = "/homepage.html"
   status = 301
+
+[[redirects]]
+  from = "/"
+  to = "/homepage.html"
+  status = 200
