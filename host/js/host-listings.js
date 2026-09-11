@@ -1,6 +1,13 @@
 // Host Listings Wizard Logic
 
 document.addEventListener('DOMContentLoaded', () => {
+    const user = JSON.parse(localStorage.getItem('tripmate_user') || 'null');
+    const session = JSON.parse(localStorage.getItem('tripmate_session') || 'null');
+    if (!user || !session || (user.role || user.type) !== 'host') {
+        window.location.href = '../login.html?type=host&redirect=host/listings.html';
+        return;
+    }
+
     let currentStep = 1;
     const totalSteps = 7;
     
@@ -84,17 +91,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveDraft() {
-        // Collect data from the current step (to be implemented)
-        console.log(`Saving draft for step ${currentStep}...`);
-        
-        // Structure for host_listing_draft:
-        // { currentStep: 2, data: { basics: {...}, pricing: {...} } }
         let draft = JSON.parse(localStorage.getItem('host_listing_draft')) || { data: {} };
         draft.currentStep = currentStep;
-        
-        // Mock data saving just for demonstration
+        draft.hostId = user.id;
+        draft.data.basics = {
+            title: document.getElementById('propertyName')?.value || '',
+            propertyType: document.getElementById('propertyType')?.value || '',
+            maxGuests: document.getElementById('guests')?.value || '1',
+            bedrooms: document.getElementById('bedrooms')?.value || '1',
+            bathrooms: document.getElementById('bathrooms')?.value || '1',
+            location: document.getElementById('propertyAddress')?.value || ''
+        };
+        draft.data.pricing = {
+            pricePerNight: document.getElementById('basePrice')?.value || '0',
+            cleaningFee: document.getElementById('cleaningFee')?.value || '0',
+            securityDeposit: document.getElementById('securityDeposit')?.value || '0',
+            weeklyDiscount: document.getElementById('weeklyDiscount')?.value || '0'
+        };
+        draft.data.amenities = [...document.querySelectorAll('input[name="amenity"]:checked')].map(input => input.value);
+        draft.data.rules = {
+            checkInTime: document.getElementById('checkInTime')?.value || '14:00',
+            checkOutTime: document.getElementById('checkOutTime')?.value || '11:00',
+            smoking: document.getElementById('ruleSmoking')?.checked || false,
+            pets: document.getElementById('rulePets')?.checked || false,
+            parties: document.getElementById('ruleParties')?.checked || false,
+            custom: document.getElementById('customRules')?.value || ''
+        };
         draft.data.lastSaved = new Date().toISOString();
-        
         localStorage.setItem('host_listing_draft', JSON.stringify(draft));
     }
 
@@ -107,15 +130,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function publishListing() {
-        alert('Listing Published Successfully!');
-        
-        // In a real implementation:
-        // 1. Move data from draft to host_listings array
-        // 2. Clear draft
+    async function publishListing() {
+        saveDraft();
+        const draft = JSON.parse(localStorage.getItem('host_listing_draft') || '{}');
+        const basics = draft.data?.basics || {};
+        const pricing = draft.data?.pricing || {};
+        if (!basics.title || !basics.location || !pricing.pricePerNight || Number(pricing.pricePerNight) <= 0) {
+            alert('Complete the property name, address, and nightly price before publishing.');
+            return;
+        }
+        try {
+            await apiRequest('/host/listings', {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: basics.title,
+                    property_type: basics.propertyType || 'house',
+                    location: basics.location,
+                    price_per_night: Number(pricing.pricePerNight),
+                    cleaning_fee: Number(pricing.cleaningFee) || 0,
+                    max_guests: Number(basics.maxGuests) || 1,
+                    bedrooms: Number(basics.bedrooms) || 1,
+                    bathrooms: Number(basics.bathrooms) || 1,
+                    amenities: draft.data.amenities || [],
+                    rules: draft.data.rules || {},
+                    images: uploadedPhotos.map(photo => photo.url),
+                    status: document.getElementById('publishToggle')?.checked ? 'published' : 'draft'
+                })
+            });
+        } catch (error) {
+            alert(error.message || 'Unable to save listing to Neon.');
+            return;
+        }
         localStorage.removeItem('host_listing_draft');
-        
-        // 3. Redirect
+        alert('Listing saved successfully.');
         window.location.href = 'dashboard.html';
     }
 

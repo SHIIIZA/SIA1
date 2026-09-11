@@ -1,3 +1,14 @@
+.save-search-btn {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background: transparent;
+    color: inherit;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.save-search-btn:hover { background: rgba(255, 255, 255, 0.12); }
 /* ===========================================================
    TripMate — Stays browse page
    Builds on tokens + nav/footer/hero rules from homepage.css

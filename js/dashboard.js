@@ -91,9 +91,25 @@
     }
 
     // Load bookings from localStorage
-    function loadBookings() {
-        allBookingsRaw = readAllBookings();
-        myBookings = allBookingsRaw.filter(b => b.userId === user.id);
+    async function loadBookings() {
+        try {
+            const rows = await apiRequest("/bookings");
+            myBookings = rows.map(booking => ({
+                ...booking,
+                id: booking.id,
+                userId: booking.guest_id,
+                propertyId: booking.listing_id,
+                propertyName: booking.listings?.title || `Listing #${booking.listing_id}`,
+                checkin: booking.check_in,
+                checkout: booking.check_out,
+                guests: booking.guest_count,
+                total: Number(booking.total_amount),
+                propertyImage: booking.listings?.images?.[0] || ""
+            }));
+        } catch (error) {
+            allBookingsRaw = readAllBookings();
+            myBookings = allBookingsRaw.filter(b => b.userId === user.id);
+        }
         renderAllSections();
     }
 
@@ -330,22 +346,33 @@
 
     // Cancel booking — updates the FULL bookings array (not the
     // per-user filtered copy) so other users' bookings are preserved.
-    function handleCancel(bookingId) {
+    async function handleCancel(bookingId) {
         if (!confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) return;
 
-        const fullBookings = readAllBookings();
-        const index = fullBookings.findIndex(b => b.id === bookingId);
-        if (index === -1) return;
-
-        fullBookings[index].status = "cancelled";
-        fullBookings[index].cancelledAt = new Date().toISOString();
-        localStorage.setItem(BOOKINGS_KEY, JSON.stringify(fullBookings));
+        try {
+            await apiRequest(`/bookings/${encodeURIComponent(bookingId)}/cancel`, { method: "PATCH" });
+        } catch {
+            const fullBookings = readAllBookings();
+            const index = fullBookings.findIndex(b => b.id === bookingId);
+            if (index === -1) return;
+            fullBookings[index].status = "cancelled";
+            fullBookings[index].cancelledAt = new Date().toISOString();
+            localStorage.setItem(BOOKINGS_KEY, JSON.stringify(fullBookings));
+        }
         loadBookings();
     }
 
     // Write review (placeholder)
-    function handleReview(bookingId) {
-        alert("Review feature coming soon!");
+    async function handleReview(bookingId) {
+        const rating = Number(prompt("Rate your stay from 1 to 5:", "5"));
+        if (!Number.isInteger(rating) || rating < 1 || rating > 5) return;
+        const comment = prompt("Write a short review:", "Great stay!") || "";
+        try {
+            await apiRequest("/reviews", { method: "POST", body: JSON.stringify({ booking_id: bookingId, rating, comment }) });
+            showToast("Review submitted. Thank you!");
+        } catch (error) {
+            showToast(error.message || "Unable to submit review.", true);
+        }
     }
 
     // Initialize

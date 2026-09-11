@@ -85,6 +85,7 @@
     </div>
   </main>
 
+  <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script>
     const tabGuest = document.getElementById("tab-guest");
@@ -121,7 +122,7 @@
     const passwordField = document.getElementById("f-password");
     const submitBtn = document.getElementById("submit-btn");
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       [emailField, passwordField].forEach(clearFieldError);
 
@@ -139,27 +140,19 @@
       }
       if (hasError) return;
 
-      const user = findUser(email);
-      if (!user) {
-        setFieldError(emailField, "No account found with this email.");
-        return;
-      }
-      if (user.type !== mode) {
-        setFieldError(emailField, `This email is registered as a ${user.type}. Use ${user.type === "guest" ? "Guest" : "Host"} Login.`);
-        return;
-      }
-      if (user.password !== password) {
-        setFieldError(passwordField, "Incorrect password.");
-        return;
-      }
-
       submitBtn.disabled = true;
       submitBtn.textContent = "Logging in…";
-      loginUser(user);
-      showToast(`Welcome back, ${user.name.split(" ")[0]}!`);
-      const redirectParam = new URLSearchParams(location.search).get("redirect");
-      const destination = redirectParam || (user.type === "host" ? "host/dashboard.html" : "dashboard.html");
-      setTimeout(() => { window.location.href = destination; }, 700);
+      try {
+        const user = await apiLogin({ email, password, role: mode });
+        showToast(`Welcome back, ${user.name.split(" ")[0]}!`);
+        const redirectParam = new URLSearchParams(location.search).get("redirect");
+        const destination = redirectParam || (user.role === "host" ? "host/dashboard.html" : "dashboard.html");
+        setTimeout(() => { window.location.href = destination; }, 700);
+      } catch (error) {
+        setFieldError(emailField, error.message || "Unable to log in.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Log In";
+      }
     });
   </script>
 </body>

@@ -186,10 +186,32 @@
     }
 
     // Load wishlist from localStorage
-    function loadWishlist() {
-        const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-        const userWishlist = wishlist.filter((item) => item.userId === user.id);
-        renderWishlist(userWishlist);
+    async function loadWishlist() {
+        try {
+            const rows = await apiRequest("/wishlist");
+            const userWishlist = rows.map(item => {
+                const listing = item.listings;
+                if (listing) {
+                    propertyData[listing.id] = {
+                        id: listing.id,
+                        name: listing.title,
+                        type: listing.property_type,
+                        location: listing.location,
+                        price: Number(listing.price_per_night),
+                        rating: Number(listing.rating) || 5,
+                        reviews: Number(listing.review_count) || 0,
+                        guests: listing.max_guests,
+                        amenities: listing.amenities || [],
+                        img: listing.images?.[0] || ""
+                    };
+                }
+                return { propertyId: listing?.id || item.listing_id, savedAt: item.created_at };
+            });
+            renderWishlist(userWishlist);
+        } catch {
+            const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
+            renderWishlist(wishlist.filter((item) => item.userId === user.id));
+        }
     }
 
     function renderWishlist(wishlist) {
@@ -304,12 +326,15 @@
         removeFromWishlist(propertyId);
     });
 
-    function removeFromWishlist(propertyId) {
-        const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-        const filtered = wishlist.filter(
-            (item) => !(item.userId === user.id && item.propertyId === propertyId)
-        );
-        localStorage.setItem("tripmate_wishlist", JSON.stringify(filtered));
+    async function removeFromWishlist(propertyId) {
+        try {
+            const rows = await apiRequest("/wishlist");
+            const item = rows.find(row => String(row.listing_id) === String(propertyId));
+            if (item) await apiRequest(`/wishlist/${item.id}`, { method: "DELETE" });
+        } catch {
+            const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
+            localStorage.setItem("tripmate_wishlist", JSON.stringify(wishlist.filter(item => !(item.userId === user.id && item.propertyId === propertyId))));
+        }
         loadWishlist();
     }
 

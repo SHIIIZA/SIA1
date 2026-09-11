@@ -49,7 +49,7 @@
     const state = {
         checkIn: storedCheckIn && /^\d{4}-\d{2}-\d{2}$/.test(storedCheckIn) ? storedCheckIn : defaultCheckIn,
         checkOut: storedCheckOut && /^\d{4}-\d{2}-\d{2}$/.test(storedCheckOut) ? storedCheckOut : defaultCheckOut,
-        guests: Math.min(2, listing.maxGuests),
+        guests: Math.min(Number(urlParams.get("guests")) || 2, listing.maxGuests),
         promoCode: null,
         promoRate: 0,
         payMethod: "card"
@@ -205,6 +205,19 @@
         }
         if (guestCountEl) guestCountEl.textContent = state.guests;
 
+        const currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+        if (currentUser) {
+            const nameParts = (currentUser.name || "").trim().split(/\s+/);
+            const firstName = document.getElementById("firstName");
+            const lastName = document.getElementById("lastName");
+            const email = document.getElementById("email");
+            const phone = document.getElementById("phone");
+            if (firstName) firstName.value = nameParts.shift() || "";
+            if (lastName) lastName.value = nameParts.join(" ");
+            if (email) email.value = currentUser.email || "";
+            if (phone) phone.value = (currentUser.phone || "").replace(/^\+63\s*/, "");
+        }
+
         const guestHint = document.querySelector(".guest-row .hint");
         if (guestHint) {
             guestHint.textContent = `This stay comfortably fits up to ${listing.maxGuests} guests.`;
@@ -352,6 +365,8 @@
         const last = document.getElementById("lastName");
         const email = document.getElementById("email");
         const phone = document.getElementById("phone");
+        const terms = document.getElementById("termsAccepted");
+        const termsError = document.getElementById("termsError");
 
         if (first && !first.value.trim()) { setError(first, "Enter your first name."); ok = false; } else setError(first, "");
         if (last && !last.value.trim()) { setError(last, "Enter your last name."); ok = false; } else setError(last, "");
@@ -361,6 +376,10 @@
 
         const phoneDigits = phone ? phone.value.replace(/\D/g, "") : "";
         if (phoneDigits.length < 10) { setError(phone, "Enter a valid mobile number."); ok = false; } else setError(phone, "");
+        if (terms && !terms.checked) {
+            if (termsError) termsError.textContent = "Accept the booking terms to continue.";
+            ok = false;
+        } else if (termsError) termsError.textContent = "";
 
         return ok;
     }
@@ -448,7 +467,67 @@
         }, 1100);
     });
 
-    function completeBooking() {
+    async function completeBooking() {
+        const currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+        const session = JSON.parse(localStorage.getItem("tripmate_session") || "null");
+        if (!currentUser || !session) {
+            const redirect = `booking.html?guests=${encodeURIComponent(state.guests)}`;
+            window.location.href = `login.html?redirect=${encodeURIComponent(redirect)}`;
+            return;
+        }
+
+        const p = pricing();
+        const booking = {
+            id: "BK-" + Date.now().toString(36).toUpperCase(),
+            userId: currentUser.id,
+            guestName: `${document.getElementById("firstName")?.value.trim() || currentUser.name || "Guest"} ${document.getElementById("lastName")?.value.trim() || ""}`.trim(),
+            guestEmail: document.getElementById("email")?.value.trim() || currentUser.email || "",
+            guestPhone: document.getElementById("phone")?.value.trim() || currentUser.phone || "",
+            propertyId: listing.id,
+            propertyName: listing.name,
+            propertyImage: listing.img,
+            checkin: state.checkIn,
+            checkout: state.checkOut,
+            guests: state.guests,
+            nights: p.n,
+            subtotal: p.subtotal,
+            cleaningFee: p.cleaning,
+            serviceFee: p.serviceFee,
+            taxes: p.taxes,
+            discount: p.discount,
+            total: p.total,
+            paymentMethod: state.payMethod,
+            status: "pending",
+            createdAt: new Date().toISOString()
+        };
+        const listingId = Number(listing.id);
+        if (!Number.isInteger(listingId)) {
+            showToast("This demo stay is not yet available from the Neon database.", true);
+            return;
+        }
+        try {
+            await apiRequest("/bookings", {
+                method: "POST",
+                body: JSON.stringify({
+                    listing_id: listingId,
+                    check_in: state.checkIn,
+                    check_out: state.checkOut,
+                    guest_count: state.guests,
+                    subtotal: p.subtotal,
+                    cleaning_fee: p.cleaning,
+                    service_fee: p.serviceFee,
+                    taxes: p.taxes,
+                    total_amount: p.total,
+                    payment_method: state.payMethod
+                    ,special_requests: document.getElementById("specialRequests")?.value.trim() || null
+                    ,terms_accepted: document.getElementById("termsAccepted")?.checked === true
+                })
+            });
+        } catch (error) {
+            showToast(error.message || "Unable to save booking.", true);
+            return;
+        }
+
         highestUnlocked = 3;
         const confirmEmail = document.getElementById("confirmEmail");
         const emailInput = document.getElementById("email");
@@ -462,6 +541,26 @@
         renderSummaries();
         goToStep(3);
     }
+
+    function calendarFile() {
+        const ref = document.getElementById("confirmRef")?.textContent || "TM-BOOKING";
+        const start = state.checkIn.replace(/-/g, "");
+        const end = state.checkOut.replace(/-/g, "");
+        const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", `UID:${ref}@tripmate`, `DTSTART;VALUE=DATE:${start}`, `DTEND;VALUE=DATE:${end}`, `SUMMARY:${listing.name}`, `LOCATION:${listing.location}`, "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+        link.download = `${ref}.ics`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById("downloadCalendarBtn")?.addEventListener("click", calendarFile);
+    document.getElementById("shareBookingBtn")?.addEventListener("click", async () => {
+        const text = `${listing.name} - ${state.checkIn} to ${state.checkOut}`;
+        if (navigator.share) await navigator.share({ title: "TripMate booking", text });
+        else await navigator.clipboard?.writeText(text);
+        showToast("Booking details copied.");
+    });
 
     document.getElementById("newBookingBtn")?.addEventListener("click", () => {
         highestUnlocked = 1;

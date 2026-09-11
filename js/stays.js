@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    const listings = [
+    let listings = [
         {
             id: "happy-hut", name: "Happy Hut", type: "Cabin",
             location: "San Felipe, Zambales", price: 2000, rating: 4.92, reviews: 86, guests: 4,
@@ -75,6 +75,45 @@
             img: "https://pix8.agoda.net/hotelImages/85348252/0/b294dc4f9636bff3a7f896491fd591cc.jpg?ce=3&s=600x"
         }
     ];
+    try {
+        const hostListings = JSON.parse(localStorage.getItem("tripmate_listings") || "[]");
+        hostListings.filter(item => item.status === "published" || item.status === "active").forEach(item => {
+            listings.push({
+                id: item.id,
+                name: item.title || "TripMate stay",
+                type: item.propertyType || "House rental",
+                location: item.location || "Philippines",
+                price: Number(item.pricePerNight) || 0,
+                rating: Number(item.rating) || 5,
+                reviews: Number(item.reviews) || 0,
+                guests: Number(item.maxGuests) || 1,
+                amenities: item.amenities || [],
+                img: item.images?.[0] || ""
+            });
+        });
+    } catch { /* Ignore malformed local data and keep demo stays available. */ }
+
+    async function loadDatabaseListings() {
+        try {
+            const remoteListings = await apiRequest("/listings");
+            const remoteIds = new Set(remoteListings.map(item => String(item.id)));
+            listings = listings.filter(item => !remoteIds.has(String(item.id))).concat(remoteListings.map(item => ({
+                id: item.id,
+                name: item.title,
+                type: item.property_type,
+                location: item.location,
+                price: Number(item.price_per_night),
+                rating: Number(item.rating) || 5,
+                reviews: Number(item.review_count) || 0,
+                guests: Number(item.max_guests),
+                amenities: item.amenities || [],
+                img: item.images?.[0] || ""
+            })));
+            render();
+        } catch (error) {
+            console.warn("Database listings unavailable:", error.message);
+        }
+    }
 
     const peso = (n) => "\u20B1" + Math.round(n).toLocaleString("en-PH");
 
@@ -90,6 +129,12 @@
         sort: "recommended",
         favorites: new Set()
     };
+
+    const currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+    try {
+        const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
+        saved.filter(item => !currentUser || item.userId === currentUser.id).forEach(item => state.favorites.add(item.propertyId));
+    } catch { /* Keep an empty wishlist when local data is malformed. */ }
 
     const grid = document.getElementById("staysGrid");
     const resultsCount = document.getElementById("resultsCount");
@@ -177,6 +222,12 @@
         }
         if (emptyState) emptyState.hidden = results.length !== 0;
         renderChips();
+        const params = new URLSearchParams();
+        if (state.search) params.set("search", state.search);
+        if (state.sort !== "recommended") params.set("sort", state.sort);
+        if (state.minPrice !== priceBounds.min) params.set("minPrice", state.minPrice);
+        if (state.maxPrice !== priceBounds.max) params.set("maxPrice", state.maxPrice);
+        window.history.replaceState({}, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
     }
 
     function renderChips() {
@@ -222,6 +273,19 @@
     });
     document.getElementById("heroSearchBtn")?.addEventListener("click", () => {
         document.querySelector(".stays-main")?.scrollIntoView({ behavior: "smooth" });
+    });
+
+    document.getElementById("saveSearchBtn")?.addEventListener("click", async () => {
+        if (!currentUser) {
+            window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
+            return;
+        }
+        try {
+            await apiRequest("/saved-searches", { method: "POST", body: JSON.stringify({ search_name: state.search || "Trip search", filters: { search: state.search, minPrice: state.minPrice, maxPrice: state.maxPrice, sort: state.sort, guests: state.guests } }) });
+            showToast("Search saved.");
+        } catch (error) {
+            showToast(error.message || "Unable to save search.", true);
+        }
     });
 
     sortSelect?.addEventListener("change", () => {
@@ -293,7 +357,7 @@
     priceMin?.addEventListener("input", function () { updatePriceUI(); render(); });
     priceMax?.addEventListener("input", function () { updatePriceUI(); render(); });
 
-    grid?.addEventListener("click", (e) => {
+    grid?.addEventListener("click", async (e) => {
         const bookBtn = e.target.closest(".listing-book");
         if (bookBtn) {
             const card = bookBtn.closest(".listing-card");
@@ -317,8 +381,25 @@
             state.favorites.delete(id);
             favBtn.classList.remove("is-active");
         } else {
+            if (!currentUser) {
+                window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
+                return;
+            }
             state.favorites.add(id);
             favBtn.classList.add("is-active");
+        }
+        if (currentUser) {
+            try {
+                const existing = await apiRequest("/wishlist");
+                const saved = existing.find(item => String(item.listing_id) === String(id));
+                if (state.favorites.has(id) && !saved) {
+                    await apiRequest("/wishlist", { method: "POST", body: JSON.stringify({ listing_id: Number(id) }) });
+                } else if (!state.favorites.has(id) && saved) {
+                    await apiRequest(`/wishlist/${saved.id}`, { method: "DELETE" });
+                }
+            } catch (error) {
+                console.error(error);
+            }
         }
     });
 
@@ -368,6 +449,9 @@
     const incomingSearch = urlParams.get('search');
     const incomingCheckIn = urlParams.get('checkin');
     const incomingCheckOut = urlParams.get('checkout');
+    const incomingSort = urlParams.get('sort');
+    const incomingMinPrice = Number(urlParams.get('minPrice'));
+    const incomingMaxPrice = Number(urlParams.get('maxPrice'));
 
     if (incomingSearch && searchInput) {
         state.search = incomingSearch;
@@ -375,7 +459,14 @@
     }
     if (incomingCheckIn) localStorage.setItem('trip_checkin', incomingCheckIn);
     if (incomingCheckOut) localStorage.setItem('trip_checkout', incomingCheckOut);
+    if (["recommended", "price-asc", "price-desc", "rating-desc"].includes(incomingSort)) {
+        state.sort = incomingSort;
+        if (sortSelect) sortSelect.value = incomingSort;
+    }
+    if (incomingMinPrice >= priceBounds.min && incomingMinPrice <= priceBounds.max && priceMin) priceMin.value = incomingMinPrice;
+    if (incomingMaxPrice >= priceBounds.min && incomingMaxPrice <= priceBounds.max && priceMax) priceMax.value = incomingMaxPrice;
 
     updatePriceUI();
     render();
+    loadDatabaseListings();
 })();

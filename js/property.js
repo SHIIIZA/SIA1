@@ -202,13 +202,28 @@
     // Get property ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const propertyId = urlParams.get("id") || "happy-hut";
-    const property = propertyData[propertyId];
-
-    if (!property) {
-        console.error("Property not found:", propertyId);
-        window.location.href = "stays.html";
-        return;
-    }
+    try {
+        const hostListing = JSON.parse(localStorage.getItem("tripmate_listings") || "[]").find(item => item.id === propertyId);
+        if (hostListing) {
+            propertyData[propertyId] = {
+                id: hostListing.id,
+                name: hostListing.title || "TripMate stay",
+                type: hostListing.propertyType || "House rental",
+                location: hostListing.location || "Philippines",
+                price: Number(hostListing.pricePerNight) || 0,
+                rating: Number(hostListing.rating) || 5,
+                reviews: [],
+                guests: Number(hostListing.maxGuests) || 1,
+                amenities: hostListing.amenities || [],
+                images: hostListing.images?.length ? hostListing.images : [""],
+                description: hostListing.description || "A stay listed by a TripMate host.",
+                host: { name: "TripMate host", avatar: "", joined: new Date().getFullYear().toString(), verified: true, responseRate: 100, responseTime: "within an hour" },
+                houseRules: [],
+                reviews: []
+            };
+        }
+    } catch { /* Keep the built-in property catalogue available. */ }
+    let property = propertyData[propertyId];
 
     // DOM elements
     const mainImage = document.getElementById("mainImage");
@@ -234,9 +249,39 @@
     const guestMinus = document.getElementById("guestMinus");
     const guestPlus = document.getElementById("guestPlus");
     const bookNowBtn = document.getElementById("bookNowBtn");
+    const imageLightbox = document.getElementById("imageLightbox");
+    const lightboxImage = document.getElementById("lightboxImage");
+    const closeLightbox = document.getElementById("closeLightbox");
 
     // Initialize page
-    function init() {
+    async function init() {
+        if (!property && typeof apiRequest === "function" && /^\d+$/.test(propertyId)) {
+            try {
+                const remote = await apiRequest(`/listings/${propertyId}`);
+                property = {
+                    id: remote.id,
+                    name: remote.title,
+                    type: remote.property_type,
+                    location: remote.location,
+                    price: Number(remote.price_per_night),
+                    rating: Number(remote.rating) || 5,
+                    reviews: [],
+                    guests: Number(remote.max_guests),
+                    amenities: remote.amenities || [],
+                    images: remote.images?.length ? remote.images : [""],
+                    description: remote.description || "A stay listed by a TripMate host.",
+                    host: { name: "TripMate host", avatar: "", joined: new Date().getFullYear().toString(), verified: true, responseRate: 100, responseTime: "within an hour" },
+                    houseRules: [],
+                    reviews: []
+                };
+            } catch (error) {
+                console.warn("Unable to load listing:", error.message);
+            }
+        }
+        if (!property) {
+            window.location.href = "stays.html";
+            return;
+        }
         document.title = `${property.name} — TripMate`;
 
         // Gallery
@@ -256,7 +301,20 @@
                 document.querySelectorAll(".thumb").forEach(t => t.classList.remove("active"));
                 thumb.classList.add("active");
             });
+            thumb.addEventListener("dblclick", () => {
+                if (imageLightbox && lightboxImage) {
+                    lightboxImage.src = img;
+                    imageLightbox.showModal();
+                }
+            });
             galleryThumbs.appendChild(thumb);
+        });
+
+        mainImage.addEventListener("click", () => {
+            if (imageLightbox && lightboxImage) {
+                lightboxImage.src = mainImage.src;
+                imageLightbox.showModal();
+            }
         });
 
         // Property header
@@ -395,6 +453,11 @@
         bookingForm.addEventListener("submit", handleBooking);
     }
 
+    closeLightbox?.addEventListener("click", () => imageLightbox?.close());
+    imageLightbox?.addEventListener("click", event => {
+        if (event.target === imageLightbox) imageLightbox.close();
+    });
+
     function updateBreakdown() {
         const checkin = checkinDate.value;
         const checkout = checkoutDate.value;
@@ -477,42 +540,22 @@
             return;
         }
 
-        bookNowBtn.disabled = true;
-        bookNowBtn.innerHTML = `
-            <svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite; margin-right: 8px;">
-                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
-                <path d="M12 2a10 10 0 0 1 10 10" stroke-opacity="1" stroke-linecap="round"/>
-            </svg>
-            Booking...
-        `;
+        localStorage.setItem("selectedStay", JSON.stringify({
+            id: property.id,
+            name: property.name,
+            location: property.location,
+            price: property.price,
+            rating: property.rating,
+            reviews: property.reviews.length,
+            guests: property.guests,
+            img: property.images[0]
+        }));
+        localStorage.setItem("trip_checkin", checkin);
+        localStorage.setItem("trip_checkout", checkout);
 
-        setTimeout(() => {
-            const booking = {
-                id: "BK-" + Date.now().toString(36).toUpperCase(),
-                userId: currentUser.id,
-                guestName: currentUser.name || "Guest",
-                guestEmail: currentUser.email || "",
-                propertyId: property.id,
-                propertyName: property.name,
-                propertyImage: property.images[0],
-                checkin,
-                checkout,
-                guests,
-                nights: parseInt(bookingForm.dataset.nights),
-                subtotal: parseInt(bookingForm.dataset.subtotal),
-                cleaningFee: parseInt(bookingForm.dataset.cleaningFee),
-                serviceFee: parseInt(bookingForm.dataset.serviceFee),
-                total: parseInt(bookingForm.dataset.total),
-                status: "pending",
-                createdAt: new Date().toISOString()
-            };
-
-            const bookings = JSON.parse(localStorage.getItem("tripmate_bookings") || "[]");
-            bookings.push(booking);
-            localStorage.setItem("tripmate_bookings", JSON.stringify(bookings));
-
-            window.location.href = `booking-confirmation.html?id=${booking.id}`;
-        }, 1000);
+        const bookingUrl = new URL("booking.html", window.location.href);
+        bookingUrl.searchParams.set("guests", String(guests));
+        window.location.href = bookingUrl.href;
     }
 
     function showToast(message, isError = false) {

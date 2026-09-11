@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: tripmate-api
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NEON_API_URL
+        sync: false
+      - key: NEON_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false

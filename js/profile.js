@@ -25,6 +25,12 @@
     const avatarPlaceholder = document.getElementById("avatarPlaceholder");
     const logoutBtn = document.getElementById("logoutBtn");
     const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+    const notificationInputs = {
+        booking: document.getElementById("notifBooking"),
+        payment: document.getElementById("notifPayment"),
+        reminders: document.getElementById("notifReminders"),
+        promo: document.getElementById("notifPromo")
+    };
 
     // Auth check
     const user = JSON.parse(localStorage.getItem("tripmate_user") || "null");
@@ -51,10 +57,26 @@
         lastNameInput.value = nameParts.slice(1).join(" ") || "";
         emailInput.value = user.email || "";
         phoneInput.value = user.phone || "";
+
+        const notifications = JSON.parse(localStorage.getItem(`tripmate_notifications_${user.id}`) || "null") || {
+            booking: true, payment: true, reminders: true, promo: false
+        };
+        Object.entries(notificationInputs).forEach(([key, input]) => {
+            if (input) input.checked = notifications[key] !== false;
+        });
     }
 
+    Object.entries(notificationInputs).forEach(([key, input]) => {
+        input?.addEventListener("change", () => {
+            const notifications = Object.fromEntries(Object.entries(notificationInputs).map(([name, checkbox]) => [name, checkbox?.checked !== false]));
+            localStorage.setItem(`tripmate_notifications_${user.id}`, JSON.stringify(notifications));
+            apiRequest("/notifications/preferences", { method: "POST", body: JSON.stringify({ preferences: notifications }) }).catch(error => showToast(error.message || "Unable to save notification settings.", true));
+            showToast(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications updated.`);
+        });
+    });
+
     // Save account info
-    accountForm.addEventListener("submit", (e) => {
+    accountForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const firstName = firstNameInput.value.trim();
@@ -72,7 +94,14 @@
             return;
         }
 
-        // Update user in localStorage
+        try {
+            await apiRequest("/me", { method: "PATCH", body: JSON.stringify({ name: `${firstName} ${lastName}`, email, phone }) });
+        } catch (error) {
+            showToast(error.message || "Unable to save your profile.", true);
+            return;
+        }
+
+        // Keep the local session mirror for the existing page navigation.
         const updatedUser = { ...user, name: `${firstName} ${lastName}`, email, phone };
         localStorage.setItem("tripmate_user", JSON.stringify(updatedUser));
 
@@ -89,7 +118,7 @@
     });
 
     // Change password
-    securityForm.addEventListener("submit", (e) => {
+    securityForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const currentPassword = currentPasswordInput.value;
@@ -111,16 +140,10 @@
             return;
         }
 
-        // Verify the current password and apply the change via the shared
-        // auth.js helper, rather than overwriting unconditionally.
-        if (typeof changePassword !== "function") {
-            showToast("Unable to update password right now.", true);
-            return;
-        }
-
-        const result = changePassword(user.id, currentPassword, newPassword);
-        if (!result.ok) {
-            showToast(result.error || "Could not update password.", true);
+        try {
+            await apiRequest("/me/password", { method: "PATCH", body: JSON.stringify({ currentPassword, newPassword }) });
+        } catch (error) {
+            showToast(error.message || "Could not update password.", true);
             return;
         }
 
@@ -149,7 +172,9 @@
             avatarPreview.innerHTML = `<img src="${dataUrl}" alt="Profile">`;
             avatarPreview.style.background = "transparent";
 
-            // Save to localStorage (in a real app, this would be uploaded to a server)
+            apiRequest("/me", { method: "PATCH", body: JSON.stringify({ avatar: dataUrl }) }).catch(error => showToast(error.message || "Unable to save your photo.", true));
+
+            // Keep a local preview for the current browser session.
             const updatedUser = { ...user, avatar: dataUrl };
             localStorage.setItem("tripmate_user", JSON.stringify(updatedUser));
 
