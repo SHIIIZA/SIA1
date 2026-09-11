@@ -33,6 +33,7 @@ Netlify hosts the static frontend. The Node API must run separately because Netl
 
 ```text
 NEON_API_URL=https://ep-super-king-b3dwl2jz.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1
+NEON_AUTH_URL=https://ep-super-king-b3dwl2jz.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth
 NEON_API_KEY=<your Neon Data API key>
 JWT_SECRET=<long random secret>
 FRONTEND_URL=https://<your-site>.netlify.app

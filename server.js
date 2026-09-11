@@ -18,6 +18,7 @@ try {
 
 const config = {
     apiUrl: process.env.NEON_API_URL || env.NEON_API_URL,
+    authUrl: process.env.NEON_AUTH_URL || env.NEON_AUTH_URL,
     apiKey: process.env.NEON_API_KEY || env.NEON_API_KEY,
     jwtSecret: process.env.JWT_SECRET || env.JWT_SECRET || "change-this-secret",
     port: Number(process.env.PORT || env.PORT || 3000)
@@ -136,7 +137,7 @@ async function routeApi(req, res, url) {
     const requireAdmin = () => { const current = requireAuth(); if (current.role !== "admin") throw Object.assign(new Error("Admin access required"), { status: 403 }); return current; };
 
     if (req.method === "GET" && url.pathname === "/api/health") {
-        return json(res, 200, { ok: true, databaseConfigured: Boolean(config.apiUrl && config.apiKey) });
+        return json(res, 200, { ok: true, databaseConfigured: Boolean(config.apiUrl && config.apiKey), authConfigured: Boolean(config.authUrl) });
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/data") {
