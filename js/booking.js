@@ -501,8 +501,8 @@
             createdAt: new Date().toISOString()
         };
         const listingId = Number(listing.id);
-        if (!Number.isInteger(listingId)) {
-            showToast("This demo stay is not yet available from the Neon database.", true);
+        if (!Number.isInteger(listingId) || listingId <= 0) {
+            showToast("Choose a stay published from the Neon database before confirming payment.", true);
             return;
         }
         try {
