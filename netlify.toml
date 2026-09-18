@@ -5,10 +5,6 @@
 [functions]
   node_bundler = "esbuild"
 
-[functions."api"]
-  node_bundler = "esbuild"
-  format = "esm"
-
 [[headers]]
   for = "/*"
   [headers.values]
