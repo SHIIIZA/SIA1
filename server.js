@@ -4,6 +4,7 @@ import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+import { neon as neonClient } from "@neondatabase/serverless";
 
 const scrypt = promisify(scryptCallback);
 const root = fileURLToPath(new URL(".", import.meta.url));
@@ -20,6 +21,7 @@ const config = {
     apiUrl: process.env.NEON_API_URL || env.NEON_API_URL,
     authUrl: process.env.NEON_AUTH_URL || env.NEON_AUTH_URL,
     apiKey: process.env.NEON_API_KEY || env.NEON_API_KEY,
+    databaseUrl: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || env.NETLIFY_DATABASE_URL || env.DATABASE_URL,
     jwtSecret: process.env.JWT_SECRET || env.JWT_SECRET || "change-this-secret",
     port: Number(process.env.PORT || env.PORT || 3000)
 };
@@ -27,8 +29,10 @@ const config = {
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "admin1234";
 
-if (!config.apiUrl || !config.apiKey) {
-    console.warn("Missing NEON_API_URL or NEON_API_KEY. Add them to .env before starting the server.");
+const sql = config.databaseUrl ? neonClient(config.databaseUrl) : null;
+
+if (!sql && (!config.apiUrl || !config.apiKey)) {
+    console.warn("Missing NETLIFY_DATABASE_URL/DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
 }
 
 function json(res, status, data) {
@@ -50,7 +54,77 @@ function readBody(req) {
     });
 }
 
+const SQL_TABLES = new Set(["users", "listings", "bookings", "payments", "wishlists", "notifications", "reviews", "payouts", "saved_searches"]);
+const SQL_IDENTIFIER = /^[a-z_][a-z0-9_]*$/i;
+
+function sqlValue(value) {
+    if (value !== null && typeof value === "object") return JSON.stringify(value);
+    return value;
+}
+
+async function neonDatabase(path, options = {}) {
+    const requestUrl = new URL(path, "https://neon.local");
+    const table = requestUrl.pathname.split("/").filter(Boolean)[0];
+    if (!SQL_TABLES.has(table)) throw Object.assign(new Error(`Unsupported database table: ${table}`), { status: 500 });
+
+    const method = options.method || "GET";
+    const body = options.body ? JSON.parse(options.body) : {};
+    const params = [];
+    const parameter = (value) => { params.push(sqlValue(value)); return `$${params.length}`; };
+    const filters = [];
+    for (const [key, raw] of requestUrl.searchParams) {
+        if (["select", "order"].includes(key) || !SQL_IDENTIFIER.test(key)) continue;
+        if (raw.startsWith("eq.")) filters.push(`"${key}" = ${parameter(raw.slice(3))}`);
+        if (raw.startsWith("in.(") && raw.endsWith(")")) {
+            const values = raw.slice(4, -1).split(",").filter(Boolean).map(parameter);
+            if (values.length) filters.push(`"${key}" IN (${values.join(", ")})`);
+        }
+    }
+    const where = filters.length ? ` WHERE ${filters.join(" AND ")}` : "";
+    const order = requestUrl.searchParams.get("order");
+    const orderSql = order && SQL_IDENTIFIER.test(order.replace(/\.(asc|desc)$/, ""))
+        ? ` ORDER BY "${order.replace(/\.(asc|desc)$/, "")}"${order.endsWith(".desc") ? " DESC" : " ASC"}` : "";
+
+    let rows;
+    if (method === "GET") {
+        rows = await sql.query(`SELECT * FROM "${table}"${where}${orderSql}`, params);
+    } else if (method === "POST") {
+        const keys = Object.keys(body).filter((key) => SQL_IDENTIFIER.test(key));
+        const values = keys.map((key) => parameter(body[key]));
+        rows = await sql.query(`INSERT INTO "${table}" (${keys.map((key) => `"${key}"`).join(", ")}) VALUES (${values.join(", ")}) RETURNING *`, params);
+    } else if (method === "PATCH") {
+        const updates = Object.keys(body).filter((key) => SQL_IDENTIFIER.test(key)).map((key) => `"${key}" = ${parameter(body[key])}`);
+        rows = await sql.query(`UPDATE "${table}" SET ${updates.join(", ")}${where} RETURNING *`, params);
+    } else if (method === "DELETE") {
+        rows = await sql.query(`DELETE FROM "${table}"${where} RETURNING *`, params);
+    } else {
+        throw Object.assign(new Error("Method not supported"), { status: 405 });
+    }
+
+    // The REST adapter supports a few embedded resources used by the admin and host views.
+    if (table === "bookings" && requestUrl.searchParams.get("select")?.includes("listings")) {
+        const listingIds = [...new Set(rows.map((row) => row.listing_id).filter(Boolean))];
+        const listings = listingIds.length ? await sql.query(`SELECT id, title, images, host_id FROM listings WHERE id = ANY($1::int[])`, [listingIds]) : [];
+        const listingMap = new Map(listings.map((item) => [item.id, item]));
+        rows = rows.map((row) => ({ ...row, listings: listingMap.get(row.listing_id) || null }));
+    }
+    if (table === "bookings" && requestUrl.searchParams.get("select")?.includes("users")) {
+        const guestIds = [...new Set(rows.map((row) => row.guest_id).filter(Boolean))];
+        const users = guestIds.length ? await sql.query(`SELECT id, name, email, phone FROM users WHERE id = ANY($1::int[])`, [guestIds]) : [];
+        const userMap = new Map(users.map((item) => [item.id, item]));
+        rows = rows.map((row) => ({ ...row, users: userMap.get(row.guest_id) || null }));
+    }
+    if (table === "wishlists" && requestUrl.searchParams.get("select")?.includes("listings")) {
+        const listingIds = [...new Set(rows.map((row) => row.listing_id).filter(Boolean))];
+        const listings = listingIds.length ? await sql.query(`SELECT * FROM listings WHERE id = ANY($1::int[])`, [listingIds]) : [];
+        const listingMap = new Map(listings.map((item) => [item.id, item]));
+        rows = rows.map((row) => ({ ...row, listings: listingMap.get(row.listing_id) || null }));
+    }
+    return rows;
+}
+
 async function neon(path, options = {}) {
+    if (sql) return neonDatabase(path, options);
     if (!config.apiUrl || !config.apiKey) {
         throw Object.assign(new Error("Neon API configuration is missing."), { status: 503 });
     }
@@ -148,7 +222,7 @@ export async function routeApi(req, res, url) {
     const requireAdmin = () => { const current = requireAuth(); if (current.role !== "admin") throw Object.assign(new Error("Admin access required"), { status: 403 }); return current; };
 
     if (req.method === "GET" && url.pathname === "/api/health") {
-        return json(res, 200, { ok: true, databaseConfigured: Boolean(config.apiUrl && config.apiKey), authConfigured: Boolean(config.authUrl) });
+        return json(res, 200, { ok: true, databaseConfigured: Boolean(sql || (config.apiUrl && config.apiKey)), authConfigured: Boolean(config.authUrl || config.databaseUrl) });
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/data") {
