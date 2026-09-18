@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { routeApi } from "../../server.js";
+import { initializeAdminAccount, routeApi } from "../../server.js";
 
 function routePath(event) {
     const rawPath = event.path || "/api/health";
@@ -59,6 +59,12 @@ export async function handler(event) {
 
     if (method === "OPTIONS") {
         return { statusCode: 204, headers, body: "" };
+    }
+
+    try {
+        await initializeAdminAccount();
+    } catch (error) {
+        console.error("Unable to seed admin account:", error.message);
     }
 
     const request = createRequest(event);

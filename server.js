@@ -210,6 +210,12 @@ async function ensureAdminAccount() {
     }
 }
 
+let adminAccountPromise = null;
+export function initializeAdminAccount() {
+    if (!adminAccountPromise) adminAccountPromise = ensureAdminAccount();
+    return adminAccountPromise;
+}
+
 function signToken(user) {
     const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + 7 * 86400000 })).toString("base64url");
     const signature = createHmac("sha256", config.jwtSecret).update(payload).digest("base64url");
@@ -504,5 +510,5 @@ const server = createServer(async (req, res) => {
 
 if (process.argv[1] && /(?:^|[\\/])server\.js$/.test(process.argv[1])) {
     server.listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
-    ensureAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
+    initializeAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
 }
