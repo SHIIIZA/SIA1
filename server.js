@@ -158,6 +158,18 @@ async function neon(path, options = {}) {
     return data;
 }
 
+async function databaseHealth() {
+    if (sql) {
+        try {
+            await sql.query("SELECT 1");
+            return { configured: true };
+        } catch {
+            return { configured: false, error: "Neon database connection failed." };
+        }
+    }
+    return { configured: Boolean(config.apiUrl && config.apiKey) };
+}
+
 async function hashPassword(password) {
     const salt = randomBytes(16).toString("hex");
     const derived = await scrypt(password, salt, 64);
@@ -173,7 +185,7 @@ async function verifyPassword(password, stored) {
 }
 
 async function ensureAdminAccount() {
-    if (!config.apiUrl || !config.apiKey) return;
+    if (!sql && (!config.apiUrl || !config.apiKey)) return;
     const existing = await neon(`/users?username=eq.${ADMIN_USERNAME}&select=*`);
     const password_hash = await hashPassword(ADMIN_PASSWORD);
     const payload = {
@@ -211,7 +223,11 @@ function authUser(req) {
 function safeUser(user) {
     if (!user) return null;
     const { password_hash, ...safe } = user;
-    return safe;
+    return {
+        ...safe,
+        type: safe.role === "host" ? "host" : "guest",
+        businessName: safe.business_name || "",
+    };
 }
 
 export async function routeApi(req, res, url) {
@@ -222,7 +238,13 @@ export async function routeApi(req, res, url) {
     const requireAdmin = () => { const current = requireAuth(); if (current.role !== "admin") throw Object.assign(new Error("Admin access required"), { status: 403 }); return current; };
 
     if (req.method === "GET" && url.pathname === "/api/health") {
-        return json(res, 200, { ok: true, databaseConfigured: Boolean(sql || (config.apiUrl && config.apiKey)), authConfigured: Boolean(config.authUrl || config.databaseUrl) });
+        const database = await databaseHealth();
+        return json(res, 200, {
+            ok: true,
+            databaseConfigured: database.configured,
+            databaseError: database.error || null,
+            authConfigured: Boolean(config.authUrl || config.databaseUrl)
+        });
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/data") {

@@ -33,7 +33,7 @@ async function apiRequest(path, options = {}) {
 async function apiRegister(payload) {
     const health = await apiRequest("/health");
     if (!health?.databaseConfigured) {
-        throw new Error("Backend database is not configured. Set NEON_API_URL and NEON_API_KEY on the server.");
+        throw new Error(health?.databaseError || "Backend database is not configured. Set NETLIFY_DATABASE_URL or DATABASE_URL on the server.");
     }
     const result = await apiRequest("/auth/register", { method: "POST", body: JSON.stringify(payload) });
     if (!result?.token || !result?.user) throw new Error("The API returned an incomplete registration response.");

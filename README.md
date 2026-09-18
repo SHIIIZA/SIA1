@@ -4,7 +4,7 @@
 
 1. Run `schema.sql` in the Neon SQL Editor.
 2. Copy `.env.example` to `.env`.
-3. Put the pooled Neon PostgreSQL connection string in `.env` as `NETLIFY_DATABASE_URL` (the same variable used by the GameByte project). `DATABASE_URL` is also accepted locally. Never put this secret in browser JavaScript.
+3. Put the pooled Neon PostgreSQL connection string in `.env` as `NETLIFY_DATABASE_URL`. `DATABASE_URL` is also accepted locally. Never put this secret in browser JavaScript.
 4. Start the app from this folder:
 
 ```powershell
@@ -13,7 +13,7 @@ npm start
 
 5. Open `http://localhost:3000`.
 
-The local Node server serves the HTML files and exposes the same browser-safe API routes under `/api` for development. In production, those routes run through the Netlify Function in `netlify/functions/api.js`, which uses the Neon serverless HTTP client server-side, following the GameByte database pattern. The browser token is not a Neon secret.
+The local Node server serves the HTML files and exposes the same browser-safe TripMate API routes under `/api` for development. In production, those routes run through the Netlify Function in `netlify/functions/api.js`, which uses the Neon serverless HTTP client server-side. The browser token is not a Neon secret.
 
 The server creates or refreshes the Neon admin account on startup:
 
