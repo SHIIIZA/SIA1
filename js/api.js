@@ -7,7 +7,17 @@ async function apiRequest(path, options = {}) {
     const token = localStorage.getItem(TRIPMATE_TOKEN_KEY);
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const response = await fetch(`${TRIPMATE_API_BASE}${path}`, { ...options, headers });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+        response = await fetch(`${TRIPMATE_API_BASE}${path}`, { ...options, headers, signal: controller.signal });
+    } catch (error) {
+        if (error.name === "AbortError") throw new Error("API request timed out. Check the Netlify Function and Neon configuration.");
+        throw error;
+    } finally {
+        clearTimeout(timeout);
+    }
     const text = await response.text();
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = { error: text }; }

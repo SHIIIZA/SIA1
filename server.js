@@ -54,8 +54,11 @@ async function neon(path, options = {}) {
     if (!config.apiUrl || !config.apiKey) {
         throw Object.assign(new Error("Neon API configuration is missing."), { status: 503 });
     }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     const response = await fetch(`${config.apiUrl}${path}`, {
         ...options,
+        signal: controller.signal,
         headers: {
             apikey: config.apiKey,
             Authorization: `Bearer ${config.apiKey}`,
@@ -63,7 +66,12 @@ async function neon(path, options = {}) {
             Prefer: "return=representation",
             ...(options.headers || {})
         }
-    });
+    }).catch((error) => {
+        if (error.name === "AbortError") {
+            throw Object.assign(new Error("Neon Data API request timed out."), { status: 504 });
+        }
+        throw error;
+    }).finally(() => clearTimeout(timeout));
     const text = await response.text();
     let data;
     try { data = text ? JSON.parse(text) : null; } catch { data = { message: text }; }
