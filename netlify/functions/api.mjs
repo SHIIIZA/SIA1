@@ -1,6 +1,8 @@
 import { EventEmitter } from "node:events";
 import { routeApi } from "../../server.js";
 
+// The .mjs entry keeps Netlify's esbuild output in ES module format.
+
 function routePath(event) {
     const rawPath = event.path || "/api/health";
     const functionPrefix = "/.netlify/functions/api";
