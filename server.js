@@ -28,7 +28,15 @@ const config = {
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "admin1234";
 
-const sql = config.databaseUrl ? neonClient(config.databaseUrl) : null;
+let sql = null;
+let databaseConfigError = null;
+if (config.databaseUrl) {
+    try {
+        sql = neonClient(config.databaseUrl);
+    } catch {
+        databaseConfigError = "Neon database URL is invalid.";
+    }
+}
 
 if (!sql && (!config.apiUrl || !config.apiKey)) {
     console.warn("Missing NETLIFY_DATABASE_URL/DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
@@ -158,6 +166,7 @@ async function neon(path, options = {}) {
 }
 
 async function databaseHealth() {
+    if (databaseConfigError) return { configured: false, error: databaseConfigError };
     if (sql) {
         try {
             await sql.query("SELECT 1");
