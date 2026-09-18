@@ -207,8 +207,8 @@
         setTimeout(() => { window.location.href = destination; }, 800);
       } catch (error) {
         const message = error.message || "Unable to create account.";
-        setFieldError(emailField, message.includes("API server unavailable")
-          ? "Signup service is offline. The Render API must be deployed and connected to Neon."
+        setFieldError(emailField, message.includes("API service unavailable")
+          ? "Signup service is offline. Check the Netlify Function deployment and Neon environment variables."
           : message);
         submitBtn.disabled = false;
         submitBtn.textContent = "Create Account";

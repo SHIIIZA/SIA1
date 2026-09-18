@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
@@ -129,7 +129,7 @@ function safeUser(user) {
     return safe;
 }
 
-async function routeApi(req, res, url) {
+export async function routeApi(req, res, url) {
     const body = ["POST", "PATCH", "PUT"].includes(req.method) ? await readBody(req) : {};
     const user = authUser(req);
     const requireAuth = () => { if (!user) throw Object.assign(new Error("Authentication required"), { status: 401 }); return user; };
@@ -386,5 +386,7 @@ const server = createServer(async (req, res) => {
     }
 });
 
-server.listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
-ensureAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+    server.listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
+    ensureAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
+}

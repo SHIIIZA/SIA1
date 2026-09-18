@@ -14,7 +14,7 @@ async function apiRequest(path, options = {}) {
     if (!response.ok) {
         const isHTML = /^\s*<!doctype html|^\s*<html/i.test(text);
         throw new Error(isHTML
-            ? `API server unavailable (${response.status}). Deploy the Render API and check the Netlify API proxy URL.`
+            ? `API service unavailable (${response.status}). Check the Netlify Function deployment and API environment variables.`
             : data?.error || data?.message || "Request failed");
     }
     return data;
