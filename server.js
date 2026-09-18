@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash, createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
@@ -10,7 +10,7 @@ const scrypt = promisify(scryptCallback);
 const root = fileURLToPath(new URL(".", import.meta.url));
 const env = {};
 try {
-    const text = await import("node:fs/promises").then(fs => fs.readFile(join(root, ".env"), "utf8"));
+    const text = readFileSync(join(root, ".env"), "utf8");
     text.split(/\r?\n/).forEach(line => {
         const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
         if (match) env[match[1]] = match[2].replace(/^['"]|['"]$/g, "");
