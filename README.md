@@ -4,7 +4,7 @@
 
 1. Run `schema.sql` in the Neon SQL Editor.
 2. Copy `.env.example` to `.env`.
-3. Put your Neon Data API key in `.env` as `NEON_API_KEY`. Never put this key in browser JavaScript.
+3. Put the Neon Data API URL in `.env` as `NEON_API_URL` and the separate Data API key from Neon in `.env` as `NEON_API_KEY`. The PostgreSQL connection string and its password are not the Data API key and are not used by this implementation. Never put either secret in browser JavaScript.
 4. Start the app from this folder:
 
 ```powershell
@@ -30,10 +30,11 @@ Netlify hosts both the static frontend and the API bridge. The function keeps Ne
 
 1. Run `schema.sql` in the Neon SQL Editor.
 2. Create a Netlify site from this repository. Netlify automatically detects `netlify.toml` and deploys `netlify/functions/api.js`.
-3. Set these Netlify environment variables for the site and deploy contexts:
+3. Set these Netlify environment variables for the site and deploy contexts. `NEON_API_KEY` must be copied from the Neon Data API credentials screen, not from the PostgreSQL connection string:
 
 ```text
 NEON_API_URL=https://ep-super-king-b3dwl2jz.apirest.c-4.ap-southeast-1.aws.neon.tech/neondb/rest/v1
+NEON_AUTH_URL=https://ep-super-king-b3dwl2jz.neonauth.c-4.ap-southeast-1.aws.neon.tech/neondb/auth
 NEON_API_KEY=<your Neon Data API key>
 JWT_SECRET=<long random secret>
 FRONTEND_URL=https://<your-site>.netlify.app

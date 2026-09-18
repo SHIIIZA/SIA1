@@ -15,12 +15,16 @@ async function apiRequest(path, options = {}) {
         const isHTML = /^\s*<!doctype html|^\s*<html/i.test(text);
         throw new Error(isHTML
             ? `API service unavailable (${response.status}). Check the Netlify Function deployment and API environment variables.`
-            : data?.error || data?.message || "Request failed");
+            : data?.error || data?.message || `Request failed (${response.status})`);
     }
     return data;
 }
 
 async function apiRegister(payload) {
+    const health = await apiRequest("/health");
+    if (!health?.databaseConfigured) {
+        throw new Error("Backend database is not configured. Set NEON_API_URL and NEON_API_KEY on the server.");
+    }
     const result = await apiRequest("/auth/register", { method: "POST", body: JSON.stringify(payload) });
     if (!result?.token || !result?.user) throw new Error("The API returned an incomplete registration response.");
     localStorage.setItem(TRIPMATE_TOKEN_KEY, result.token);

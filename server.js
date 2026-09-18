@@ -51,7 +51,9 @@ function readBody(req) {
 }
 
 async function neon(path, options = {}) {
-    if (!config.apiUrl || !config.apiKey) throw new Error("Neon API configuration is missing.");
+    if (!config.apiUrl || !config.apiKey) {
+        throw Object.assign(new Error("Neon API configuration is missing."), { status: 503 });
+    }
     const response = await fetch(`${config.apiUrl}${path}`, {
         ...options,
         headers: {
@@ -66,7 +68,8 @@ async function neon(path, options = {}) {
     let data;
     try { data = text ? JSON.parse(text) : null; } catch { data = { message: text }; }
     if (!response.ok) {
-        const error = new Error(data?.message || data?.hint || "Neon request failed");
+        const detail = data?.message || data?.hint || data?.details || text || "Neon request failed";
+        const error = new Error(`Neon Data API ${response.status}: ${detail}`);
         error.status = response.status;
         throw error;
     }
@@ -212,8 +215,9 @@ export async function routeApi(req, res, url) {
         try {
             const rows = await neon("/users", { method: "POST", body: JSON.stringify({ name, email: email.trim().toLowerCase(), password_hash, role: role === "host" ? "host" : "guest", business_name: businessName }) });
             const created = rows[0];
+            if (!created) throw new Error("Neon Data API returned no created user.");
             return json(res, 201, { token: signToken(created), user: safeUser(created) });
-        } catch (error) { return json(res, error.status === 409 ? 409 : 400, { error: error.message }); }
+        } catch (error) { return json(res, error.status || 400, { error: error.message }); }
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/login") {
