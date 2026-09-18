@@ -1,6 +1,20 @@
 (function () {
     "use strict";
 
+    function showToast(message, isError = false) {
+        let toast = document.querySelector(".toast");
+        if (!toast) {
+            toast = document.createElement("div");
+            toast.className = "toast";
+            document.body.appendChild(toast);
+        }
+        toast.textContent = message;
+        toast.classList.toggle("error-toast", isError);
+        toast.classList.add("show");
+        clearTimeout(toast._hideTimer);
+        toast._hideTimer = setTimeout(() => toast.classList.remove("show"), 3200);
+    }
+
     // --- Retrieve Stored Listing Data or Fallback ---
     const storedStay = localStorage.getItem("selectedStay");
     const parsedStay = storedStay ? JSON.parse(storedStay) : null;
