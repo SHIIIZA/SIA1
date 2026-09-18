@@ -1,13 +1,12 @@
 import { createServer } from "node:http";
 import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createHash, createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { neon as neonClient } from "@neondatabase/serverless";
 
 const scrypt = promisify(scryptCallback);
-const root = fileURLToPath(new URL(".", import.meta.url));
+const root = process.cwd();
 const env = {};
 try {
     const text = readFileSync(join(root, ".env"), "utf8");
@@ -494,7 +493,7 @@ const server = createServer(async (req, res) => {
     }
 });
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+if (process.argv[1] && /(?:^|[\\/])server\.js$/.test(process.argv[1])) {
     server.listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
     ensureAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
 }
