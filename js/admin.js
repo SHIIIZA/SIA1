@@ -1,13 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  const currentUser = (() => {
-    try { return JSON.parse(localStorage.getItem('tripmate_user') || 'null'); } catch { return null; }
-  })();
-  if (!currentUser || currentUser.role !== 'admin' || !localStorage.getItem('tripmate_access_token')) {
-    window.location.replace('login.html?redirect=admin.html');
-    return;
-  }
-
   /* =========================================================
      STORAGE KEYS — nothing is pre-seeded. This workspace starts
      empty so the first person to use it is genuinely the first test.
@@ -86,40 +78,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let listings = loadJSON(LISTINGS_KEY, []);
   let bookings = loadJSON(BOOKINGS_KEY, []);
 
-  let syncTimer = null;
-  const syncAdminData = () => {
-    clearTimeout(syncTimer);
-    syncTimer = setTimeout(async () => {
-      try {
-        await apiRequest('/admin/sync', { method: 'POST', body: JSON.stringify({ listings, bookings }) });
-        const fresh = await apiRequest('/admin/data');
-        listings = fresh.listings || [];
-        bookings = fresh.bookings || [];
-        save(LISTINGS_KEY, listings);
-        save(BOOKINGS_KEY, bookings);
-        renderDashboard();
-        renderInventory();
-        renderVerification();
-        renderTransactions();
-      } catch (error) {
-        showToast(error.message || 'Unable to sync admin changes.', 'error');
-      }
-    }, 120);
-  };
-  const persistListings = () => { save(LISTINGS_KEY, listings); syncAdminData(); };
-  const persistBookings = () => { save(BOOKINGS_KEY, bookings); syncAdminData(); };
-
-  const hydrateAdminData = async () => {
-    try {
-      const data = await apiRequest('/admin/data');
-      if (Array.isArray(data.listings)) listings = data.listings;
-      if (Array.isArray(data.bookings)) bookings = data.bookings;
-      save(LISTINGS_KEY, listings);
-      save(BOOKINGS_KEY, bookings);
-    } catch (error) {
-      showToast(error.message || 'Unable to load admin data.', 'error');
-    }
-  };
+  const persistListings = () => save(LISTINGS_KEY, listings);
+  const persistBookings = () => save(BOOKINGS_KEY, bookings);
 
   const getUsers = () => loadJSON(USERS_KEY, []);
   const saveUsers = (users) => save(USERS_KEY, users);
@@ -451,7 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   accountMenu.querySelector('[data-action="account-logout"]').addEventListener('click', () => {
     closeAccountMenu();
-    showToast('Logged out (demo only — no backend session).');
+    try { localStorage.removeItem('tripmate_session'); } catch { /* storage unavailable — ignore */ }
+    window.location.href = 'login.html';
   });
 
   document.addEventListener('click', (e) => {
@@ -1892,12 +1853,10 @@ document.addEventListener('DOMContentLoaded', () => {
   /* =========================================================
      INITIAL RENDER
   ========================================================= */
-  hydrateAdminData().finally(() => {
-    renderDashboard();
-    renderInventory();
-    renderVerification();
-    renderTransactions();
-    renderProfile();
-    applySettingsToDOM();
-  });
+  renderDashboard();
+  renderInventory();
+  renderVerification();
+  renderTransactions();
+  renderProfile();
+  applySettingsToDOM();
 });
