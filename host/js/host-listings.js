@@ -153,7 +153,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     bathrooms: Number(basics.bathrooms) || 1,
                     amenities: draft.data.amenities || [],
                     rules: draft.data.rules || {},
-                    images: uploadedPhotos.map(photo => photo.url),
+                    images: await Promise.all(uploadedPhotos.map(async photo => {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.readAsDataURL(photo.file);
+    reader.onload = () => resolve(reader.result);
+  });
+}))
                     status: document.getElementById('publishToggle')?.checked ? 'published' : 'draft'
                 })
             });

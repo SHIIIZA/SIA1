@@ -341,7 +341,8 @@
             alert("Please make sure your check-out date is after your check-in date.");
             return;
         }
-        if (!Number.isInteger(Number(listing.id)) || Number(listing.id) <= 0) {
+        const listingId = typeof listing.id === 'string' ? listing.id : Number(listing.id);
+if (!listingId || (typeof listingId === 'number' && listingId <= 0)) {
             showToast("This stay is a demo listing. Choose a published Neon stay to continue.", true);
             return;
         }

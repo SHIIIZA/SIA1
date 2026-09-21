@@ -152,7 +152,7 @@
     });
 
     // Avatar upload
-    avatarInput.addEventListener("change", (e) => {
+    // avatarInput.addEventListener("change", (e) => { // Removed per user request - photo upload not needed
         const file = e.target.files[0];
         if (!file) return;
 
