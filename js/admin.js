@@ -1,5 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+  const currentUser = (() => {
+    try { return JSON.parse(localStorage.getItem('tripmate_user') || 'null'); } catch { return null; }
+  })();
+  if (!currentUser || currentUser.role !== 'admin' || !localStorage.getItem('tripmate_access_token')) {
+    window.location.replace('login.html?redirect=admin.html');
+    return;
+  }
+
   /* =========================================================
      STORAGE KEYS — nothing is pre-seeded. This workspace starts
      empty so the first person to use it is genuinely the first test.
@@ -78,8 +86,42 @@ document.addEventListener('DOMContentLoaded', () => {
   let listings = loadJSON(LISTINGS_KEY, []);
   let bookings = loadJSON(BOOKINGS_KEY, []);
 
-  const persistListings = () => save(LISTINGS_KEY, listings);
-  const persistBookings = () => save(BOOKINGS_KEY, bookings);
+  let syncTimer = null;
+  const syncAdminData = () => {
+    if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+      try {
+        await apiRequest('/admin/sync', { method: 'POST', body: JSON.stringify({ listings, bookings }) });
+        const fresh = await apiRequest('/admin/data');
+        listings = fresh.listings || [];
+        bookings = fresh.bookings || [];
+        save(LISTINGS_KEY, listings);
+        save(BOOKINGS_KEY, bookings);
+        renderDashboard();
+        renderInventory();
+        renderVerification();
+        renderTransactions();
+      } catch (error) {
+        showToast(error.message || 'Unable to sync admin changes.', 'error');
+      }
+    }, 120);
+  };
+  const persistListings = () => { save(LISTINGS_KEY, listings); syncAdminData(); };
+  const persistBookings = () => { save(BOOKINGS_KEY, bookings); syncAdminData(); };
+
+  const hydrateAdminData = async () => {
+    if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') return;
+    try {
+      const data = await apiRequest('/admin/data');
+      if (Array.isArray(data.listings)) listings = data.listings;
+      if (Array.isArray(data.bookings)) bookings = data.bookings;
+      save(LISTINGS_KEY, listings);
+      save(BOOKINGS_KEY, bookings);
+    } catch (error) {
+      showToast(error.message || 'Unable to load admin data.', 'error');
+    }
+  };
 
   const getUsers = () => loadJSON(USERS_KEY, []);
   const saveUsers = (users) => save(USERS_KEY, users);
@@ -260,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('topbarBrandBtn').addEventListener('click', () => goToView('dashboard'));
   document.getElementById('settingsBtn').addEventListener('click', () => goToView('settings'));
-  document.getElementById('helpBtn').addEventListener('click', () => goToView('support'));
   document.querySelectorAll('[data-action="footer-link"]').forEach((a) => {
     a.addEventListener('click', (e) => { e.preventDefault(); notImplemented(); });
   });
@@ -401,18 +442,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   accountMenu.addEventListener('click', (e) => e.stopPropagation());
 
-  accountMenu.querySelector('[data-action="view-profile"]').addEventListener('click', () => {
+  accountMenu.querySelector('[data-action="home-page"]').addEventListener('click', () => {
     closeAccountMenu();
-    goToView('profile');
-  });
-  accountMenu.querySelector('[data-action="account-support"]').addEventListener('click', () => {
-    closeAccountMenu();
-    goToView('support');
+    window.location.href = 'homepage.html';
   });
   accountMenu.querySelector('[data-action="account-logout"]').addEventListener('click', () => {
     closeAccountMenu();
-    try { localStorage.removeItem('tripmate_session'); } catch { /* storage unavailable — ignore */ }
-    window.location.href = 'login.html';
+    showToast('Logged out (demo only — no backend session).');
   });
 
   document.addEventListener('click', (e) => {
@@ -422,54 +458,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!notifMenu.hidden && !notifMenu.contains(e.target) && !bellBtn.contains(e.target)) {
       closeNotifMenu();
     }
-  });
-
-  const globalSearch = document.getElementById('globalSearch');
-
-  const SEARCH_PLACEHOLDERS = {
-    dashboard: 'Search across TripMate…',
-    inventory: 'Search ID, Host, Location…',
-    verification: 'Search applications…',
-    transactions: 'Search transactions, IDs…',
-    profile: 'Search…',
-    documentation: 'Search docs…',
-    support: 'Search…',
-    settings: 'Search…',
-  };
-
-  globalSearch.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    const query = globalSearch.value.trim();
-    if (!query) return;
-
-    const activeView = document.querySelector('.view.is-active')?.id.replace('view-', '');
-
-    if (activeView === 'inventory') {
-      document.getElementById('inventorySearch').value = query;
-      inventoryPage = 1;
-      renderInventory();
-      return;
-    }
-    if (activeView === 'transactions') {
-      document.getElementById('transactionSearch').value = query;
-      transactionsPage = 1;
-      renderTransactions();
-      return;
-    }
-    if (activeView === 'verification') {
-      verificationSearchQuery = query;
-      renderVerification();
-      return;
-    }
-
-    // Fall back to Inventory for pages that have nothing local to search.
-    goToView('inventory');
-    inventoryPage = 1;
-    document.getElementById('inventorySearch').value = query;
-    inventoryStatusFilters = [];
-    document.querySelectorAll('#inventoryFilterPanel input[type="checkbox"]').forEach((cb) => { cb.checked = false; });
-    document.getElementById('inventoryFilterCount').hidden = true;
-    renderInventory();
   });
 
   // Counts items created in the last N days — used for honest "this week"-style
@@ -614,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('dashBookingsDelta').textContent = `${bookings.length} total on record`;
     document.getElementById('dashVerification').textContent = pendingApplications.length;
     document.getElementById('dashVolume').textContent = formatPeso(totalVolume);
-    document.getElementById('dashVolumeDelta').textContent = `Across ${nonCancelled.length} transaction${nonCancelled.length === 1 ? '' : 's'}`;
+    document.getElementById('dashVolumeDelta').textContent = `Across ${nonCancelled.length} booking${nonCancelled.length === 1 ? '' : 's'}`;
 
     // nav badges
     document.getElementById('navInventoryCount').textContent = listings.length;
@@ -1104,6 +1092,218 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   RENDERERS.verification = renderVerification;
 
+  /* =========================================================
+     USERS
+  ========================================================= */
+  const usersBody = document.getElementById('usersBody');
+  const usersEmpty = document.getElementById('usersEmpty');
+  const usersSearch = document.getElementById('usersSearch');
+  const usersRoleFilter = document.getElementById('usersRoleFilter');
+  let adminUsers = [];
+
+  const normalizeAdminUser = (user) => ({
+    ...user,
+    name: user.name || user.fullName || 'Unnamed user',
+    email: user.email || '',
+    role: user.role || user.type || 'guest',
+    isActive: user.isActive !== false && user.is_active !== false,
+    verified: Boolean(user.verified),
+    createdAt: user.createdAt || user.created_at || Date.now()
+  });
+
+  const loadAdminUsers = async () => {
+    if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') {
+      adminUsers = getUsers().map(normalizeAdminUser);
+      return;
+    }
+    adminUsers = (await apiRequest('/admin/users')).map(normalizeAdminUser);
+  };
+
+  const renderUsers = async () => {
+    try {
+      await loadAdminUsers();
+    } catch (error) {
+      usersBody.innerHTML = `<tr><td colspan="5" class="empty-state">${escapeHTML(error.message || 'Unable to load users.')}</td></tr>`;
+      usersEmpty.hidden = true;
+      return;
+    }
+    const query = usersSearch.value.trim().toLowerCase();
+    const role = usersRoleFilter.value;
+    const filtered = adminUsers.filter((user) => {
+      const matchesQuery = !query || `${user.name} ${user.email}`.toLowerCase().includes(query);
+      return matchesQuery && (role === 'all' || user.role === role);
+    });
+    usersEmpty.hidden = filtered.length !== 0;
+    usersBody.innerHTML = filtered.map((user) => `
+      <tr>
+        <td><div class="cell-with-avatar"><span class="row-avatar" style="background:${avatarColorFor(user.email || user.name)}">${escapeHTML(getInitials(user.name))}</span><div><strong>${escapeHTML(user.name)}</strong><div class="cell-muted">${escapeHTML(user.email)}</div></div></div></td>
+        <td>${statusBadgeHTML(user.role, user.role === 'admin' ? 'blue' : user.role === 'host' ? 'amber' : 'gray')}</td>
+        <td>${statusBadgeHTML(!user.isActive ? 'Inactive' : user.verified ? 'Verified' : 'Active', !user.isActive ? 'red' : user.verified ? 'green' : 'blue')}</td>
+        <td class="cell-muted">${escapeHTML(new Date(user.createdAt).toLocaleDateString('en-PH'))}</td>
+        <td><div class="row-actions"><button type="button" class="link-btn user-edit-btn" data-id="${escapeHTML(user.id)}">Edit</button><button type="button" class="link-btn user-toggle-btn" data-id="${escapeHTML(user.id)}" data-active="${user.isActive}">${user.isActive ? 'Deactivate' : 'Activate'}</button><button type="button" class="link-btn danger user-delete-btn" data-id="${escapeHTML(user.id)}">Delete</button></div></td>
+      </tr>`).join('');
+  };
+  RENDERERS.users = renderUsers;
+
+  const adminsBody = document.getElementById('adminsBody');
+  const adminsEmpty = document.getElementById('adminsEmpty');
+  const adminsSearch = document.getElementById('adminsSearch');
+  const renderAdmins = async () => {
+    try {
+      await loadAdminUsers();
+    } catch (error) {
+      adminsBody.innerHTML = `<tr><td colspan="5" class="empty-state">${escapeHTML(error.message || 'Unable to load admins.')}</td></tr>`;
+      adminsEmpty.hidden = true;
+      return;
+    }
+    const query = adminsSearch.value.trim().toLowerCase();
+    const admins = adminUsers.filter((user) => user.role === 'admin' && (!query || `${user.name} ${user.email}`.toLowerCase().includes(query)));
+    adminsEmpty.hidden = admins.length !== 0;
+    adminsBody.innerHTML = admins.map((user) => `
+      <tr>
+        <td><div class="cell-with-avatar"><span class="row-avatar" style="background:${avatarColorFor(user.email || user.name)}">${escapeHTML(getInitials(user.name))}</span><strong>${escapeHTML(user.name)}</strong></div></td>
+        <td class="cell-muted">${escapeHTML(user.email)}</td>
+        <td>${statusBadgeHTML('Admin', 'blue')}</td>
+        <td>${statusBadgeHTML(user.isActive ? 'Active' : 'Inactive', user.isActive ? 'green' : 'red')}</td>
+        <td><button type="button" class="link-btn admin-edit-btn" data-id="${escapeHTML(user.id)}">Edit</button><button type="button" class="link-btn admin-demote-btn" data-id="${escapeHTML(user.id)}">Demote</button></td>
+      </tr>`).join('');
+  };
+  RENDERERS.admins = renderAdmins;
+
+  const updateAdminUser = async (id, updates) => {
+    if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') {
+      const users = getUsers();
+      const index = users.findIndex((user) => String(user.id) === String(id));
+      if (index !== -1) {
+        users[index] = { ...users[index], ...updates, isActive: updates.isActive ?? users[index].isActive };
+        saveUsers(users);
+      }
+      return;
+    }
+    await apiRequest(`/admin/users/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(updates) });
+  };
+
+  const createAdminUser = async (payload) => {
+    if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') {
+      const users = getUsers();
+      users.push({ id: genId('u_'), ...payload, type: payload.role, fullName: payload.name, isActive: payload.isActive });
+      saveUsers(users);
+      return;
+    }
+    await apiRequest('/admin/users', { method: 'POST', body: JSON.stringify(payload) });
+  };
+
+  const userModalOverlay = document.getElementById('userModalOverlay');
+  const userModalTitle = document.getElementById('userModalTitle');
+  const userForm = document.getElementById('userForm');
+  const userIdInput = document.getElementById('userId');
+  const userNameInput = document.getElementById('userName');
+  const userEmailInput = document.getElementById('userEmail');
+  const userPasswordInput = document.getElementById('userPassword');
+  const userRoleInput = document.getElementById('userRole');
+  const userVerifiedInput = document.getElementById('userVerified');
+  const userActiveInput = document.getElementById('userActive');
+  const closeUserModal = () => { userModalOverlay.hidden = true; };
+  const openUserModal = (user) => {
+    userForm.reset();
+    userIdInput.value = user?.id || '';
+    userModalTitle.textContent = user?.id ? 'Edit User' : 'Add User';
+    userNameInput.value = user?.name || '';
+    userEmailInput.value = user?.email || '';
+    userRoleInput.value = user?.role || 'guest';
+    userVerifiedInput.checked = Boolean(user?.verified);
+    userActiveInput.checked = user?.isActive !== false;
+    userPasswordInput.required = !user;
+    userModalOverlay.hidden = false;
+    userNameInput.focus();
+  };
+
+  document.getElementById('addUserBtn').addEventListener('click', () => openUserModal(null));
+  document.getElementById('addAdminBtn').addEventListener('click', () => openUserModal({ role: 'admin', isActive: true }));
+  document.getElementById('userModalClose').addEventListener('click', closeUserModal);
+  document.getElementById('userCancelBtn').addEventListener('click', closeUserModal);
+  userModalOverlay.addEventListener('click', (event) => { if (event.target === userModalOverlay) closeUserModal(); });
+  userForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const payload = {
+      name: userNameInput.value.trim(), email: userEmailInput.value.trim(), role: userRoleInput.value,
+      verified: userVerifiedInput.checked, isActive: userActiveInput.checked
+    };
+    if (!payload.name || !/^\S+@\S+\.\S+$/.test(payload.email)) {
+      showToast('Enter a valid name and email.', 'error');
+      return;
+    }
+    if (userPasswordInput.value) payload.password = userPasswordInput.value;
+    if (!userIdInput.value && !payload.password) {
+      showToast('A password is required for new users.', 'error');
+      return;
+    }
+    try {
+      if (userIdInput.value) await updateAdminUser(userIdInput.value, payload);
+      else await createAdminUser(payload);
+      closeUserModal();
+      await renderUsers();
+      await renderAdmins();
+      showToast(userIdInput.value ? 'User updated.' : 'User created.', 'success');
+    } catch (error) {
+      showToast(error.message || 'Unable to save user.', 'error');
+    }
+  });
+
+  usersSearch.addEventListener('input', renderUsers);
+  usersRoleFilter.addEventListener('change', renderUsers);
+  usersBody.addEventListener('click', async (event) => {
+    const edit = event.target.closest('.user-edit-btn');
+    const toggle = event.target.closest('.user-toggle-btn');
+    const remove = event.target.closest('.user-delete-btn');
+    const id = edit?.dataset.id || toggle?.dataset.id || remove?.dataset.id;
+    if (!id) return;
+    try {
+      if (edit) {
+        const user = adminUsers.find((item) => String(item.id) === String(id));
+        if (user) openUserModal(user);
+      } else if (toggle) {
+        await updateAdminUser(id, { isActive: toggle.dataset.active !== 'true' });
+        showToast('User access updated.', 'success');
+      } else if (remove) {
+        openConfirmModal('Delete user?', 'This permanently removes the account and any linked records.', async () => {
+          if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') {
+            saveUsers(getUsers().filter((user) => String(user.id) !== String(id)));
+          } else {
+            await apiRequest(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+          }
+          await renderUsers();
+          showToast('User deleted.', 'success');
+        });
+        return;
+      }
+      await renderUsers();
+    } catch (error) {
+      showToast(error.message || 'Unable to update user.', 'error');
+    }
+  });
+
+  adminsSearch.addEventListener('input', renderAdmins);
+  adminsBody.addEventListener('click', async (event) => {
+    const edit = event.target.closest('.admin-edit-btn');
+    const demote = event.target.closest('.admin-demote-btn');
+    const id = edit?.dataset.id || demote?.dataset.id;
+    if (!id) return;
+    const user = adminUsers.find((item) => String(item.id) === String(id));
+    if (!user) return;
+    if (edit) {
+      openUserModal(user);
+      return;
+    }
+    try {
+      await updateAdminUser(id, { role: 'guest' });
+      await renderAdmins();
+      showToast('Admin access removed.', 'success');
+    } catch (error) {
+      showToast(error.message || 'Unable to change admin access.', 'error');
+    }
+  });
+
   // Renders a badge card for every pending application at once — the panel no longer
   // waits for "Review" to be clicked before showing anything.
   const renderBadgePreview = (pendingArg) => {
@@ -1214,7 +1414,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* =========================================================
-     TRANSACTIONS
+    BOOKINGS
   ========================================================= */
   const transactionSearchInput = document.getElementById('transactionSearch');
   const transactionStatusFilter = document.getElementById('transactionStatusFilter');
@@ -1248,7 +1448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })).size;
 
     document.getElementById('txVolume').textContent = formatPeso(totalVolume);
-    document.getElementById('txVolumeDelta').textContent = `Across ${nonCancelled.length} transaction${nonCancelled.length === 1 ? '' : 's'}`;
+    document.getElementById('txVolumeDelta').textContent = `Across ${nonCancelled.length} booking${nonCancelled.length === 1 ? '' : 's'}`;
     document.getElementById('txCommissions').textContent = formatPeso(totalCommissions);
     document.getElementById('txPending').textContent = formatPeso(pendingTotal);
     document.getElementById('txPendingPartners').textContent = `${pendingPartners} partner${pendingPartners === 1 ? '' : 's'} awaiting`;
@@ -1304,7 +1504,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     downloadCSV(
-      `tripmate-transactions-${new Date().toISOString().split('T')[0]}.csv`,
+      `tripmate-bookings-${new Date().toISOString().split('T')[0]}.csv`,
       ['Transaction ID', 'Partner/Host', 'Guest', 'Check-in', 'Check-out', 'Base Rate', 'Taxes/Fees', 'Commission (12%)', 'Total', 'Status'],
       filtered.map((b) => {
         const listing = listingById(b.listingId);
@@ -1314,12 +1514,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return [`TRX-${b.id.slice(-5).toUpperCase()}`, host, b.guestName, b.checkIn, b.checkOut, base.toFixed(2), taxesFees.toFixed(2), commission.toFixed(2), total.toFixed(2), meta.label];
       })
     );
-    showToast(`Exported ${filtered.length} transaction${filtered.length === 1 ? '' : 's'}.`, 'success');
+    showToast(`Exported ${filtered.length} booking${filtered.length === 1 ? '' : 's'}.`, 'success');
   });
 
   document.getElementById('generateStatementBtn').addEventListener('click', () => {
     if (!bookings.length) {
-      showToast('There\'s no transaction history to summarize yet.', 'error');
+      showToast('There\'s no booking history to summarize yet.', 'error');
       return;
     }
     const nonCancelled = bookings.filter((b) => b.status !== 'Cancelled');
@@ -1332,7 +1532,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ['Total platform volume', formatPeso(totalVolume)],
       ['Net commissions (12%)', formatPeso(totalCommissions)],
       ['Pending payouts', formatPeso(pendingTotal)],
-      ['Total transactions', String(bookings.length)],
+      ['Total bookings', String(bookings.length)],
       [],
       ['Transaction ID', 'Partner/Host', 'Base Rate', 'Taxes/Fees', 'Commission', 'Total', 'Status'],
     ];
@@ -1702,43 +1902,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* =========================================================
-     SUPPORT FORM
-  ========================================================= */
-  const supportForm = document.getElementById('supportForm');
-  supportForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nameInput = document.getElementById('supportName');
-    const emailInput = document.getElementById('supportEmail');
-    const messageInput = document.getElementById('supportMessage');
-    [nameInput, emailInput, messageInput].forEach((el) => {
-      el.classList.remove('has-error');
-      const err = document.getElementById(`${el.id}Error`);
-      if (err) err.textContent = '';
-    });
-
-    let hasError = false;
-    if (!nameInput.value.trim()) {
-      nameInput.classList.add('has-error');
-      document.getElementById('supportNameError').textContent = 'Enter your name.';
-      hasError = true;
-    }
-    if (!emailInput.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
-      emailInput.classList.add('has-error');
-      document.getElementById('supportEmailError').textContent = 'Enter a valid email address.';
-      hasError = true;
-    }
-    if (!messageInput.value.trim()) {
-      messageInput.classList.add('has-error');
-      document.getElementById('supportMessageError').textContent = 'Enter a message.';
-      hasError = true;
-    }
-    if (hasError) return;
-
-    supportForm.reset();
-    showToast('Message sent — our team will follow up by email.', 'success');
-  });
-
-  /* =========================================================
      SETTINGS
   ========================================================= */
   const settingsForm = document.getElementById('settingsForm');
@@ -1853,10 +2016,12 @@ document.addEventListener('DOMContentLoaded', () => {
   /* =========================================================
      INITIAL RENDER
   ========================================================= */
-  renderDashboard();
-  renderInventory();
-  renderVerification();
-  renderTransactions();
-  renderProfile();
-  applySettingsToDOM();
+  hydrateAdminData().finally(() => {
+    renderDashboard();
+    renderInventory();
+    renderVerification();
+    renderTransactions();
+    renderProfile();
+    applySettingsToDOM();
+  });
 });

@@ -97,7 +97,11 @@
         try {
             const remoteListings = await apiRequest("/listings");
             const remoteIds = new Set(remoteListings.map(item => String(item.id)));
-            listings = listings.filter(item => !remoteIds.has(String(item.id))).concat(remoteListings.map(item => ({
+            const remoteTitles = new Set(remoteListings.map(item => String(item.title || "").trim().toLowerCase()));
+            listings = listings.filter(item =>
+                !remoteIds.has(String(item.id)) &&
+                !remoteTitles.has(String(item.name || "").trim().toLowerCase())
+            ).concat(remoteListings.map(item => ({
                 id: item.id,
                 name: item.title,
                 type: item.property_type,
@@ -161,10 +165,13 @@
 
     function cardHTML(l) {
         const isFav = state.favorites.has(l.id);
+        const detailUrl = `property.html?id=${encodeURIComponent(l.id)}`;
         return `
       <article class="listing-card" data-id="${l.id}">
-        <div class="listing-media" style="position:relative;">
-          <img src="${l.img}" alt="${l.name}">
+        <div class="listing-media">
+          <a href="${detailUrl}" class="listing-media-link" aria-label="View ${l.name}">
+            <img src="${l.img}" alt="${l.name}" loading="lazy">
+          </a>
           <span class="listing-badge">${l.type}</span>
           <button class="fav-btn ${isFav ? "is-active" : ""}" data-action="fav" aria-label="Save ${l.name}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -172,17 +179,27 @@
             </svg>
           </button>
         </div>
-        <div class="listing-title-row">
-          <h3>${l.name}</h3>
-          <span class="listing-rating">&#9733; ${l.rating.toFixed(2)}</span>
+        <div class="listing-content">
+          <div class="listing-title-row">
+            <h3 class="listing-title"><a href="${detailUrl}">${l.name}</a></h3>
+            <span class="listing-rating">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#E8B04B" stroke="#E8B04B"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>${l.rating.toFixed(2)}</span>
+            </span>
+          </div>
+          <p class="listing-loc">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>${l.location}</span>
+          </p>
+          <p class="listing-guests">Up to ${l.guests} guest${l.guests > 1 ? "s" : ""} &middot; ${l.reviews} reviews</p>
+          <div class="listing-amenities">
+            ${l.amenities.slice(0, 3).map((a) => `<span class="amenity-pill">${a}</span>`).join("")}
+          </div>
+          <div class="listing-footer">
+            <p class="listing-price"><b class="price-val">${peso(l.price)}</b> <span class="price-period">/ night</span></p>
+            <a class="listing-book" href="booking.html?id=${encodeURIComponent(l.id)}">Reserve</a>
+          </div>
         </div>
-        <p class="listing-loc">${l.location}</p>
-        <p class="listing-guests">Up to ${l.guests} guest${l.guests > 1 ? "s" : ""} &middot; ${l.reviews} reviews</p>
-        <div class="listing-amenities">
-          ${l.amenities.slice(0, 3).map((a) => `<span class="amenity-pill">${a}</span>`).join("")}
-        </div>
-        <p class="listing-price"><b>${peso(l.price)}</b> <span>/ night</span></p>
-        <a class="listing-book" href="booking.html">Book now</a>
       </article>`;
     }
 
@@ -417,11 +434,39 @@
         const r0 = document.querySelector('input[name="rating"][value="0"]');
         if (r0) r0.checked = true;
         if (filterGuestCount) filterGuestCount.textContent = "1";
+        document.querySelectorAll("#categoryCarousel .category-pill").forEach(p => {
+            const isAll = p.dataset.category === "all";
+            p.classList.toggle("is-active", isAll);
+            p.setAttribute("aria-selected", isAll ? "true" : "false");
+        });
         resetPriceRange();
         render();
     }
     document.getElementById("clearFilters")?.addEventListener("click", clearAll);
     document.getElementById("emptyClearBtn")?.addEventListener("click", clearAll);
+
+    document.getElementById("categoryCarousel")?.addEventListener("click", (e) => {
+        const btn = e.target.closest(".category-pill");
+        if (!btn) return;
+        const cat = btn.dataset.category;
+        document.querySelectorAll("#categoryCarousel .category-pill").forEach(p => {
+            p.classList.remove("is-active");
+            p.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-selected", "true");
+
+        state.types.clear();
+        state.amenities.clear();
+        if (cat === "Beachfront") {
+            state.amenities.add("Beachfront");
+        } else if (cat !== "all") {
+            state.types.add(cat);
+        }
+        syncCheckboxes("#typeList", state.types);
+        syncCheckboxes("#amenityList", state.amenities);
+        render();
+    });
 
     const filtersPanel = document.getElementById("filtersPanel");
     document.getElementById("filtersToggle")?.addEventListener("click", () => filtersPanel?.classList.add("is-open"));

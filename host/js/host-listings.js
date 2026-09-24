@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsDataURL(photo.file);
     reader.onload = () => resolve(reader.result);
   });
-}))
+})),
                     status: document.getElementById('publishToggle')?.checked ? 'published' : 'draft'
                 })
             });

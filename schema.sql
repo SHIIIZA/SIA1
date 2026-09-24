@@ -5,6 +5,9 @@ CREATE TABLE IF NOT EXISTS users (
     email varchar(250) NOT NULL UNIQUE,
     password_hash text NOT NULL,
     role varchar(20) NOT NULL DEFAULT 'guest',
+    verified boolean NOT NULL DEFAULT false,
+    declined boolean NOT NULL DEFAULT false,
+    is_active boolean NOT NULL DEFAULT true,
     business_name varchar(200),
     phone varchar(40),
     avatar text,
@@ -14,6 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS username varchar(80);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS role varchar(20) NOT NULL DEFAULT 'guest';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS verified boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS declined boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS business_name varchar(200);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS phone varchar(40);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar text;

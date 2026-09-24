@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/design-system.css">
     <link rel="stylesheet" href="css/homepage.css">
     <link rel="stylesheet" href="css/booking.css">
 </head>
@@ -20,12 +21,6 @@
             <a href="homepage.html" class="logo">
                 <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
             </a>
-            <div class="nav-links">
-                <a href="stays.html">Stays</a>
-                <a href="homepage.html#how">How it works</a>
-                <a href="host.html">Become a Host</a>
-            </div>
-            <a href="#" class="nav-cta">Get started</a>
         </nav>
     </header>
 
@@ -72,7 +67,12 @@
                 <h1 class="panel-title">Review your trip</h1>
 
                 <div class="card-block">
-                    <h2 class="block-title"><span class="block-icon">&#128197;</span> Trip dates</h2>
+                    <h2 class="block-title">
+                        <span class="block-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                        </span>
+                        Trip dates
+                    </h2>
                     <div class="date-row">
                         <div class="field">
                             <label for="checkin">Check in</label>
@@ -87,7 +87,12 @@
                 </div>
 
                 <div class="card-block">
-                    <h2 class="block-title"><span class="block-icon">&#128101;</span> Guests</h2>
+                    <h2 class="block-title">
+                        <span class="block-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </span>
+                        Guests
+                    </h2>
                     <div class="guest-row">
                         <div>
                             <p class="guest-label">Guests</p>
@@ -102,7 +107,12 @@
                 </div>
 
                 <div class="card-block">
-                    <h2 class="block-title"><span class="block-icon">&#127968;</span> Cancellation policy</h2>
+                    <h2 class="block-title">
+                        <span class="block-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+                        </span>
+                        Cancellation policy
+                    </h2>
                     <p class="hint">Free cancellation <strong id="cancelDate">1 week before your actual Check-in</strong>. After that, the first night is non-refundable.</p>
                 </div>
 
@@ -124,7 +134,12 @@
 
                 <form id="bookingCheckoutForm" novalidate>
                     <div class="card-block">
-                        <h2 class="block-title"><span class="block-icon">&#128100;</span> Guest details</h2>
+                        <h2 class="block-title">
+                            <span class="block-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            </span>
+                            Guest details
+                        </h2>
 
                         <div class="field-row">
                             <div class="field">
@@ -168,12 +183,20 @@
                     </div>
 
                     <div class="card-block">
-                        <h2 class="block-title"><span class="block-icon">&#128179;</span> Payment method</h2>
+                        <h2 class="block-title">
+                            <span class="block-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                            </span>
+                            Payment method
+                        </h2>
 
                         <div class="pay-options">
                             <label class="pay-option is-selected" data-method="card">
                                 <span class="pay-option-head">
-                                    <span class="pay-option-name"><span class="pay-icon">&#128179;</span> Credit / Debit Card</span>
+                                    <span class="pay-option-name">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                                        Credit / Debit Card
+                                    </span>
                                     <span class="radio" aria-hidden="true"></span>
                                 </span>
                                 <input type="radio" name="payMethod" value="card" checked hidden>
@@ -182,7 +205,6 @@
                                     <div class="field">
                                         <label for="cardNumber">Card number</label>
                                         <div class="card-input-wrap">
-                                            <span class="pay-icon">&#128179;</span>
                                             <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" inputmode="numeric" maxlength="19" autocomplete="cc-number">
                                         </div>
                                         <span class="error-text"></span>
@@ -204,23 +226,29 @@
 
                             <label class="pay-option" data-method="gcash">
                                 <span class="pay-option-head">
-                                    <span class="pay-option-name"><span class="pay-icon">&#128241;</span> GCash</span>
+                                    <span class="pay-option-name">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                                        GCash (e-Wallet)
+                                    </span>
                                     <span class="radio" aria-hidden="true"></span>
                                 </span>
                                 <input type="radio" name="payMethod" value="gcash" hidden>
                                 <div class="pay-option-body">
-                                    <p class="hint">You'll be redirected to GCash to confirm this payment after you tap "Confirm and pay".</p>
+                                    <p class="hint">You'll be seamlessly redirected to GCash to authorize payment after tapping "Confirm and pay".</p>
                                 </div>
                             </label>
 
                             <label class="pay-option" data-method="maya">
                                 <span class="pay-option-head">
-                                    <span class="pay-option-name"><span class="pay-icon">&#128179;</span> Maya</span>
+                                    <span class="pay-option-name">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><circle cx="18" cy="14" r="2"></circle></svg>
+                                        Maya (Wallet & Cards)
+                                    </span>
                                     <span class="radio" aria-hidden="true"></span>
                                 </span>
                                 <input type="radio" name="payMethod" value="maya" hidden>
                                 <div class="pay-option-body">
-                                    <p class="hint">You'll be redirected to Maya to confirm this payment after you tap "Confirm and pay".</p>
+                                    <p class="hint">You'll be seamlessly redirected to Maya to authorize payment after tapping "Confirm and pay".</p>
                                 </div>
                             </label>
                         </div>
@@ -278,7 +306,7 @@
         <div class="footer-top">
             <div class="footer-brand">
                 <a href="#" class="logo">
-                    <img src="tripmate.svg" alt="TripMate" class="logo-img">
+                    <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
                 </a>
                 <p>A Filipino-built platform for booking hotels and house rentals across the Philippines.</p>
             </div>
@@ -287,7 +315,7 @@
                     <h4>Explore</h4>
                     <a href="stays.html">Stays</a>
                     <a href="homepage.html#how">How it works</a>
-                    <a href="host.html">Become a Host</a>
+                    <a href="signup.html?type=host">Become a Host</a>
                 </div>
                 <div class="footer-col">
                     <h4>Support</h4>

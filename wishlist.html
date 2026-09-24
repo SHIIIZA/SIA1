@@ -103,10 +103,12 @@
 
                 <div class="wishlist-grid stagger-in stagger-in-4" id="wishlistGrid" data-view="grid"></div>
 
-                <div class="empty-state stagger-in stagger-in-5" id="wishlistEmpty" hidden>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                    </svg>
+                <div class="empty-state wishlist-empty-state stagger-in stagger-in-5" id="wishlistEmpty" hidden>
+                    <div class="empty-state-icon wishlist-empty-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M12 20.25s-7.5-4.35-9.83-8.2A5.72 5.72 0 0 1 12 4.82a5.72 5.72 0 0 1 9.83 7.23C19.5 15.9 12 20.25 12 20.25Z"/>
+                        </svg>
+                    </div>
                     <h3>Your wishlist is empty</h3>
                     <p>Save stays you love to find them easily later.</p>
                     <a href="stays.html" class="btn-primary">Explore Stays</a>
@@ -128,7 +130,7 @@
                     <h4>Explore</h4>
                     <a href="stays.html">Stays</a>
                     <a href="homepage.html#how">How it works</a>
-                    <a href="host.html">Become a Host</a>
+                    <a href="signup.html?type=host">Become a Host</a>
                 </div>
                 <div class="footer-col">
                     <h4>Support</h4>
@@ -147,6 +149,7 @@
         </div>
     </footer>
 
+    <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/wishlist.js"></script>
 </body>

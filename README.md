@@ -2,7 +2,7 @@
 
 ## Local development
 
-1. Run `schema.sql` in the Neon SQL Editor.
+1. Run `schema.sql` in the Neon SQL Editor. Re-run it after pulling schema changes; it uses `IF NOT EXISTS` migrations for admin user status fields.
 2. Copy `.env.example` to `.env`.
 3. Put the pooled Neon PostgreSQL connection string in `.env` as `NETLIFY_DATABASE_URL`. `DATABASE_URL` is also accepted locally. Never put this secret in browser JavaScript.
 4. Start the app from this folder:
@@ -23,6 +23,8 @@ Password: admin1234
 ```
 
 Change these values in `server.js` before production if this is more than a school/demo deployment.
+
+The admin panel now includes protected user management endpoints under `/api/admin/users`. They require an admin JWT and never return password hashes.
 
 ## Netlify deployment
 

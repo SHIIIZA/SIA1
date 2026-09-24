@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cancellation policy — TripMate</title>
+    <meta name="description" content="TripMate's cancellation policy: free cancellation up to a week before check-in, first night held after that.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- Base styles shared with the homepage (tokens, header, footer, buttons) -->
+    <link rel="stylesheet" href="css/homepage.css">
+    <!-- Page styles -->
+    <link rel="stylesheet" href="css/cancellation.css">
+</head>
+
+<body>
+
+    <div class="hero page-hero">
+
+        <nav>
+            <a href="homepage.html" class="logo">
+                <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+            </a>
+            <div class="nav-links">
+                <a href="stays.html">Stays</a>
+                <a href="homepage.html#how">How it works</a>
+                <a href="signup.html?type=host">Become a Host</a>
+            </div>
+            <div class="nav-auth" id="navAuth">
+                <!-- Guest state -->
+                <a href="signup.html" class="nav-cta" id="navGetStarted">Get started</a>
+                <a href="login.html" class="nav-login" id="navLogin">Log in</a>
+                <!-- Logged-in state (hidden by default) -->
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-avatar-btn" id="userAvatarBtn" aria-label="User menu">
+                        <span class="avatar-placeholder" id="avatarPlaceholder">JD</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-header">
+                            <span class="dropdown-name" id="dropdownName">Juan Dela Cruz</span>
+                            <span class="dropdown-email" id="dropdownEmail">juan@example.com</span>
+                        </div>
+                        <hr class="dropdown-divider">
+                        <a href="dashboard.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            <span>My Trips</span>
+                        </a>
+                        <a href="wishlist.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span>Wishlist</span>
+                        </a>
+                        <a href="profile.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span>Profile</span>
+                        </a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" id="logoutBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            <span>Log out</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- Mobile menu button (shown below 900px by homepage.css) -->
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
+        </nav>
+
+        <div class="page-hero-body">
+            <p class="crumbs"><a href="homepage.html">Home</a> / Cancellation policy</p>
+            <h1>Cancellation policy, made simple.</h1>
+            <p class="lead">Know exactly what you'll get back, and when, before you book. One rule, no fine print
+                to hunt for.</p>
+        </div>
+    </div>
+
+    <main>
+        <!-- ===== The rule ===== -->
+        <section class="policy-summary">
+            <div class="policy-layout">
+                <div class="rule-card">
+                    <span class="rule-eyebrow">Our policy</span>
+                    <h2>Free cancellation up to <span class="hl">1 week</span> before check-in.</h2>
+                    <p>Cancel any time up until 7 days before your check-in date and get a full refund. Cancel
+                        after that, and your first night becomes non-refundable — everything else you paid for
+                        the stay is still refunded.</p>
+
+                    <div class="rule-points">
+                        <div class="rule-point">
+                            <span class="rule-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20 6L9 17l-5-5" />
+                                </svg>
+                            </span>
+                            <div>
+                                <h3>7 days or more before check-in</h3>
+                                <p>Full refund, no questions asked. Cancel from <a href="dashboard.html">My Trips</a>.</p>
+                            </div>
+                        </div>
+                        <div class="rule-point">
+                            <span class="rule-icon warn" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="9" />
+                                    <path d="M12 7v5l3 2" />
+                                </svg>
+                            </span>
+                            <div>
+                                <h3>Less than 7 days before check-in</h3>
+                                <p>The first night's rate is kept as a cancellation fee. The rest of your stay is
+                                    refunded.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== Deadline checker ===== -->
+                <div class="tool-card" id="toolCard">
+                    <h2>Check your deadline</h2>
+                    <p class="tool-intro">Enter your check-in date and we'll tell you the last day to cancel for a
+                        full refund.</p>
+
+                    <div class="tool-field">
+                        <label for="checkinDate">Check-in date</label>
+                        <input type="date" id="checkinDate" aria-describedby="checkinDate-error">
+                        <span class="field-error" id="checkinDate-error" role="alert"></span>
+                    </div>
+
+                    <div class="result-panel" id="resultPanel" role="status" aria-live="polite">
+                        <p class="result-placeholder" id="resultPlaceholder">Pick a date above to see your
+                            cancellation deadline.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== FAQ ===== -->
+        <section class="policy-faq">
+            <div class="pfaq-layout">
+                <div class="pfaq-head">
+                    <h2>Common questions.</h2>
+                    <p>A few things people usually ask about how cancellations work.</p>
+                </div>
+
+                <div class="pfaq-list" id="pfaqList">
+                    <div class="pfaq-item">
+                        <button class="pfaq-q" type="button" aria-expanded="false" aria-controls="pfaq-a1" id="pfaq-q1">
+                            <span>What counts as my "check-in date"?</span>
+                            <span class="pfaq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="pfaq-a" id="pfaq-a1" role="region" aria-labelledby="pfaq-q1">
+                            <div class="pfaq-a-inner">
+                                <p>It's the first night of your booking, shown on your confirmation and in
+                                    <a href="dashboard.html">My Trips</a>. The 7-day window is counted back from
+                                    this date, not from the day you booked.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pfaq-item">
+                        <button class="pfaq-q" type="button" aria-expanded="false" aria-controls="pfaq-a2" id="pfaq-q2">
+                            <span>How and when do I get my refund?</span>
+                            <span class="pfaq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="pfaq-a" id="pfaq-a2" role="region" aria-labelledby="pfaq-q2">
+                            <div class="pfaq-a-inner">
+                                <p>Refunds go back to your original payment method — GCash, Maya, or bank
+                                    transfer — and usually land within 3 to 7 business days, depending on your
+                                    provider.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pfaq-item">
+                        <button class="pfaq-q" type="button" aria-expanded="false" aria-controls="pfaq-a3" id="pfaq-q3">
+                            <span>Does this policy apply to every stay?</span>
+                            <span class="pfaq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="pfaq-a" id="pfaq-a3" role="region" aria-labelledby="pfaq-q3">
+                            <div class="pfaq-a-inner">
+                                <p>Yes, this standard policy applies across TripMate. If a listing ever shows
+                                    different terms, whatever's stated on that listing's page applies instead.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pfaq-item">
+                        <button class="pfaq-q" type="button" aria-expanded="false" aria-controls="pfaq-a4" id="pfaq-q4">
+                            <span>What if the host cancels on me instead?</span>
+                            <span class="pfaq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="pfaq-a" id="pfaq-a4" role="region" aria-labelledby="pfaq-q4">
+                            <div class="pfaq-a-inner">
+                                <p>You get a full refund every time, no matter how close it is to check-in. This
+                                    first-night rule only applies when you're the one cancelling.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pfaq-item">
+                        <button class="pfaq-q" type="button" aria-expanded="false" aria-controls="pfaq-a5" id="pfaq-q5">
+                            <span>I have a special situation. Can someone review it?</span>
+                            <span class="pfaq-icon" aria-hidden="true"></span>
+                        </button>
+                        <div class="pfaq-a" id="pfaq-a5" role="region" aria-labelledby="pfaq-q5">
+                            <div class="pfaq-a-inner">
+                                <p>Yes — reach out through <a href="contactus.html?topic=cancellations">Contact
+                                    us</a> and choose "Cancellations and refunds." A real person will look into
+                                    it.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-top">
+            <div class="footer-brand">
+                <a href="homepage.html" class="logo">
+                    <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+                </a>
+                <p>A Filipino-built platform for booking hotels and house rentals across the Philippines.</p>
+            </div>
+            <div class="footer-cols">
+                <div class="footer-col">
+                    <h4>Explore</h4>
+                    <a href="stays.html">Stays</a>
+                    <a href="homepage.html#how">How it works</a>
+                    <a href="signup.html?type=host">Become a Host</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <a href="cancellation.html">Cancellation policy</a>
+                    <a href="contactus.html">Contact us</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <a href="about.html">About</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; 2026 TripMate. Made in Quezon City.</span>
+            <span>Terms &middot; Privacy</span>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/nav-auth.js"></script>
+    <script src="js/cancellation.js"></script>
+</body>
+
+</html>

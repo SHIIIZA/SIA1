@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About us — TripMate</title>
+    <meta name="description" content="TripMate is a Filipino-built platform for booking vetted hotels and house rentals across the Philippines, direct from local hosts.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <!-- Base styles shared with the homepage (tokens, header, footer, buttons) -->
+    <link rel="stylesheet" href="css/homepage.css">
+    <!-- Page styles -->
+    <link rel="stylesheet" href="css/about.css">
+</head>
+
+<body>
+
+    <div class="hero page-hero">
+        <!-- ===== Header (same as homepage) ===== -->
+        <nav>
+            <a href="homepage.html" class="logo">
+                <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+            </a>
+            <div class="nav-links">
+                <a href="stays.html">Stays</a>
+                <a href="homepage.html#how">How it works</a>
+                <a href="signup.html?type=host">Become a Host</a>
+            </div>
+            <div class="nav-auth" id="navAuth">
+                <!-- Guest state -->
+                <a href="signup.html" class="nav-cta" id="navGetStarted">Get started</a>
+                <a href="login.html" class="nav-login" id="navLogin">Log in</a>
+                <!-- Logged-in state (hidden by default) -->
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-avatar-btn" id="userAvatarBtn" aria-label="User menu">
+                        <span class="avatar-placeholder" id="avatarPlaceholder">JD</span>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-header">
+                            <span class="dropdown-name" id="dropdownName">Juan Dela Cruz</span>
+                            <span class="dropdown-email" id="dropdownEmail">juan@example.com</span>
+                        </div>
+                        <hr class="dropdown-divider">
+                        <a href="dashboard.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            <span>My Trips</span>
+                        </a>
+                        <a href="wishlist.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span>Wishlist</span>
+                        </a>
+                        <a href="profile.html" class="dropdown-item">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span>Profile</span>
+                        </a>
+                        <hr class="dropdown-divider">
+                        <a href="#" class="dropdown-item" id="logoutBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            <span>Log out</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- Mobile menu button (shown below 900px by homepage.css) -->
+            <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
+        </nav>
+
+        <div class="page-hero-body">
+            <p class="crumbs"><a href="homepage.html">Home</a> / About us</p>
+            <h1>Built in Quezon City, for every island.</h1>
+            <p class="lead">TripMate connects travelers with vetted hotels and house rentals across the Philippines,
+                booked direct from the people who live there.</p>
+        </div>
+    </div>
+
+    <main>
+        <!-- ===== Story ===== -->
+        <section class="about-story">
+            <figure class="story-media">
+                <img src="https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?q=80&w=900&auto=format&fit=crop"
+                    alt="A cliffside cabin overlooking a lagoon in El Nido" loading="lazy">
+                <figcaption>El Nido, Palawan</figcaption>
+            </figure>
+
+            <div class="story-copy">
+                <h2>Planning a trip shouldn't run on screenshots and hope.</h2>
+                <p>Booking a stay in the Philippines has too often meant messaging a page, waiting for a reply, and
+                    sending a GCash payment to someone you've never met. We built TripMate to make that simpler, and
+                    safer.</p>
+                <p>Every host submits a valid ID and proof of property before their first listing goes live. Every
+                    review comes from a guest who completed a paid booking. And you pay the way you already do: GCash,
+                    Maya, or bank transfer.</p>
+                <p>We're based in Quezon City and we build for the whole archipelago. From Batanes to Siargao, the best
+                    stays are run by people who live there. TripMate gives them a place to be found, and gives you a
+                    reason to trust what you see.</p>
+
+                <ul class="facts" id="facts">
+                    <li>
+                        <span class="fact-figure" data-count="7641">7,641</span>
+                        <span class="fact-label">islands to explore</span>
+                    </li>
+                    <li>
+                        <span class="fact-figure" data-count="11">11</span>
+                        <span class="fact-label">destinations to start with</span>
+                    </li>
+                    <li>
+                        <span class="fact-figure" data-count="100" data-suffix="%">100%</span>
+                        <span class="fact-label">of hosts ID-verified</span>
+                    </li>
+                    <li>
+                        <span class="fact-figure" data-count="3">3</span>
+                        <span class="fact-label">local ways to pay</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ===== Values ===== -->
+        <section class="about-values">
+            <div class="section-head">
+                <h2>What we stand for.</h2>
+                <p>Four commitments that shape how TripMate is built and who we build it with.</p>
+            </div>
+            <dl class="values-list">
+                <div class="value-row">
+                    <dt>Local first</dt>
+                    <dd>Our listings come from hosts who live where you're headed, so you get their knowledge as well
+                        as their spare room.</dd>
+                </div>
+                <div class="value-row">
+                    <dt>Trust before the booking</dt>
+                    <dd>IDs and proof of property are checked before a listing goes live, not after a complaint comes
+                        in.</dd>
+                </div>
+                <div class="value-row">
+                    <dt>Honest reviews</dt>
+                    <dd>Only guests with a completed, paid booking can leave a review. That's the whole rule, and it
+                        keeps the five stars real.</dd>
+                </div>
+                <div class="value-row">
+                    <dt>Built for how Filipinos pay</dt>
+                    <dd>GCash, Maya, and bank transfer are first-class options, not an afterthought behind a credit
+                        card form.</dd>
+                </div>
+            </dl>
+        </section>
+
+        <!-- ===== Places ===== -->
+        <section class="about-places">
+            <div class="section-head">
+                <h2>Where to start.</h2>
+                <p>Pick a region to see what our hosts have listed.</p>
+            </div>
+            <ul class="places-list">
+                <li><a href="stays.html?search=Baguio">Baguio</a></li>
+                <li><a href="stays.html?search=Batanes">Batanes</a></li>
+                <li><a href="stays.html?search=Boracay">Boracay</a></li>
+                <li><a href="stays.html?search=Cebu">Cebu</a></li>
+                <li><a href="stays.html?search=Ilocos%20Sur">Ilocos Sur</a></li>
+                <li><a href="stays.html?search=Palawan">Palawan</a></li>
+                <li><a href="stays.html?search=Mountain%20Province">Mountain Province</a></li>
+                <li><a href="stays.html?search=Negros%20Oriental">Negros Oriental</a></li>
+                <li><a href="stays.html?search=Siargao">Siargao</a></li>
+                <li><a href="stays.html?search=Tagaytay">Tagaytay</a></li>
+                <li><a href="stays.html?search=Zambales">Zambales</a></li>
+            </ul>
+        </section>
+    </main>
+
+    <div class="cta-band">
+        <h2>Questions before you book? We're happy to help.</h2>
+        <a href="contactus.html" class="btn-primary">
+            Contact us
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
+        </a>
+    </div>
+
+    <!-- ===== Footer (same as homepage) ===== -->
+    <footer>
+        <div class="footer-top">
+            <div class="footer-brand">
+                <a href="homepage.html" class="logo">
+                    <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
+                </a>
+                <p>A Filipino-built platform for booking hotels and house rentals across the Philippines.</p>
+            </div>
+            <div class="footer-cols">
+                <div class="footer-col">
+                    <h4>Explore</h4>
+                    <a href="stays.html">Stays</a>
+                    <a href="homepage.html#how">How it works</a>
+                    <a href="signup.html?type=host">Become a Host</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Support</h4>
+                    <a href="#">Cancellation policy</a>
+                    <a href="contactus.html">Contact us</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <a href="about.html">About</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; 2026 TripMate. Made in Quezon City.</span>
+            <span>Terms &middot; Privacy</span>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/nav-auth.js"></script>
+    <script src="js/about.js"></script>
+</body>
+
+</html>

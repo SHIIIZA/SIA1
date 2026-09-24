@@ -3,16 +3,13 @@
 (function () {
     "use strict";
 
-    // DOM elements
     const accountForm = document.getElementById("accountForm");
     const securityForm = document.getElementById("securityForm");
-    const avatarInput = document.getElementById("avatarInput");
-    const avatarPreview = document.getElementById("avatarPreview");
-    const avatarInitials = document.getElementById("avatarInitials");
     const firstNameInput = document.getElementById("firstName");
     const lastNameInput = document.getElementById("lastName");
     const emailInput = document.getElementById("email");
     const phoneInput = document.getElementById("phone");
+    const bioInput = document.getElementById("bio");
     const currentPasswordInput = document.getElementById("currentPassword");
     const newPasswordInput = document.getElementById("newPassword");
     const confirmPasswordInput = document.getElementById("confirmPassword");
@@ -24,7 +21,8 @@
     const dropdownEmail = document.getElementById("dropdownEmail");
     const avatarPlaceholder = document.getElementById("avatarPlaceholder");
     const logoutBtn = document.getElementById("logoutBtn");
-    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+    const adminSettingsBtn = document.getElementById("adminSettingsBtn");
+
     const notificationInputs = {
         booking: document.getElementById("notifBooking"),
         payment: document.getElementById("notifPayment"),
@@ -32,94 +30,89 @@
         promo: document.getElementById("notifPromo")
     };
 
-    // Auth check
-    const user = JSON.parse(localStorage.getItem("tripmate_user") || "null");
-    const session = JSON.parse(localStorage.getItem("tripmate_session") || "null");
-
-    if (!user || !session) {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
         window.location.href = "login.html?redirect=profile.html";
         return;
     }
 
-    // Populate user info
+    const user = { ...currentUser };
+
     function populateUserInfo() {
+        if (!dropdownName || !dropdownEmail || !avatarPlaceholder) return;
+
         dropdownName.textContent = user.name || "Guest";
         dropdownEmail.textContent = user.email || "";
-        if (user.name) {
-            const initials = user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-            avatarPlaceholder.textContent = initials;
-            avatarInitials.textContent = initials;
-        }
 
-        // Populate form fields
+        const initials = (user.name || "Guest")
+            .split(" ")
+            .map(name => name[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+        avatarPlaceholder.textContent = initials;
+
         const nameParts = (user.name || "").split(" ");
         firstNameInput.value = nameParts[0] || "";
         lastNameInput.value = nameParts.slice(1).join(" ") || "";
         emailInput.value = user.email || "";
         phoneInput.value = user.phone || "";
+        bioInput.value = user.bio || "";
+
+        if (adminSettingsBtn) {
+            adminSettingsBtn.style.display = (user.role || user.type || "guest") === "admin" ? "flex" : "none";
+        }
 
         const notifications = JSON.parse(localStorage.getItem(`tripmate_notifications_${user.id}`) || "null") || {
-            booking: true, payment: true, reminders: true, promo: false
+            booking: true,
+            payment: true,
+            reminders: true,
+            promo: false
         };
+
         Object.entries(notificationInputs).forEach(([key, input]) => {
             if (input) input.checked = notifications[key] !== false;
         });
     }
 
-    Object.entries(notificationInputs).forEach(([key, input]) => {
-        input?.addEventListener("change", () => {
-            const notifications = Object.fromEntries(Object.entries(notificationInputs).map(([name, checkbox]) => [name, checkbox?.checked !== false]));
-            localStorage.setItem(`tripmate_notifications_${user.id}`, JSON.stringify(notifications));
-            apiRequest("/notifications/preferences", { method: "POST", body: JSON.stringify({ preferences: notifications }) }).catch(error => showToast(error.message || "Unable to save notification settings.", true));
-            showToast(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications updated.`);
-        });
-    });
-
-    // Save account info
-    accountForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    accountForm.addEventListener("submit", (event) => {
+        event.preventDefault();
 
         const firstName = firstNameInput.value.trim();
         const lastName = lastNameInput.value.trim();
         const email = emailInput.value.trim();
         const phone = phoneInput.value.trim();
+        const bio = bioInput.value.trim();
 
         if (!firstName || !lastName || !email) {
             showToast("Please fill in all required fields.", true);
             return;
         }
 
-        if (!email.includes("@")) {
+        if (!isValidEmail(email)) {
             showToast("Please enter a valid email address.", true);
             return;
         }
 
-        try {
-            await apiRequest("/me", { method: "PATCH", body: JSON.stringify({ name: `${firstName} ${lastName}`, email, phone }) });
-        } catch (error) {
-            showToast(error.message || "Unable to save your profile.", true);
+        const updatedUser = updateUser(user.id, {
+            name: `${firstName} ${lastName}`.trim(),
+            email,
+            phone,
+            bio
+        });
+
+        if (!updatedUser) {
+            showToast("Unable to save your profile.", true);
             return;
         }
 
-        // Keep the local session mirror for the existing page navigation.
-        const updatedUser = { ...user, name: `${firstName} ${lastName}`, email, phone };
         localStorage.setItem("tripmate_user", JSON.stringify(updatedUser));
-
-        // Also update in users array if exists
-        const users = JSON.parse(localStorage.getItem("tripmate_users") || "[]");
-        const userIndex = users.findIndex(u => u.id === user.id);
-        if (userIndex !== -1) {
-            users[userIndex] = { ...users[userIndex], ...updatedUser };
-            localStorage.setItem("tripmate_users", JSON.stringify(users));
-        }
-
         showToast("Profile updated successfully!");
         populateUserInfo();
     });
 
-    // Change password
-    securityForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+    securityForm.addEventListener("submit", (event) => {
+        event.preventDefault();
 
         const currentPassword = currentPasswordInput.value;
         const newPassword = newPasswordInput.value;
@@ -140,10 +133,9 @@
             return;
         }
 
-        try {
-            await apiRequest("/me/password", { method: "PATCH", body: JSON.stringify({ currentPassword, newPassword }) });
-        } catch (error) {
-            showToast(error.message || "Could not update password.", true);
+        const result = changePassword(user.id, currentPassword, newPassword);
+        if (!result.ok) {
+            showToast(result.error || "Could not update password.", true);
             return;
         }
 
@@ -151,72 +143,30 @@
         securityForm.reset();
     });
 
-    // Avatar upload
-    // avatarInput.addEventListener("change", (e) => { // Removed per user request - photo upload not needed
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (!file.type.startsWith("image/")) {
-            showToast("Please select an image file.", true);
-            return;
-        }
-
-        if (file.size > 2 * 1024 * 1024) {
-            showToast("Image must be less than 2MB.", true);
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const dataUrl = event.target.result;
-            avatarPreview.innerHTML = `<img src="${dataUrl}" alt="Profile">`;
-            avatarPreview.style.background = "transparent";
-
-            apiRequest("/me", { method: "PATCH", body: JSON.stringify({ avatar: dataUrl }) }).catch(error => showToast(error.message || "Unable to save your photo.", true));
-
-            // Keep a local preview for the current browser session.
-            const updatedUser = { ...user, avatar: dataUrl };
-            localStorage.setItem("tripmate_user", JSON.stringify(updatedUser));
-
-            // Also persist to the master users array — without this the
-            // photo is lost the next time the user logs in, since login
-            // rebuilds the session copy from tripmate_users.
-            const users = JSON.parse(localStorage.getItem("tripmate_users") || "[]");
-            const userIndex = users.findIndex(u => u.id === user.id);
-            if (userIndex !== -1) {
-                users[userIndex] = { ...users[userIndex], avatar: dataUrl };
-                localStorage.setItem("tripmate_users", JSON.stringify(users));
-            }
-
-            showToast("Profile photo updated!");
-        };
-        reader.readAsDataURL(file);
+    Object.entries(notificationInputs).forEach(([key, input]) => {
+        input?.addEventListener("change", () => {
+            const notifications = Object.fromEntries(
+                Object.entries(notificationInputs).map(([name, checkbox]) => [name, checkbox?.checked !== false])
+            );
+            localStorage.setItem(`tripmate_notifications_${user.id}`, JSON.stringify(notifications));
+            showToast(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications updated.`);
+        });
     });
 
-    // Delete account
     deleteAccountBtn.addEventListener("click", () => {
-        if (!confirm("Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.")) return;
+        if (!confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) return;
 
-        if (!confirm("This will delete all your bookings, wishlist, and account information. Are you sure?")) return;
-
-        // Remove user data
+        const users = JSON.parse(localStorage.getItem("tripmate_users") || "[]");
+        const filteredUsers = users.filter(item => item.id !== user.id);
+        localStorage.setItem("tripmate_users", JSON.stringify(filteredUsers));
         localStorage.removeItem("tripmate_user");
         localStorage.removeItem("tripmate_session");
 
-        // Remove from users array
-        const users = JSON.parse(localStorage.getItem("tripmate_users") || "[]");
-        const filteredUsers = users.filter(u => u.id !== user.id);
-        localStorage.setItem("tripmate_users", JSON.stringify(filteredUsers));
-
-        // Remove user's bookings
         const bookings = JSON.parse(localStorage.getItem("tripmate_bookings") || "[]");
-        const filteredBookings = bookings.filter(b => b.userId !== user.id);
-        localStorage.setItem("tripmate_bookings", JSON.stringify(filteredBookings));
+        localStorage.setItem("tripmate_bookings", JSON.stringify(bookings.filter(item => item.userId !== user.id)));
 
-        // Remove user's wishlist
         const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-        const filteredWishlist = wishlist.filter(w => w.userId !== user.id);
-        localStorage.setItem("tripmate_wishlist", JSON.stringify(filteredWishlist));
+        localStorage.setItem("tripmate_wishlist", JSON.stringify(wishlist.filter(item => item.userId !== user.id)));
 
         showToast("Account deleted successfully.");
         setTimeout(() => {
@@ -224,71 +174,22 @@
         }, 1500);
     });
 
-    // User dropdown toggle
-    userAvatarBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        userDropdown.classList.toggle("open");
+    userAvatarBtn?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        userDropdown?.classList.toggle("open");
     });
 
-    document.addEventListener("click", (e) => {
-        if (!userAvatarBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+    document.addEventListener("click", (event) => {
+        if (userDropdown && userAvatarBtn && !userAvatarBtn.contains(event.target) && !userDropdown.contains(event.target)) {
             userDropdown.classList.remove("open");
         }
     });
 
-    // Logout
-    logoutBtn.addEventListener("click", (e) => {
-        e.preventDefault();
+    logoutBtn?.addEventListener("click", (event) => {
+        event.preventDefault();
         logoutUser();
         window.location.href = "homepage.html";
     });
 
-    // Toast notification
-    function showToast(message, isError = false) {
-        let toast = document.querySelector(".toast");
-        if (!toast) {
-            toast = document.createElement("div");
-            toast.className = "toast";
-            document.body.appendChild(toast);
-        }
-        toast.textContent = message;
-        toast.classList.toggle("error-toast", isError);
-        toast.classList.add("show");
-        clearTimeout(toast._hideTimer);
-        toast._hideTimer = setTimeout(() => toast.classList.remove("show"), 3200);
-    }
-
-    const style = document.createElement("style");
-    style.textContent = `
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 14px 24px;
-            border-radius: 12px;
-            background: var(--teal-900);
-            color: var(--white);
-            font-weight: 500;
-            font-size: 0.9rem;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            z-index: 1000;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s;
-        }
-        .toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .toast.error-toast {
-            background: #EF4444;
-        }
-    `;
-    document.head.appendChild(style);
-
-    // Initialize
     populateUserInfo();
 })();

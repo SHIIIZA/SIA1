@@ -28,6 +28,45 @@ const config = {
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "admin1234";
 
+const CATALOG_LISTINGS = [
+    {
+        title: "Happy Hut", property_type: "Cabin", location: "San Felipe, Zambales",
+        price_per_night: 2000, max_guests: 4, bedrooms: 1, bathrooms: 1,
+        images: ["https://cf.bstatic.com/xdata/images/hotel/max1024x768/630810990.jpg?k=f0a258fd952f19c7285f4e99e64664bc423cd779166b639a29d87037cb90b2ac&o="],
+        amenities: ["Wifi", "Kitchen", "Beachfront", "Pet friendly"]
+    },
+    {
+        title: "Baey bogan Homestay", property_type: "House rental", location: "Sagada, Mountain Province",
+        price_per_night: 1800, max_guests: 4, bedrooms: 2, bathrooms: 1,
+        images: ["https://cf.bstatic.com/xdata/images/hotel/max1024x768/184656762.jpg?k=03df05cdd232e5aec61fb79b29314d5d84e8eb5904f33efa84a05dd9b1800e80&o="],
+        amenities: ["Wifi", "Kitchen", "Air conditioning"]
+    },
+    {
+        title: "Baguio Holiday Villas", property_type: "Villa", location: "Baguio City, Benguet",
+        price_per_night: 4300, max_guests: 6, bedrooms: 3, bathrooms: 2,
+        images: ["https://pix8.agoda.net/hotelImages/275905/0/2bfa720cb4d3471781e35efcbe6c3dfe.jpg?ce=2&s=375x"],
+        amenities: ["Wifi", "Kitchen", "Air conditioning", "Pet friendly"]
+    },
+    {
+        title: "Sunset Villa", property_type: "Villa", location: "Coron, Palawan",
+        price_per_night: 5200, max_guests: 8, bedrooms: 4, bathrooms: 3,
+        images: ["https://discovery.s14-host.com/qkUByrarp5PILHjccAD3jHDhtozxLY-metaU3Vuc2V0LVZpbGxhLURlbHV4ZS1WZXJhbmRhLmpwZw==-.jpg"],
+        amenities: ["Wifi", "Pool", "Kitchen", "Beachfront"]
+    },
+    {
+        title: "Kubo Homestay", property_type: "Cabin", location: "El Nido, Palawan",
+        price_per_night: 3600, max_guests: 4, bedrooms: 2, bathrooms: 1,
+        images: ["https://a0.muscache.com/im/pictures/d64b6a63-3599-4fa3-a6dc-3062a952202b.jpg?im_w=720"],
+        amenities: ["Wifi", "Beachfront"]
+    },
+    {
+        title: "Ivatan Stone House", property_type: "House rental", location: "Basco, Batanes",
+        price_per_night: 2600, max_guests: 2, bedrooms: 1, bathrooms: 1,
+        images: ["https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/1d/9d/8d/house-of-dakay-in-ivana.jpg?w=900&h=500&s=1"],
+        amenities: ["Wifi", "Kitchen", "Pet friendly"]
+    }
+];
+
 let sql = null;
 let databaseConfigError = null;
 if (config.databaseUrl) {
@@ -216,6 +255,30 @@ export function initializeAdminAccount() {
     return adminAccountPromise;
 }
 
+export async function initializeCatalogListings() {
+    if (!sql && (!config.apiUrl || !config.apiKey)) return;
+    const adminRows = await neon(`/users?username=eq.${ADMIN_USERNAME}&select=id`);
+    const hostId = adminRows[0]?.id;
+    if (!hostId) return;
+
+    const existing = await neon("/listings?select=title");
+    const existingTitles = new Set(existing.map(item => String(item.title || "").toLowerCase()));
+    for (const listing of CATALOG_LISTINGS) {
+        if (existingTitles.has(listing.title.toLowerCase())) continue;
+        await neon("/listings", {
+            method: "POST",
+            body: JSON.stringify({
+                ...listing,
+                host_id: hostId,
+                description: `A verified TripMate ${listing.property_type.toLowerCase()} in ${listing.location}.`,
+                cleaning_fee: 0,
+                status: "published",
+                rules: {}
+            })
+        });
+    }
+}
+
 function signToken(user) {
     const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + 7 * 86400000 })).toString("base64url");
     const signature = createHmac("sha256", config.jwtSecret).update(payload).digest("base64url");
@@ -241,6 +304,25 @@ function safeUser(user) {
         ...safe,
         type: safe.role === "host" ? "host" : "guest",
         businessName: safe.business_name || "",
+    };
+}
+
+function safeAdminUser(user) {
+    if (!user) return null;
+    const { password_hash, ...safe } = user;
+    return {
+        id: safe.id,
+        name: safe.name,
+        username: safe.username || "",
+        email: safe.email,
+        phone: safe.phone || "",
+        role: safe.role || "guest",
+        businessName: safe.business_name || "",
+        verified: Boolean(safe.verified),
+        declined: Boolean(safe.declined),
+        isActive: safe.is_active !== false,
+        createdAt: safe.created_at,
+        updatedAt: safe.updated_at
     };
 }
 
@@ -278,11 +360,79 @@ export async function routeApi(req, res, url) {
             bookings: bookingRows.map((item) => ({
                 id: String(item.id), guestName: item.users?.name || String(item.guest_id), guestEmail: item.users?.email || "",
                 guestPhone: item.users?.phone || "", listingId: String(item.listing_id), checkIn: item.check_in,
-                checkOut: item.check_out, guests: item.guest_count, amount: Number(item.subtotal),
+                checkOut: item.check_out, guests: item.guest_count, amount: Number(item.total_amount),
                 status: item.status === "confirmed" ? "Confirmed" : item.status === "cancelled" ? "Cancelled" : "Pending",
                 createdAt: new Date(item.created_at).getTime()
             }))
         });
+    }
+
+    const adminUserRoute = url.pathname.match(/^\/api\/admin\/users(?:\/(\d+))?$/);
+    if (adminUserRoute) {
+        const admin = requireAdmin();
+        const userId = adminUserRoute[1];
+
+        if (req.method === "GET") {
+            const rows = await neon(`/users${userId ? `?id=eq.${userId}` : "?select=*"}`);
+            return json(res, 200, rows.map(safeAdminUser));
+        }
+
+        if (req.method === "POST" && !userId) {
+            const name = String(body.name || "").trim();
+            const email = String(body.email || "").trim().toLowerCase();
+            const password = String(body.password || "");
+            const role = ["guest", "host", "admin"].includes(body.role) ? body.role : "guest";
+            if (!name || !email || !/^\S+@\S+\.\S+$/.test(email)) return json(res, 400, { error: "A valid name and email are required." });
+            if (password.length < 8) return json(res, 400, { error: "Password must be at least 8 characters." });
+            const existing = await neon(`/users?email=eq.${encodeURIComponent(email)}&select=id`);
+            if (existing[0]) return json(res, 409, { error: "A user with that email already exists." });
+            const rows = await neon("/users", {
+                method: "POST",
+                body: JSON.stringify({
+                    name, email, username: body.username || null, password_hash: await hashPassword(password), role,
+                    business_name: body.businessName || "", phone: body.phone || "", verified: Boolean(body.verified),
+                    declined: false, is_active: body.isActive !== false
+                })
+            });
+            return json(res, 201, safeAdminUser(rows[0]));
+        }
+
+        if ((req.method === "PATCH" || req.method === "DELETE") && !userId) {
+            return json(res, 400, { error: "A user id is required." });
+        }
+
+        const currentRows = await neon(`/users?id=eq.${userId}&select=*`);
+        const target = currentRows[0];
+        if (!target) return json(res, 404, { error: "User not found." });
+
+        if (req.method === "DELETE") {
+            if (String(target.id) === String(admin.id)) return json(res, 400, { error: "You cannot delete the account currently in use." });
+            if (target.role === "admin") {
+                const admins = await neon("/users?role=eq.admin&is_active=eq.true&select=id");
+                if (admins.length <= 1) return json(res, 400, { error: "The last active admin cannot be deleted." });
+            }
+            await neon(`/users?id=eq.${userId}`, { method: "DELETE" });
+            return json(res, 200, { ok: true, id: Number(userId) });
+        }
+
+        const updates = {};
+        ["name", "email", "username", "business_name", "phone", "role", "verified", "declined", "is_active"].forEach((key) => {
+            if (body[key] !== undefined) updates[key] = body[key];
+        });
+        if (updates.role && !["guest", "host", "admin"].includes(updates.role)) return json(res, 400, { error: "Invalid user role." });
+        if (updates.email) updates.email = String(updates.email).trim().toLowerCase();
+        if (body.password !== undefined) {
+            if (String(body.password).length < 8) return json(res, 400, { error: "Password must be at least 8 characters." });
+            updates.password_hash = await hashPassword(String(body.password));
+        }
+        if (String(target.id) === String(admin.id) && updates.role && updates.role !== "admin") return json(res, 400, { error: "You cannot remove your own admin access." });
+        if (target.role === "admin" && updates.is_active === false) {
+            const admins = await neon("/users?role=eq.admin&is_active=eq.true&select=id");
+            if (admins.length <= 1) return json(res, 400, { error: "The last active admin cannot be deactivated." });
+        }
+        updates.updated_at = new Date().toISOString();
+        const rows = await neon(`/users?id=eq.${userId}`, { method: "PATCH", body: JSON.stringify(updates) });
+        return json(res, 200, safeAdminUser(rows[0]));
     }
 
     if (req.method === "POST" && url.pathname === "/api/admin/sync") {
@@ -510,5 +660,7 @@ const server = createServer(async (req, res) => {
 
 if (process.argv[1] && /(?:^|[\\/])server\.js$/.test(process.argv[1])) {
     server.listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
-    initializeAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
+    initializeAdminAccount()
+        .then(initializeCatalogListings)
+        .catch(error => console.error("Unable to seed TripMate catalog:", error.message));
 }
