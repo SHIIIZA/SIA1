@@ -21,8 +21,10 @@ const config = {
     authUrl: process.env.NEON_AUTH_URL || env.NEON_AUTH_URL,
     apiKey: process.env.NEON_API_KEY || env.NEON_API_KEY,
     databaseUrl: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || env.NETLIFY_DATABASE_URL || env.DATABASE_URL,
+    paymongoSecretKey: process.env.PAYMONGO_SECRET_KEY || env.PAYMONGO_SECRET_KEY,
     jwtSecret: process.env.JWT_SECRET || env.JWT_SECRET || "change-this-secret",
-    port: Number(process.env.PORT || env.PORT || 3000)
+    port: Number(process.env.PORT || env.PORT || 3000),
+    frontendUrl: process.env.FRONTEND_URL || env.FRONTEND_URL || "http://localhost:3000"
 };
 
 const ADMIN_USERNAME = "admin";
@@ -200,6 +202,28 @@ async function neon(path, options = {}) {
         const error = new Error(`Neon Data API ${response.status}: ${detail}`);
         error.status = response.status;
         throw error;
+    }
+    return data;
+}
+
+async function paymongo(path, options = {}) {
+    if (!config.paymongoSecretKey) {
+        throw Object.assign(new Error("PayMongo is not configured. Set PAYMONGO_SECRET_KEY on the server."), { status: 503 });
+    }
+    const response = await fetch(`https://api.paymongo.com/v1${path}`, {
+        ...options,
+        headers: {
+            Authorization: `Basic ${Buffer.from(`${config.paymongoSecretKey}:`).toString("base64")}`,
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        }
+    });
+    const text = await response.text();
+    let data;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { error: text }; }
+    if (!response.ok) {
+        const message = data?.errors?.[0]?.detail || data?.error || `PayMongo request failed (${response.status})`;
+        throw Object.assign(new Error(message), { status: response.status });
     }
     return data;
 }
@@ -581,6 +605,102 @@ export async function routeApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/bookings") {
         const current = requireAuth();
         return json(res, 200, await neon(`/bookings?guest_id=eq.${current.id}&select=*&order=created_at.desc`));
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/payments/checkout") {
+        const current = requireAuth();
+        const listingId = Number(body.listing_id);
+        const totalAmount = Math.round(Number(body.total_amount));
+        const checkIn = String(body.check_in || "");
+        const checkOut = String(body.check_out || "");
+        if (!Number.isInteger(listingId) || listingId <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(checkIn) || !/^\d{4}-\d{2}-\d{2}$/.test(checkOut) || totalAmount <= 0) {
+            return json(res, 400, { error: "A valid listing, stay dates, and booking amount are required." });
+        }
+
+        const listingRows = await neon(`/listings?id=eq.${listingId}&status=eq.published&select=id,title`);
+        if (!listingRows[0]) return json(res, 404, { error: "This stay is no longer available." });
+
+        const bookingRows = await neon("/bookings", {
+            method: "POST",
+            body: JSON.stringify({
+                listing_id: listingId,
+                guest_id: current.id,
+                check_in: checkIn,
+                check_out: checkOut,
+                guest_count: Number(body.guest_count) || 1,
+                subtotal: Number(body.subtotal) || 0,
+                cleaning_fee: Number(body.cleaning_fee) || 0,
+                service_fee: Number(body.service_fee) || 0,
+                taxes: Number(body.taxes) || 0,
+                total_amount: totalAmount,
+                payment_method: body.payment_method || "card",
+                special_requests: body.special_requests || null,
+                terms_accepted: body.terms_accepted === true,
+                status: "pending"
+            })
+        });
+        const booking = bookingRows[0];
+        if (!booking) return json(res, 500, { error: "Unable to create the booking." });
+
+        const paymentMethodTypes = { card: "card", gcash: "gcash", maya: "paymaya" };
+        try {
+            const session = await paymongo("/checkout_sessions", {
+                method: "POST",
+                body: JSON.stringify({
+                    data: {
+                        attributes: {
+                            line_items: [{
+                                currency: "PHP",
+                                amount: totalAmount * 100,
+                                name: listingRows[0].title,
+                                quantity: 1
+                            }],
+                            payment_method_types: [paymentMethodTypes[body.payment_method] || "card"],
+                            description: `TripMate booking ${booking.id}`,
+                            success_url: `${config.frontendUrl}/booking.html?payment=success&booking_id=${booking.id}`,
+                            cancel_url: `${config.frontendUrl}/booking.html?payment=cancelled&booking_id=${booking.id}`,
+                            metadata: { booking_id: String(booking.id) }
+                        }
+                    }
+                })
+            });
+            const sessionId = session?.data?.id;
+            const checkoutUrl = session?.data?.attributes?.checkout_url;
+            if (!sessionId || !checkoutUrl) throw new Error("PayMongo did not return a checkout URL.");
+
+            await neon("/payments", {
+                method: "POST",
+                body: JSON.stringify({
+                    booking_id: booking.id,
+                    payment_method: body.payment_method || "card",
+                    amount: totalAmount,
+                    status: "pending",
+                    transaction_reference: sessionId
+                })
+            });
+            return json(res, 201, { booking_id: booking.id, session_id: sessionId, checkout_url: checkoutUrl });
+        } catch (error) {
+            await neon(`/bookings?id=eq.${booking.id}`, { method: "DELETE" }).catch(() => {});
+            throw error;
+        }
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/payments/confirm") {
+        const current = requireAuth();
+        const bookingId = Number(url.searchParams.get("booking_id"));
+        const sessionId = url.searchParams.get("session_id");
+        if (!bookingId || !sessionId) return json(res, 400, { error: "A booking and payment session are required." });
+        const bookings = await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}&select=*`);
+        if (!bookings[0]) return json(res, 404, { error: "Booking not found." });
+        const session = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}`);
+        const payments = Array.isArray(session?.data?.attributes?.payments) ? session.data.attributes.payments : [];
+        const paid = session?.data?.attributes?.payment_intent?.status === "succeeded" ||
+            session?.data?.attributes?.status === "paid" ||
+            payments.some(payment => payment?.attributes?.status === "paid");
+        if (!paid) return json(res, 409, { error: "Payment has not been completed yet." });
+        await neon(`/bookings?id=eq.${bookingId}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() }) });
+        await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}`, { method: "PATCH", body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() }) });
+        return json(res, 200, { ok: true, booking_id: bookingId });
     }
 
     if (req.method === "POST" && url.pathname === "/api/bookings") {

@@ -37,6 +37,7 @@ Netlify hosts both the static frontend and the API bridge. The function keeps Ne
 ```text
 NETLIFY_DATABASE_URL=<your Neon pooled PostgreSQL connection string>
 JWT_SECRET=<long random secret>
+PAYMONGO_SECRET_KEY=sk_test_<your PayMongo secret key>
 FRONTEND_URL=https://<your-site>.netlify.app
 ```
 
@@ -45,5 +46,5 @@ FRONTEND_URL=https://<your-site>.netlify.app
 
 For local Netlify-style testing, install the Netlify CLI and run `npm run netlify:dev`. The existing `npm start` command remains available for testing the local Node server directly.
 
-Never commit `.env` or the Neon connection string. The included `.gitignore` protects the local secret file. Do not add Neon variables to frontend JavaScript.
+Checkout uses PayMongo Checkout Sessions for cards, GCash, and Maya. Keep `PAYMONGO_SECRET_KEY` and the Neon credentials in server or Netlify environment variables only. Use a `sk_test_` key while testing and switch to a live key for production. Never commit `.env` or add payment/database secrets to frontend JavaScript.
 
