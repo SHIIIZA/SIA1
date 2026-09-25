@@ -4,7 +4,7 @@
 
 1. Run `schema.sql` in the Neon SQL Editor. Re-run it after pulling schema changes; it uses `IF NOT EXISTS` migrations for admin user status fields.
 2. Copy `.env.example` to `.env`.
-3. Put the pooled Neon PostgreSQL connection string in `.env` as `NETLIFY_DATABASE_URL`. `DATABASE_URL` is also accepted locally. Never put this secret in browser JavaScript.
+3. Put the pooled Neon PostgreSQL connection string in `.env` as `DATABASE_URL` (or `NEON_DATABASE_URL`). `NETLIFY_DATABASE_URL` is supported only when configuring the same Neon connection as a Netlify deployment variable. Never put this secret in browser JavaScript.
 4. Start the app from this folder:
 
 ```powershell

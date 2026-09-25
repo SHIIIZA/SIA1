@@ -20,12 +20,27 @@ const config = {
     apiUrl: process.env.NEON_API_URL || env.NEON_API_URL,
     authUrl: process.env.NEON_AUTH_URL || env.NEON_AUTH_URL,
     apiKey: process.env.NEON_API_KEY || env.NEON_API_KEY,
-    databaseUrl: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || env.NETLIFY_DATABASE_URL || env.DATABASE_URL,
+    databaseUrl: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || process.env.NETLIFY_DATABASE_URL || env.DATABASE_URL || env.NEON_DATABASE_URL || env.NETLIFY_DATABASE_URL,
     paymongoSecretKey: process.env.PAYMONGO_SECRET_KEY || env.PAYMONGO_SECRET_KEY,
     jwtSecret: process.env.JWT_SECRET || env.JWT_SECRET || "change-this-secret",
     port: Number(process.env.PORT || env.PORT || 3000),
     frontendUrl: process.env.FRONTEND_URL || env.FRONTEND_URL || "http://localhost:3000"
 };
+
+function isPlaceholder(value) {
+    return !value || /(?:replace_with|user:password@host|change-this)/i.test(value);
+}
+
+function getFrontendUrl(req) {
+    if (!isPlaceholder(config.frontendUrl) && config.frontendUrl !== "http://localhost:3000") {
+        return config.frontendUrl.replace(/\/$/, "");
+    }
+
+    const forwardedProto = req.headers["x-forwarded-proto"] || "http";
+    const protocol = String(forwardedProto).split(",")[0].trim();
+    const host = req.headers["x-forwarded-host"] || req.headers.host;
+    return host ? `${protocol}://${host}`.replace(/\/$/, "") : "http://localhost:3000";
+}
 
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "admin1234";
@@ -80,7 +95,7 @@ if (config.databaseUrl) {
 }
 
 if (!sql && (!config.apiUrl || !config.apiKey)) {
-    console.warn("Missing NETLIFY_DATABASE_URL/DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
+    console.warn("Missing Neon DATABASE_URL/NEON_DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
 }
 
 function json(res, status, data) {
@@ -207,7 +222,7 @@ async function neon(path, options = {}) {
 }
 
 async function paymongo(path, options = {}) {
-    if (!config.paymongoSecretKey) {
+    if (isPlaceholder(config.paymongoSecretKey) || !/^sk_(test|live)_/i.test(config.paymongoSecretKey)) {
         throw Object.assign(new Error("PayMongo is not configured. Set PAYMONGO_SECRET_KEY on the server."), { status: 503 });
     }
     const response = await fetch(`https://api.paymongo.com/v1${path}`, {
@@ -363,6 +378,7 @@ export async function routeApi(req, res, url) {
             ok: true,
             databaseConfigured: database.configured,
             databaseError: database.error || null,
+            paymongoConfigured: !isPlaceholder(config.paymongoSecretKey) && /^sk_(test|live)_/i.test(config.paymongoSecretKey),
             authConfigured: Boolean(config.authUrl || config.databaseUrl)
         });
     }
@@ -643,6 +659,11 @@ export async function routeApi(req, res, url) {
         if (!booking) return json(res, 500, { error: "Unable to create the booking." });
 
         const paymentMethodTypes = { card: "card", gcash: "gcash", maya: "paymaya" };
+        const paymentMethod = String(body.payment_method || "card").toLowerCase();
+        if (!paymentMethodTypes[paymentMethod]) {
+            await neon(`/bookings?id=eq.${booking.id}`, { method: "DELETE" }).catch(() => {});
+            return json(res, 400, { error: "Choose card, GCash, or Maya as the payment method." });
+        }
         try {
             const session = await paymongo("/checkout_sessions", {
                 method: "POST",
@@ -655,10 +676,10 @@ export async function routeApi(req, res, url) {
                                 name: listingRows[0].title,
                                 quantity: 1
                             }],
-                            payment_method_types: [paymentMethodTypes[body.payment_method] || "card"],
+                            payment_method_types: [paymentMethodTypes[paymentMethod]],
                             description: `TripMate booking ${booking.id}`,
-                            success_url: `${config.frontendUrl}/booking.html?payment=success&booking_id=${booking.id}`,
-                            cancel_url: `${config.frontendUrl}/booking.html?payment=cancelled&booking_id=${booking.id}`,
+                            success_url: `${getFrontendUrl(req)}/booking.html?payment=success&booking_id=${booking.id}`,
+                            cancel_url: `${getFrontendUrl(req)}/booking.html?payment=cancelled&booking_id=${booking.id}`,
                             metadata: { booking_id: String(booking.id) }
                         }
                     }
@@ -672,7 +693,7 @@ export async function routeApi(req, res, url) {
                 method: "POST",
                 body: JSON.stringify({
                     booking_id: booking.id,
-                    payment_method: body.payment_method || "card",
+                    payment_method: paymentMethod,
                     amount: totalAmount,
                     status: "pending",
                     transaction_reference: sessionId
