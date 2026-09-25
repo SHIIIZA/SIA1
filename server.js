@@ -374,7 +374,7 @@ export async function routeApi(req, res, url) {
 
     if (req.method === "GET" && url.pathname === "/api/health") {
         const database = await databaseHealth();
-        const paymongoKeyLoaded = Boolean(config.paymongoSecretKey);
+        const oypaymongoKeyLoaded = Boolean(config.paymongoSecretKey);
         const paymongoKeyFormatValid = /^sk_(test|live)_/i.test(config.paymongoSecretKey);
         return json(res, 200, {
             ok: true,
