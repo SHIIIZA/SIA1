@@ -21,7 +21,7 @@ const config = {
     authUrl: process.env.NEON_AUTH_URL || env.NEON_AUTH_URL,
     apiKey: process.env.NEON_API_KEY || env.NEON_API_KEY,
     databaseUrl: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || process.env.NETLIFY_DATABASE_URL || env.DATABASE_URL || env.NEON_DATABASE_URL || env.NETLIFY_DATABASE_URL,
-    paymongoSecretKey: process.env.PAYMONGO_SECRET_KEY || env.PAYMONGO_SECRET_KEY,
+    paymongoSecretKey: String(process.env.PAYMONGO_SECRET_KEY || env.PAYMONGO_SECRET_KEY || "").trim(),
     jwtSecret: process.env.JWT_SECRET || env.JWT_SECRET || "change-this-secret",
     port: Number(process.env.PORT || env.PORT || 3000),
     frontendUrl: process.env.FRONTEND_URL || env.FRONTEND_URL || "http://localhost:3000"
@@ -374,11 +374,15 @@ export async function routeApi(req, res, url) {
 
     if (req.method === "GET" && url.pathname === "/api/health") {
         const database = await databaseHealth();
+        const paymongoKeyLoaded = Boolean(config.paymongoSecretKey);
+        const paymongoKeyFormatValid = /^sk_(test|live)_/i.test(config.paymongoSecretKey);
         return json(res, 200, {
             ok: true,
             databaseConfigured: database.configured,
             databaseError: database.error || null,
-            paymongoConfigured: !isPlaceholder(config.paymongoSecretKey) && /^sk_(test|live)_/i.test(config.paymongoSecretKey),
+            paymongoConfigured: !isPlaceholder(config.paymongoSecretKey) && paymongoKeyFormatValid,
+            paymongoKeyLoaded,
+            paymongoKeyFormatValid,
             authConfigured: Boolean(config.authUrl || config.databaseUrl)
         });
     }
