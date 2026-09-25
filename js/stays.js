@@ -96,12 +96,8 @@
     async function loadDatabaseListings() {
         try {
             const remoteListings = await apiRequest("/listings");
-            const remoteIds = new Set(remoteListings.map(item => String(item.id)));
-            const remoteTitles = new Set(remoteListings.map(item => String(item.title || "").trim().toLowerCase()));
-            listings = listings.filter(item =>
-                !remoteIds.has(String(item.id)) &&
-                !remoteTitles.has(String(item.name || "").trim().toLowerCase())
-            ).concat(remoteListings.map(item => ({
+            if (!remoteListings.length) return;
+            listings = remoteListings.map(item => ({
                 id: item.id,
                 name: item.title,
                 type: item.property_type,
@@ -112,7 +108,7 @@
                 guests: Number(item.max_guests),
                 amenities: item.amenities || [],
                 img: item.images?.[0] || ""
-            })));
+            }));
             render();
         } catch (error) {
             console.warn("Database listings unavailable:", error.message);
@@ -380,7 +376,7 @@
             const card = bookBtn.closest(".listing-card");
             if (card) {
                 const id = card.dataset.id;
-                const selected = listings.find((item) => item.id === id);
+                const selected = listings.find((item) => String(item.id) === String(id));
                 if (selected) {
                     localStorage.setItem("selectedStay", JSON.stringify(selected));
                 }
