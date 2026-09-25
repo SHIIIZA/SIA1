@@ -38,11 +38,11 @@ Netlify hosts both the static frontend and the API bridge. The function keeps Ne
 NETLIFY_DATABASE_URL=<your Neon pooled PostgreSQL connection string>
 JWT_SECRET=<long random secret>
 PAYMONGO_SECRET_KEY=sk_test_<your PayMongo secret key>
-FRONTEND_URL=https://<your-site>.netlify.app
+FRONTEND_URL=https://trypmate.netlify.app
 ```
 
 4. The `/api/*` rewrite in `netlify.toml` forwards to the `api` Netlify Function, so frontend calls continue using the existing relative `/api` paths.
-5. Verify the deployed bridge at `https://<your-site>.netlify.app/api/health`.
+5. Verify the deployed bridge at `https://trypmate.netlify.app/api/health`.
 
 For local Netlify-style testing, install the Netlify CLI and run `npm run netlify:dev`. The existing `npm start` command remains available for testing the local Node server directly.
 
