@@ -191,46 +191,18 @@
                         </h2>
 
                         <div class="pay-options">
-                            <label class="pay-option is-selected" data-method="card">
+                            <label class="pay-option is-selected" data-method="qrph">
                                 <span class="pay-option-head">
                                     <span class="pay-option-name">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
-                                        Credit / Debit Card
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 8h2v2H8zM14 8h2v2h-2zM8 14h2v2H8zM14 14h2v2h-2z"></path></svg>
+                                        QR Ph
                                     </span>
                                     <span class="radio" aria-hidden="true"></span>
                                 </span>
-                                <input type="radio" name="payMethod" value="card" checked hidden>
+                                <input type="radio" name="payMethod" value="qrph" checked hidden>
 
                                 <div class="pay-option-body">
-                                    <p class="hint">You'll be redirected to PayMongo's secure checkout to enter your card details.</p>
-                                </div>
-                            </label>
-
-                            <label class="pay-option" data-method="gcash">
-                                <span class="pay-option-head">
-                                    <span class="pay-option-name">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                                        GCash (e-Wallet)
-                                    </span>
-                                    <span class="radio" aria-hidden="true"></span>
-                                </span>
-                                <input type="radio" name="payMethod" value="gcash" hidden>
-                                <div class="pay-option-body">
-                                    <p class="hint">You'll be seamlessly redirected to GCash to authorize payment after tapping "Confirm and pay".</p>
-                                </div>
-                            </label>
-
-                            <label class="pay-option" data-method="maya">
-                                <span class="pay-option-head">
-                                    <span class="pay-option-name">
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"></path><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"></path><circle cx="18" cy="14" r="2"></circle></svg>
-                                        Maya (Wallet & Cards)
-                                    </span>
-                                    <span class="radio" aria-hidden="true"></span>
-                                </span>
-                                <input type="radio" name="payMethod" value="maya" hidden>
-                                <div class="pay-option-body">
-                                    <p class="hint">You'll be seamlessly redirected to Maya to authorize payment after tapping "Confirm and pay".</p>
+                                    <p class="hint">You'll be redirected to PayMongo's secure checkout to scan and authorize your QR Ph payment.</p>
                                 </div>
                             </label>
                         </div>

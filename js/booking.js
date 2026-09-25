@@ -66,7 +66,7 @@
         guests: Math.min(Number(urlParams.get("guests")) || 2, listing.maxGuests),
         promoCode: null,
         promoRate: 0,
-        payMethod: "card"
+        payMethod: "qrph"
     };
 
     function nights() {

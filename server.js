@@ -653,7 +653,7 @@ export async function routeApi(req, res, url) {
                 service_fee: Number(body.service_fee) || 0,
                 taxes: Number(body.taxes) || 0,
                 total_amount: totalAmount,
-                payment_method: body.payment_method || "card",
+                payment_method: body.payment_method || "qrph",
                 special_requests: body.special_requests || null,
                 terms_accepted: body.terms_accepted === true,
                 status: "pending"
@@ -662,11 +662,11 @@ export async function routeApi(req, res, url) {
         const booking = bookingRows[0];
         if (!booking) return json(res, 500, { error: "Unable to create the booking." });
 
-        const paymentMethodTypes = { card: "card", gcash: "gcash", maya: "paymaya" };
-        const paymentMethod = String(body.payment_method || "card").toLowerCase();
+        const paymentMethodTypes = { qrph: "qrph" };
+        const paymentMethod = String(body.payment_method || "qrph").toLowerCase();
         if (!paymentMethodTypes[paymentMethod]) {
             await neon(`/bookings?id=eq.${booking.id}`, { method: "DELETE" }).catch(() => {});
-            return json(res, 400, { error: "Choose card, GCash, or Maya as the payment method." });
+            return json(res, 400, { error: "Choose QR Ph as the payment method." });
         }
         try {
             const session = await paymongo("/checkout_sessions", {
