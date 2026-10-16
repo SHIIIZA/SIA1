@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { initializeAdminAccount, routeApi } from "../../server.js";
+import { initializeAdminAccount, initializeCatalogListings, routeApi } from "../../server.js";
 
 function routePath(event) {
     const rawPath = event.path || "/api/health";
@@ -63,8 +63,9 @@ export async function handler(event) {
 
     try {
         await initializeAdminAccount();
+        await initializeCatalogListings();
     } catch (error) {
-        console.error("Unable to seed admin account:", error.message);
+        console.error("Unable to seed TripMate database:", error.message);
     }
 
     const request = createRequest(event);

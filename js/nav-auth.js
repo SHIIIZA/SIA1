@@ -50,6 +50,7 @@
     `;
 
     navCta.replaceWith(wrapper);
+    document.querySelector(".nav-login")?.remove();
 
     const avatarBtn = wrapper.querySelector("#navUserAvatarBtn");
     const dropdown = wrapper.querySelector("#navUserDropdown");

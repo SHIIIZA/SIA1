@@ -66,7 +66,7 @@
         guests: Math.min(Number(urlParams.get("guests")) || 2, listing.maxGuests),
         promoCode: null,
         promoRate: 0,
-        payMethod: "card"
+        payMethod: "qrph"
     };
 
     function nights() {
@@ -101,11 +101,17 @@
       <div class="summary-card">
         <div class="summary-media">
           <img src="${listing.img}" alt="${listing.name}">
-          <span class="summary-rating"><span class="star">&#9733;</span> ${listing.rating.toFixed(2)} <span class="count">(${listing.reviews} reviews)</span></span>
+          <span class="summary-rating">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#E8B04B" stroke="#E8B04B"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            ${listing.rating.toFixed(2)} <span class="count">(${listing.reviews} reviews)</span>
+          </span>
         </div>
         <div class="summary-body">
           <p class="summary-name">${listing.name}</p>
-          <p class="summary-loc"><span>&#128205;</span> ${listing.location}</p>
+          <p class="summary-loc">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            ${listing.location}
+          </p>
 
           <div class="summary-dates">
             <div>
@@ -341,7 +347,8 @@
             alert("Please make sure your check-out date is after your check-in date.");
             return;
         }
-        if (!Number.isInteger(Number(listing.id)) || Number(listing.id) <= 0) {
+        const listingId = typeof listing.id === 'string' ? listing.id : Number(listing.id);
+if (!listingId || (typeof listingId === 'number' && listingId <= 0)) {
             showToast("This stay is a demo listing. Choose a published Neon stay to continue.", true);
             return;
         }
@@ -464,8 +471,7 @@
 
     payBtn?.addEventListener("click", () => {
         const guestOk = validateGuestForm();
-        const cardOk = state.payMethod === "card" ? validateCardForm() : true;
-        if (!guestOk || !cardOk) {
+        if (!guestOk) {
             const firstError = document.querySelector(".field.has-error input");
             if (firstError) firstError.focus();
             return;
@@ -524,7 +530,7 @@
             return;
         }
         try {
-            await apiRequest("/bookings", {
+            const checkout = await apiRequest("/payments/checkout", {
                 method: "POST",
                 body: JSON.stringify({
                     listing_id: listingId,
@@ -541,6 +547,12 @@
                     ,terms_accepted: document.getElementById("termsAccepted")?.checked === true
                 })
             });
+            localStorage.setItem("tripmate_pending_payment", JSON.stringify({
+                bookingId: checkout.booking_id,
+                sessionId: checkout.session_id
+            }));
+            window.location.assign(checkout.checkout_url);
+            return;
         } catch (error) {
             showToast(error.message || "Unable to save booking.", true);
             return;
@@ -607,9 +619,52 @@
         });
     }
 
+    async function resumePaymentReturn() {
+        const paymentState = new URLSearchParams(window.location.search).get("payment");
+        if (!paymentState) return false;
+
+        if (paymentState === "cancelled") {
+            showToast("Payment was cancelled. Your booking was not confirmed.", true);
+            window.history.replaceState({}, document.title, "booking.html");
+            return false;
+        }
+
+        let pending = null;
+        try {
+            pending = JSON.parse(localStorage.getItem("tripmate_pending_payment") || "null");
+        } catch {
+            localStorage.removeItem("tripmate_pending_payment");
+        }
+        const bookingId = new URLSearchParams(window.location.search).get("booking_id") || pending?.bookingId;
+        if (!bookingId || !pending?.sessionId) {
+            showToast("We could not verify this payment session.", true);
+            return false;
+        }
+
+        try {
+            await apiRequest(`/payments/confirm?booking_id=${encodeURIComponent(bookingId)}&session_id=${encodeURIComponent(pending.sessionId)}`);
+            localStorage.removeItem("tripmate_pending_payment");
+            const emailInput = document.getElementById("email");
+            const confirmEmail = document.getElementById("confirmEmail");
+            if (confirmEmail && emailInput) confirmEmail.textContent = emailInput.value.trim();
+            const confirmRef = document.getElementById("confirmRef");
+            if (confirmRef) confirmRef.textContent = `TM-${String(bookingId).padStart(6, "0")}`;
+            highestUnlocked = 3;
+            renderSummaries();
+            goToStep(3);
+            window.history.replaceState({}, document.title, "booking.html");
+            return true;
+        } catch (error) {
+            showToast(error.message || "Unable to verify payment.", true);
+            return false;
+        }
+    }
+
     // --- Initial Boot ---
     initReviewControls();
     refreshTrip();
     updateStepper();
-    goToStep(1);
+    resumePaymentReturn().then((resumed) => {
+        if (!resumed) goToStep(1);
+    });
 })();
