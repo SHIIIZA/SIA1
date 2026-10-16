@@ -10,7 +10,13 @@ body.booking-page {
 
 /* ---------- Nav (no hero image on this page) ---------- */
 .booking-nav-wrap {
-    background: var(--teal-950);
+    min-height: 230px;
+    display: flex;
+    flex-direction: column;
+    color: var(--cream);
+    background:
+        linear-gradient(180deg, rgba(6, 43, 39, 0.68) 0%, rgba(6, 43, 39, 0.5) 45%, rgba(6, 43, 39, 0.88) 100%),
+        url('https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?q=80&w=1800&auto=format&fit=crop') center 58% / cover no-repeat;
 }
 
 .booking-nav-wrap nav {
@@ -19,6 +25,40 @@ body.booking-page {
 
 .booking-nav-wrap .nav-links {
     color: rgba(250, 247, 239, 0.82);
+}
+
+.booking-intro {
+    width: min(1120px, 100%);
+    margin: auto;
+    padding: 26px clamp(20px, 5vw, 40px) 32px;
+    position: relative;
+    z-index: 1;
+}
+
+.booking-eyebrow {
+    color: rgba(250, 247, 239, 0.82);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.booking-intro h1 {
+    color: var(--cream);
+    font-family: 'Fraunces', serif;
+    font-size: clamp(30px, 4vw, 42px);
+    font-weight: 500;
+    letter-spacing: -0.4px;
+    line-height: 1.1;
+}
+
+.booking-intro > p:last-child {
+    color: rgba(250, 247, 239, 0.82);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-top: 8px;
+    max-width: 460px;
 }
 
 /* ---------- Stepper ---------- */
@@ -827,6 +867,17 @@ button.btn-primary:disabled {
     .field-row,
     .date-row {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .booking-nav-wrap {
+        min-height: 210px;
+    }
+
+    .booking-intro {
+        padding-top: 20px;
+        padding-bottom: 26px;
     }
 }
 
