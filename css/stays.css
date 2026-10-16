@@ -572,6 +572,22 @@ body.stays-page {
 }
 
 @media (max-width: 640px) {
+    .stays-hero {
+        min-height: 520px;
+    }
+
+    .stays-hero-body {
+        padding: 34px 20px 48px;
+    }
+
+    .stays-hero-body h1 {
+        font-size: clamp(32px, 10vw, 42px);
+    }
+
+    .stays-main {
+        padding: 28px 16px 72px;
+    }
+
     .stays-grid {
         grid-template-columns: 1fr;
     }

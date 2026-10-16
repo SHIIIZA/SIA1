@@ -10,8 +10,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="homepage.css">
-    <link rel="stylesheet" href="stays.css">
+    <link rel="stylesheet" href="css/homepage.css">
+    <link rel="stylesheet" href="css/stays.css">
 </head>
 
 <body class="stays-page">
@@ -20,14 +20,14 @@
     <div class="hero stays-hero">
        <nav>
             <a href="homepage.html" class="logo">
-                <img src="tripmate.svg" alt="TripMate" class="logo-img">
+                <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
             </a>
             <div class="nav-links">
                 <a href="stays.html">Stays</a>
                 <a href="homepage.html#how">How it works</a>
-                <a href="host.html">Become a Host</a>
+                <a href="signup.html?type=host">Become a Host</a>
             </div>
-            <a href="#" class="nav-cta">Get started</a>
+            <a href="signup.html" class="nav-cta">Get started</a>
         </nav>
 
         <div class="stays-hero-body">
@@ -174,16 +174,16 @@
                     <h4>Explore</h4>
                     <a href="stays.html">Stays</a>
                     <a href="homepage.html#how">How it works</a>
-                    <a href="homepage.html#host">Become a Host</a>
+                    <a href="signup.html?type=host">Become a Host</a>
                 </div>
                 <div class="footer-col">
                     <h4>Support</h4>
-                    <a href="#">Cancellation policy</a>
-                    <a href="#">Contact us</a>
+                    <a href="cancellation.html">Cancellation policy</a>
+                    <a href="contactus.html">Contact us</a>
                 </div>
                 <div class="footer-col">
                     <h4>Company</h4>
-                    <a href="#">About</a>
+                    <a href="about.html">About</a>
                 </div>
             </div>
         </div>
@@ -193,7 +193,10 @@
         </div>
     </footer>
  
-    <script src="stays.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/nav-auth.js"></script>
+    <script src="js/stays.js"></script>
 </body>
  
 </html>

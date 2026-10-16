@@ -2,9 +2,9 @@
 
 ## Local development
 
-1. Run `schema.sql` in the Neon SQL Editor.
+1. Run `schema.sql` in the Neon SQL Editor. Re-run it after pulling schema changes; it uses `IF NOT EXISTS` migrations for admin user status fields.
 2. Copy `.env.example` to `.env`.
-3. Put the pooled Neon PostgreSQL connection string in `.env` as `NETLIFY_DATABASE_URL`. `DATABASE_URL` is also accepted locally. Never put this secret in browser JavaScript.
+3. Put the pooled Neon PostgreSQL connection string in `.env` as `DATABASE_URL` (or `NEON_DATABASE_URL`). `NETLIFY_DATABASE_URL` is supported only when configuring the same Neon connection as a Netlify deployment variable. Never put this secret in browser JavaScript.
 4. Start the app from this folder:
 
 ```powershell
@@ -24,6 +24,8 @@ Password: admin1234
 
 Change these values in `server.js` before production if this is more than a school/demo deployment.
 
+The admin panel now includes protected user management endpoints under `/api/admin/users`. They require an admin JWT and never return password hashes.
+
 ## Netlify deployment
 
 Netlify hosts both the static frontend and the API bridge. The function keeps Neon credentials out of browser JavaScript.
@@ -35,13 +37,14 @@ Netlify hosts both the static frontend and the API bridge. The function keeps Ne
 ```text
 NETLIFY_DATABASE_URL=<your Neon pooled PostgreSQL connection string>
 JWT_SECRET=<long random secret>
-FRONTEND_URL=https://<your-site>.netlify.app
+PAYMONGO_SECRET_KEY=sk_test_<your PayMongo secret key>
+FRONTEND_URL=https://trypmate.netlify.app
 ```
 
 4. The `/api/*` rewrite in `netlify.toml` forwards to the `api` Netlify Function, so frontend calls continue using the existing relative `/api` paths.
-5. Verify the deployed bridge at `https://<your-site>.netlify.app/api/health`.
+5. Verify the deployed bridge at `https://trypmate.netlify.app/api/health`.
 
 For local Netlify-style testing, install the Netlify CLI and run `npm run netlify:dev`. The existing `npm start` command remains available for testing the local Node server directly.
 
-Never commit `.env` or the Neon connection string. The included `.gitignore` protects the local secret file. Do not add Neon variables to frontend JavaScript.
+Checkout uses PayMongo Checkout Sessions for cards, GCash, and Maya. Keep `PAYMONGO_SECRET_KEY` and the Neon credentials in server or Netlify environment variables only. Use a `sk_test_` key while testing and switch to a live key for production. Never commit `.env` or add payment/database secrets to frontend JavaScript.
 

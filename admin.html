@@ -38,26 +38,19 @@
         <span>Verification</span>
         <span class="nav-count nav-count-alert" id="navVerificationCount" hidden>0</span>
       </button>
+      <button class="nav-item" data-view="users">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Users</span>
+      </button>
       <button class="nav-item" data-view="transactions">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
-        <span>Transactions</span>
+        <span>Bookings</span>
       </button>
-      <button class="nav-item" data-view="profile">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Profile</span>
+      <button class="nav-item" data-view="admins">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        <span>Admins</span>
       </button>
     </nav>
-
-    <div class="sidebar-bottom">
-      <button class="nav-item nav-item-muted" data-view="documentation" id="docsBtn">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-        <span>Documentation</span>
-      </button>
-      <button class="nav-item nav-item-muted" data-view="support" id="supportBtn">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-        <span>Support</span>
-      </button>
-    </div>
 
   </aside>
 
@@ -72,11 +65,6 @@
       </button>
 
       <button class="topbar-brand" id="topbarBrandBtn" type="button">TripMate</button>
-
-      <div class="topbar-search">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
-        <input type="text" id="globalSearch" placeholder="Search across TripMate…">
-      </div>
 
       <div class="topbar-actions">
         <div class="topbar-notif">
@@ -95,9 +83,6 @@
         <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-        <button class="icon-btn" id="helpBtn" aria-label="Help" title="Help">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg>
-        </button>
         <div class="topbar-account">
           <button class="topbar-avatar" id="topbarAvatarBtn" aria-label="Account" aria-haspopup="true" aria-expanded="false">
             <span id="topbarAvatarInitials">A</span>
@@ -107,13 +92,9 @@
               <span class="account-menu-name" id="accountMenuName">Admin</span>
               <span class="account-menu-email" id="accountMenuEmail">No email set</span>
             </div>
-            <button type="button" data-action="view-profile">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              View Profile
-            </button>
-            <button type="button" data-action="account-support">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
-              Support
+            <button type="button" data-action="home-page">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9 21v-7h6v7"/></svg>
+              Home
             </button>
             <button type="button" class="danger" data-action="account-logout">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
@@ -174,19 +155,19 @@
               </span>
             </div>
             <span class="stat-value" id="dashVolume">₱0</span>
-            <span class="stat-delta" id="dashVolumeDelta">Across 0 transactions</span>
+            <span class="stat-delta" id="dashVolumeDelta">Across 0 bookings</span>
           </div>
         </div>
 
         <div class="dash-grid">
           <div class="panel">
             <div class="panel-head">
-              <h2>Recent Transactions</h2>
+              <h2>Recent Bookings</h2>
               <button class="link-btn" data-goto="transactions">View all</button>
             </div>
             <div class="table-wrap">
               <table class="data-table">
-                <thead><tr><th>Transaction</th><th>Partner / Host</th><th>Total</th><th>Status</th></tr></thead>
+                <thead><tr><th>Booking</th><th>Partner / Host</th><th>Total</th><th>Status</th></tr></thead>
                 <tbody id="dashTransactionsBody"></tbody>
               </table>
             </div>
@@ -365,12 +346,50 @@
         </div>
       </section>
 
-      <!-- ============ TRANSACTIONS ============ -->
+      <!-- ============ USERS ============ -->
+      <section class="view" id="view-users">
+        <div class="page-head">
+          <div>
+            <h1>User Management</h1>
+            <p>Review platform accounts, roles, and access status.</p>
+          </div>
+          <button class="btn-primary" id="addUserBtn" type="button">Add User</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Platform Users</h2>
+            <div class="toolbar-left">
+              <div class="topbar-search table-search">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+                <input type="text" id="usersSearch" placeholder="Search name or email…">
+              </div>
+              <select id="usersRoleFilter" class="table-filter" aria-label="Filter users by role">
+                <option value="all">All roles</option>
+                <option value="guest">Guests</option>
+                <option value="host">Hosts</option>
+                <option value="admin">Admins</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+            <div class="empty-state" id="usersEmpty" hidden>
+              <p>No users match the current filters.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ BOOKINGS ============ -->
       <section class="view" id="view-transactions">
         <div class="page-head">
           <div>
-            <h1>Financial Overview</h1>
-            <p>Track platform revenue, commissions, and partner payouts.</p>
+            <h1>Booking Management</h1>
+            <p>Review reservations, guest details, payment totals, and booking status.</p>
           </div>
           <div class="page-head-actions">
             <button class="btn-outline" id="exportTransactionsBtn" type="button">
@@ -388,7 +407,7 @@
           <div class="stat-card">
             <span class="stat-label stat-label-caps">Total Platform Volume</span>
             <span class="stat-value stat-value-lg" id="txVolume">₱0</span>
-            <span class="stat-delta" id="txVolumeDelta">Across 0 transactions</span>
+            <span class="stat-delta" id="txVolumeDelta">Across 0 bookings</span>
           </div>
           <div class="stat-card">
             <span class="stat-label stat-label-caps">Net Commissions</span>
@@ -407,11 +426,11 @@
 
         <div class="panel">
           <div class="panel-head">
-            <h2>Recent Transactions Ledger</h2>
+            <h2>Recent Bookings</h2>
             <div class="toolbar-left">
               <div class="topbar-search table-search">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
-                <input type="text" id="transactionSearch" placeholder="Search transactions, IDs…">
+                <input type="text" id="transactionSearch" placeholder="Search bookings, guests, IDs…">
               </div>
               <div class="select-wrap">
                 <select id="transactionStatusFilter">
@@ -431,7 +450,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>Transaction ID</th>
+                  <th>Booking ID</th>
                   <th>Partner / Host</th>
                   <th>Base Rate</th>
                   <th>Taxes / Fees</th>
@@ -445,11 +464,38 @@
             </table>
             <div class="empty-state" id="transactionsEmpty" hidden>
               <svg class="icon empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
-              <p>No transactions yet — bookings you add will appear here.</p>
+              <p>No bookings yet — reservations you add will appear here.</p>
               <button class="btn-primary" id="transactionsEmptyAddBtn" type="button">Add your first booking</button>
             </div>
           </div>
           <div class="pagination-row" id="transactionsPagination"></div>
+        </div>
+      </section>
+
+      <!-- ============ ADMINS ============ -->
+      <section class="view" id="view-admins">
+        <div class="page-head">
+          <div>
+            <h1>Admin Accounts</h1>
+            <p>Manage who can operate the TripMate control room.</p>
+          </div>
+          <button class="btn-primary" id="addAdminBtn" type="button">Add Admin</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Authorized Administrators</h2>
+            <div class="topbar-search table-search">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+              <input type="text" id="adminsSearch" placeholder="Search admins…">
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Admin</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+              <tbody id="adminsBody"></tbody>
+            </table>
+            <div class="empty-state" id="adminsEmpty" hidden><p>No admin accounts found.</p></div>
+          </div>
         </div>
       </section>
 
@@ -522,119 +568,6 @@
         </div>
       </section>
 
-      <!-- ============ DOCUMENTATION ============ -->
-      <section class="view" id="view-documentation">
-        <div class="page-head">
-          <div>
-            <h1>Documentation</h1>
-            <p>A quick reference for how each part of this admin platform works.</p>
-          </div>
-        </div>
-
-        <div class="docs-layout">
-          <div class="panel docs-toc-panel">
-            <h2 class="docs-toc-title">On this page</h2>
-            <nav class="docs-toc" id="docsToc">
-              <a href="#docs-dashboard">Dashboard</a>
-              <a href="#docs-inventory">Inventory</a>
-              <a href="#docs-verification">Verification</a>
-              <a href="#docs-transactions">Transactions</a>
-              <a href="#docs-profile">Profile</a>
-            </nav>
-          </div>
-
-          <div class="docs-articles">
-            <div class="panel docs-article" id="docs-dashboard">
-              <h2>Dashboard</h2>
-              <p>The Dashboard gives you a live snapshot of the platform: total listings, active bookings, the host verification queue, and total platform volume. Figures update immediately whenever you add, edit, or remove a listing, booking, or host approval anywhere else in the app.</p>
-            </div>
-            <div class="panel docs-article" id="docs-inventory">
-              <h2>Inventory</h2>
-              <p>Inventory is the Property Directory — every stay listing on the platform. Use <strong>Add Listing</strong> to create a property (name, location, host, nightly price, and verification status). Photos are matched automatically from the location you enter, or you can paste your own photo URLs. Use the checkboxes to select multiple listings and delete them together, or open the <strong>⋮</strong> menu on a single row to edit or delete it. The <strong>Filter</strong> button narrows results by verification status, and <strong>Export Report</strong> downloads the currently filtered list as a CSV file.</p>
-            </div>
-            <div class="panel docs-article" id="docs-verification">
-              <h2>Verification</h2>
-              <p>New hosts who sign up on the TripMate site appear here automatically as pending applications — nothing is pre-populated. Click <strong>Review</strong> on an applicant to load their details into the Badge Preview panel, then <strong>Approve Host</strong> to verify them or <strong>Reject application</strong> to remove them from the queue without deleting their account.</p>
-            </div>
-            <div class="panel docs-article" id="docs-transactions">
-              <h2>Transactions</h2>
-              <p>The Financial Overview tracks every booking as a transaction: a base rate (nights × nightly price), taxes/fees, and a 12% platform commission. Use the eye icon on any row to see the full breakdown. <strong>Export Report</strong> downloads the filtered ledger as a CSV, and <strong>Generate Statement</strong> downloads a summary statement with platform totals included.</p>
-            </div>
-            <div class="panel docs-article" id="docs-profile">
-              <h2>Profile</h2>
-              <p>Update your admin name, email, and phone, and choose whether you receive email or SMS notifications. Your "member since" date reflects the first time this admin panel was opened in this browser. Booking History shows real platform bookings — "Manage" jumps to that booking in the Transactions ledger, and "Book Again" opens a prefilled booking form for the same property.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ============ SUPPORT ============ -->
-      <section class="view" id="view-support">
-        <div class="page-head">
-          <div>
-            <h1>Support</h1>
-            <p>Get help with the TripMate Admin platform.</p>
-          </div>
-        </div>
-
-        <div class="support-layout">
-          <div class="panel support-form-panel">
-            <h2>Send us a message</h2>
-            <p class="support-form-sub">We'll get back to you as soon as possible.</p>
-            <form id="supportForm" novalidate>
-              <div class="field">
-                <label for="supportName">Name</label>
-                <input type="text" id="supportName" placeholder="Your name" required>
-                <p class="field-error" id="supportNameError"></p>
-              </div>
-              <div class="field">
-                <label for="supportEmail">Email Address</label>
-                <input type="email" id="supportEmail" placeholder="you@example.com" required>
-                <p class="field-error" id="supportEmailError"></p>
-              </div>
-              <div class="field">
-                <label for="supportSubject">Subject</label>
-                <select id="supportSubject">
-                  <option>Account issue</option>
-                  <option>Listing / Inventory question</option>
-                  <option>Host verification question</option>
-                  <option>Billing / Transactions question</option>
-                  <option>Something else</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="supportMessage">Message</label>
-                <textarea id="supportMessage" rows="5" placeholder="How can we help?" required></textarea>
-                <p class="field-error" id="supportMessageError"></p>
-              </div>
-              <button type="submit" class="btn-primary btn-block">Send Message</button>
-            </form>
-          </div>
-
-          <div class="panel support-faq-panel">
-            <h2>Frequently asked questions</h2>
-            <div class="faq-list" id="faqList">
-              <details class="faq-item" open>
-                <summary>Why is my dashboard showing all zeros?</summary>
-                <p>This admin panel starts empty. Add a listing under Inventory, then add a booking under Transactions, and every number across the app will update in real time.</p>
-              </details>
-              <details class="faq-item">
-                <summary>How do new hosts get verified?</summary>
-                <p>Anyone who signs up as a host on the TripMate site shows up under Verification automatically. Review their application, then approve or reject it.</p>
-              </details>
-              <details class="faq-item">
-                <summary>Where does the "commission" number come from?</summary>
-                <p>It's calculated as 12% of each booking's base rate (nights × nightly price), matching the same rate used for taxes/fees.</p>
-              </details>
-              <details class="faq-item">
-                <summary>Can I export my data?</summary>
-                <p>Yes — both the Inventory and Transactions pages have an "Export Report" button that downloads the currently filtered table as a CSV file.</p>
-              </details>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- ============ SETTINGS ============ -->
       <section class="view" id="view-settings">
         <div class="page-head">
@@ -656,7 +589,7 @@
             </div>
 
             <div class="field">
-              <label for="settingsRowsPerPage">Rows per page <span class="field-optional">(Inventory &amp; Transactions)</span></label>
+              <label for="settingsRowsPerPage">Rows per page <span class="field-optional">(Inventory &amp; Bookings)</span></label>
               <select id="settingsRowsPerPage">
                 <option value="5">5</option>
                 <option value="8">8</option>
@@ -698,12 +631,51 @@
     <footer class="app-footer">
       <span>© <span id="footerYear"></span> TripMate Internal. All rights reserved.</span>
       <nav class="footer-links">
-        <a href="#" data-action="footer-link">Internal Docs</a>
-        <a href="#" data-action="footer-link">Support Center</a>
         <a href="#" data-action="footer-link">Privacy Policy</a>
       </nav>
     </footer>
 
+  </div>
+</div>
+
+<!-- ============ ADD / EDIT USER MODAL ============ -->
+<div class="modal-overlay" id="userModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+    <div class="modal-head">
+      <h2 id="userModalTitle">Add User</h2>
+      <button class="modal-close" id="userModalClose" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <form id="userForm" novalidate>
+      <input type="hidden" id="userId">
+      <div class="field">
+        <label for="userName">Full Name</label>
+        <input type="text" id="userName" required>
+      </div>
+      <div class="field">
+        <label for="userEmail">Email Address</label>
+        <input type="email" id="userEmail" required>
+      </div>
+      <div class="field">
+        <label for="userPassword">Password <span class="field-optional">(required for new users)</span></label>
+        <input type="password" id="userPassword" minlength="8">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="userRole">Role</label>
+          <select id="userRole"><option value="guest">Guest</option><option value="host">Host</option><option value="admin">Admin</option></select>
+        </div>
+        <div class="field user-checks">
+          <label><input type="checkbox" id="userVerified"> Verified</label>
+          <label><input type="checkbox" id="userActive" checked> Active</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="userCancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary">Save User</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -863,11 +835,11 @@
   </div>
 </div>
 
-<!-- ============ TRANSACTION DETAIL MODAL (read-only) ============ -->
+<!-- ============ BOOKING DETAIL MODAL (read-only) ============ -->
 <div class="modal-overlay" id="transactionDetailOverlay" hidden>
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="transactionDetailTitle">
     <div class="modal-head">
-      <h2 id="transactionDetailTitle">Transaction Details</h2>
+      <h2 id="transactionDetailTitle">Booking Details</h2>
       <button class="modal-close" id="transactionDetailClose" aria-label="Close">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
