@@ -10,6 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentStep = 1;
     const totalSteps = 7;
+    const draftKey = `host_listing_draft:${user.id}`;
+    let uploadedPhotos = [];
+    let blockedDates = new Set();
+    let draftSaveTimer;
+    const previewGrid = document.getElementById('photoPreviewGrid');
+    const calendarGrid = document.getElementById('hostCalendarGrid');
+    const calendarMonthLabel = document.getElementById('calendarMonthLabel');
+    const filterAmenities = amenities => (Array.isArray(amenities) ? amenities : [])
+        .filter(amenity => !/(smoke.?alarm|first.?aid)/i.test(String(amenity)));
     
     // DOM Elements
     const steps = document.querySelectorAll('.wizard-step');
@@ -20,13 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('backBtn');
     const saveExitBtn = document.getElementById('saveExitBtn');
 
-    // 1. Load Draft from LocalStorage
-    loadDraft();
-
-    // 2. Initialize View
-    updateWizardView();
-
-    // 3. Event Listeners
     nextBtn.addEventListener('click', () => {
         if (currentStep < totalSteps) {
             // Save current step data before moving
@@ -91,85 +93,250 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveDraft() {
-        let draft = JSON.parse(localStorage.getItem('host_listing_draft')) || { data: {} };
-        draft.currentStep = currentStep;
-        draft.hostId = user.id;
-        draft.data.basics = {
-            title: document.getElementById('propertyName')?.value || '',
-            propertyType: document.getElementById('propertyType')?.value || '',
-            maxGuests: document.getElementById('guests')?.value || '1',
-            bedrooms: document.getElementById('bedrooms')?.value || '1',
-            bathrooms: document.getElementById('bathrooms')?.value || '1',
-            location: document.getElementById('propertyAddress')?.value || ''
+        const draft = {
+            currentStep,
+            hostId: user.id,
+            data: {
+                basics: {
+                    title: document.getElementById('propertyName').value,
+                    propertyType: document.getElementById('propertyType').value,
+                    maxGuests: document.getElementById('guests').value,
+                    bedrooms: document.getElementById('bedrooms').value,
+                    bathrooms: document.getElementById('bathrooms').value,
+                    location: document.getElementById('propertyAddress').value
+                },
+                pricing: {
+                    pricePerNight: document.getElementById('basePrice').value,
+                    cleaningFee: document.getElementById('cleaningFee').value,
+                    securityDeposit: document.getElementById('securityDeposit').value,
+                    weeklyDiscount: document.getElementById('weeklyDiscount').value
+                },
+                amenities: filterAmenities([...document.querySelectorAll('input[name="amenity"]:checked')].map(input => input.value)),
+                rules: {
+                    checkInTime: document.getElementById('checkInTime').value,
+                    checkOutTime: document.getElementById('checkOutTime').value,
+                    smoking: document.getElementById('ruleSmoking').checked,
+                    pets: document.getElementById('rulePets').checked,
+                    parties: document.getElementById('ruleParties').checked,
+                    custom: document.getElementById('customRules').value
+                },
+                availability: {
+                    minStay: document.getElementById('minStay').value,
+                    maxStay: document.getElementById('maxStay').value,
+                    blockedDates: [...blockedDates]
+                },
+                images: uploadedPhotos.map(photo => photo.dataUrl).filter(Boolean),
+                publish: document.getElementById('publishToggle').checked,
+                lastSaved: new Date().toISOString()
+            }
         };
-        draft.data.pricing = {
-            pricePerNight: document.getElementById('basePrice')?.value || '0',
-            cleaningFee: document.getElementById('cleaningFee')?.value || '0',
-            securityDeposit: document.getElementById('securityDeposit')?.value || '0',
-            weeklyDiscount: document.getElementById('weeklyDiscount')?.value || '0'
-        };
-        draft.data.amenities = [...document.querySelectorAll('input[name="amenity"]:checked')].map(input => input.value);
-        draft.data.rules = {
-            checkInTime: document.getElementById('checkInTime')?.value || '14:00',
-            checkOutTime: document.getElementById('checkOutTime')?.value || '11:00',
-            smoking: document.getElementById('ruleSmoking')?.checked || false,
-            pets: document.getElementById('rulePets')?.checked || false,
-            parties: document.getElementById('ruleParties')?.checked || false,
-            custom: document.getElementById('customRules')?.value || ''
-        };
-        draft.data.lastSaved = new Date().toISOString();
-        localStorage.setItem('host_listing_draft', JSON.stringify(draft));
+        try {
+            localStorage.setItem(draftKey, JSON.stringify(draft));
+        } catch (error) {
+            console.error('Unable to save the host listing draft:', error);
+            alert('The draft could not be saved in this browser. Remove a few photos or free local storage and try again.');
+        }
+    }
+
+    function scheduleDraftSave() {
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = setTimeout(saveDraft, 300);
+    }
+
+    function renderPhotoPreviews() {
+        if (!previewGrid) return;
+        previewGrid.innerHTML = '';
+        uploadedPhotos.forEach((photo, index) => {
+            const item = document.createElement('div');
+            item.className = 'photo-preview-item';
+            item.innerHTML = `
+                <img src="${photo.url}" alt="Property preview ${index + 1}">
+                <button type="button" class="photo-delete-btn" data-index="${index}" aria-label="Remove photo ${index + 1}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="18" x2="18" y2="6"></line></svg>
+                </button>
+                ${index === 0 ? '<div class="cover-badge">Cover</div>' : ''}
+            `;
+            previewGrid.appendChild(item);
+        });
+        previewGrid.querySelectorAll('.photo-delete-btn').forEach(button => {
+            button.addEventListener('click', event => {
+                event.stopPropagation();
+                uploadedPhotos.splice(Number(button.dataset.index), 1);
+                renderPhotoPreviews();
+                saveDraft();
+            });
+        });
+    }
+
+    function renderCalendar() {
+        if (!calendarGrid || !calendarMonthLabel) return;
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        calendarMonthLabel.textContent = `${monthNames[month]} ${year}`;
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        calendarGrid.innerHTML = '';
+        for (let index = 0; index < firstDay; index++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-day empty';
+            calendarGrid.appendChild(empty);
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayElement = document.createElement('button');
+            dayElement.type = 'button';
+            dayElement.className = `calendar-day ${blockedDates.has(date) ? 'blocked' : 'available'}`;
+            dayElement.textContent = day;
+            dayElement.dataset.date = date;
+            dayElement.setAttribute('aria-pressed', String(blockedDates.has(date)));
+            dayElement.addEventListener('click', () => {
+                if (blockedDates.has(date)) blockedDates.delete(date);
+                else blockedDates.add(date);
+                renderCalendar();
+                saveDraft();
+            });
+            calendarGrid.appendChild(dayElement);
+        }
     }
 
     function loadDraft() {
-        const draft = JSON.parse(localStorage.getItem('host_listing_draft'));
-        if (draft && draft.currentStep) {
-            // Uncomment to resume from last saved step:
-            // currentStep = draft.currentStep; 
-            console.log('Draft loaded:', draft);
+        let draft;
+        try {
+            draft = JSON.parse(localStorage.getItem(draftKey) || 'null');
+            const legacyDraft = JSON.parse(localStorage.getItem('host_listing_draft') || 'null');
+            if (!draft && legacyDraft?.hostId != null && String(legacyDraft.hostId) === String(user.id)) {
+                draft = legacyDraft;
+            }
+        } catch (error) {
+            console.error('Unable to read the saved host listing draft:', error);
+            alert('The saved listing draft could not be read.');
+            return;
         }
+        if (!draft?.data) return;
+
+        const basics = draft.data.basics || {};
+        const pricing = draft.data.pricing || {};
+        const rules = draft.data.rules || {};
+        const availability = draft.data.availability || {};
+        const setValue = (id, value) => {
+            if (value !== undefined && value !== null) document.getElementById(id).value = value;
+        };
+        setValue('propertyName', basics.title);
+        setValue('propertyType', basics.propertyType);
+        setValue('guests', basics.maxGuests);
+        setValue('bedrooms', basics.bedrooms);
+        setValue('bathrooms', basics.bathrooms);
+        setValue('propertyAddress', basics.location);
+        setValue('basePrice', pricing.pricePerNight);
+        setValue('cleaningFee', pricing.cleaningFee);
+        setValue('securityDeposit', pricing.securityDeposit);
+        setValue('weeklyDiscount', pricing.weeklyDiscount);
+        setValue('checkInTime', rules.checkInTime);
+        setValue('checkOutTime', rules.checkOutTime);
+        setValue('customRules', rules.custom);
+        setValue('minStay', availability.minStay);
+        setValue('maxStay', availability.maxStay);
+        document.getElementById('ruleSmoking').checked = Boolean(rules.smoking);
+        document.getElementById('rulePets').checked = rules.pets !== false;
+        document.getElementById('ruleParties').checked = Boolean(rules.parties);
+        document.getElementById('publishToggle').checked = Boolean(draft.data.publish);
+        const selectedAmenities = new Set(filterAmenities(draft.data.amenities));
+        document.querySelectorAll('input[name="amenity"]').forEach(input => {
+            input.checked = selectedAmenities.has(input.value);
+        });
+        blockedDates = new Set(availability.blockedDates || []);
+        uploadedPhotos = (draft.data.images || []).map(dataUrl => ({ dataUrl, url: dataUrl }));
+        currentStep = Math.min(totalSteps, Math.max(1, Number(draft.currentStep) || 1));
+        updatePricingPreview();
+        updatePublishStatus();
+        renderPhotoPreviews();
+        renderCalendar();
     }
 
     async function publishListing() {
         saveDraft();
-        const draft = JSON.parse(localStorage.getItem('host_listing_draft') || '{}');
+        const draft = JSON.parse(localStorage.getItem(draftKey) || '{}');
         const basics = draft.data?.basics || {};
         const pricing = draft.data?.pricing || {};
         if (!basics.title || !basics.location || !pricing.pricePerNight || Number(pricing.pricePerNight) <= 0) {
             alert('Complete the property name, address, and nightly price before publishing.');
             return;
         }
+        const requestBody = JSON.stringify({
+            title: basics.title,
+            property_type: basics.propertyType || 'house',
+            location: basics.location,
+            price_per_night: Number(pricing.pricePerNight),
+            cleaning_fee: Number(pricing.cleaningFee) || 0,
+            max_guests: Number(basics.maxGuests) || 1,
+            bedrooms: Number(basics.bedrooms) || 1,
+            bathrooms: Number(basics.bathrooms) || 1,
+            amenities: filterAmenities(draft.data.amenities),
+            rules: draft.data.rules || {},
+            images: uploadedPhotos.map(photo => photo.dataUrl).filter(Boolean),
+            status: document.getElementById('publishToggle')?.checked ? 'published' : 'draft'
+        });
+        if (requestBody.length > 950000) {
+            alert('This listing is too large to upload. Remove some photos and try again.');
+            return;
+        }
         try {
             await apiRequest('/host/listings', {
                 method: 'POST',
-                body: JSON.stringify({
-                    title: basics.title,
-                    property_type: basics.propertyType || 'house',
-                    location: basics.location,
-                    price_per_night: Number(pricing.pricePerNight),
-                    cleaning_fee: Number(pricing.cleaningFee) || 0,
-                    max_guests: Number(basics.maxGuests) || 1,
-                    bedrooms: Number(basics.bedrooms) || 1,
-                    bathrooms: Number(basics.bathrooms) || 1,
-                    amenities: draft.data.amenities || [],
-                    rules: draft.data.rules || {},
-                    images: await Promise.all(uploadedPhotos.map(async photo => {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.readAsDataURL(photo.file);
-    reader.onload = () => resolve(reader.result);
-  });
-})),
-                    status: document.getElementById('publishToggle')?.checked ? 'published' : 'draft'
-                })
+                body: requestBody
             });
         } catch (error) {
             alert(error.message || 'Unable to save listing to Neon.');
             return;
         }
-        localStorage.removeItem('host_listing_draft');
-        alert('Listing saved successfully.');
+        localStorage.removeItem(draftKey);
+        alert(document.getElementById('publishToggle').checked ? 'Listing published successfully.' : 'Listing saved as a draft.');
         window.location.href = 'dashboard.html';
+    }
+
+    function updatePublishStatus() {
+        const isPublished = document.getElementById('publishToggle').checked;
+        document.getElementById('statusLabel').textContent = isPublished ? 'Published' : 'Draft';
+        document.getElementById('statusHint').textContent = isPublished
+            ? 'Your listing will be visible to guests.'
+            : 'Your listing will be saved privately as a draft.';
+        nextBtn.textContent = currentStep === totalSteps
+            ? (isPublished ? 'Publish Listing' : 'Save Draft')
+            : 'Next';
+    }
+
+    async function encodePhoto(file) {
+        if (typeof createImageBitmap !== 'function') {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('Unable to read the selected photo.'));
+                reader.readAsDataURL(file);
+            });
+        }
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, 1400 / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+            bitmap.close();
+            throw new Error('Your browser could not process the selected photo.');
+        }
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close();
+        const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(result => result ? resolve(result) : reject(new Error('Unable to process the selected photo.')), 'image/jpeg', 0.65);
+        });
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(reader.error || new Error('Unable to read the processed photo.'));
+            reader.readAsDataURL(blob);
+        });
     }
 
     // --- Step 1: Basics UI Logic ---
@@ -239,9 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Step 3: Photos Logic ---
     const dropzone = document.getElementById('photoDropzone');
     const photoInput = document.getElementById('photoInput');
-    const previewGrid = document.getElementById('photoPreviewGrid');
-    let uploadedPhotos = [];
-
     if (dropzone && photoInput) {
         // Click to open file dialog
         dropzone.addEventListener('click', () => photoInput.click());
@@ -274,110 +438,37 @@ document.addEventListener('DOMContentLoaded', () => {
             handleFiles(this.files);
         });
 
-        function handleFiles(files) {
+        async function handleFiles(files) {
             const fileArray = [...files].filter(file => file.type.startsWith('image/'));
-            
-            // Limit to 20 total
             const spaceLeft = 20 - uploadedPhotos.length;
             const filesToProcess = fileArray.slice(0, spaceLeft);
-
-            filesToProcess.forEach(file => {
-                const objectUrl = URL.createObjectURL(file);
-                uploadedPhotos.push({ file, url: objectUrl });
-            });
-
-            renderPhotoPreviews();
-            saveDraft();
-        }
-
-        function renderPhotoPreviews() {
-            previewGrid.innerHTML = '';
-            
-            uploadedPhotos.forEach((photo, index) => {
-                const item = document.createElement('div');
-                item.className = 'photo-preview-item';
-                
-                let coverBadge = '';
-                if (index === 0) {
-                    coverBadge = `<div class="cover-badge">Cover</div>`;
-                }
-
-                item.innerHTML = `
-                    <img src="${photo.url}" alt="Property Preview">
-                    <button type="button" class="photo-delete-btn" data-index="${index}">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                    </button>
-                    ${coverBadge}
-                `;
-                previewGrid.appendChild(item);
-            });
-
-            // Bind delete buttons
-            document.querySelectorAll('.photo-delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const index = parseInt(btn.dataset.index);
-                    const photo = uploadedPhotos[index];
-                    URL.revokeObjectURL(photo.url); // Clean up memory
-                    uploadedPhotos.splice(index, 1);
-                    renderPhotoPreviews();
-                    saveDraft();
-                });
-            });
-        }
-    }
-
-    // --- Step 6: Calendar Logic ---
-    const calendarGrid = document.getElementById('hostCalendarGrid');
-    const calendarMonthLabel = document.getElementById('calendarMonthLabel');
-    
-    if (calendarGrid && calendarMonthLabel) {
-        renderCalendar();
-
-        function renderCalendar() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = today.getMonth();
-            
-            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            calendarMonthLabel.textContent = `${monthNames[month]} ${year}`;
-
-            // Get first day of month (0 = Sun, 1 = Mon...)
-            const firstDay = new Date(year, month, 1).getDay();
-            // Get number of days in month
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-            calendarGrid.innerHTML = '';
-
-            // Empty slots before 1st of month
-            for (let i = 0; i < firstDay; i++) {
-                const empty = document.createElement('div');
-                empty.className = 'calendar-day empty';
-                calendarGrid.appendChild(empty);
-            }
-
-            // Days of the month
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dayEl = document.createElement('div');
-                // Randomly block some days for preview purposes, or default to available
-                const isBlocked = (day === 14 || day === 15 || day === 20); 
-                dayEl.className = `calendar-day ${isBlocked ? 'blocked' : 'available'}`;
-                dayEl.textContent = day;
-                dayEl.dataset.date = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                
-                dayEl.addEventListener('click', function() {
-                    if (this.classList.contains('available')) {
-                        this.classList.remove('available');
-                        this.classList.add('blocked');
-                    } else {
-                        this.classList.remove('blocked');
-                        this.classList.add('available');
+            try {
+                for (const file of filesToProcess) {
+                    const dataUrl = await encodePhoto(file);
+                    const currentSize = uploadedPhotos.reduce((total, photo) => total + photo.dataUrl.length, 0);
+                    if (currentSize + dataUrl.length > 700000) {
+                        alert('These photos exceed the safe upload size. Remove a photo or choose smaller images before adding more.');
+                        break;
                     }
-                    saveDraft();
-                });
-
-                calendarGrid.appendChild(dayEl);
+                    uploadedPhotos.push({ dataUrl, url: dataUrl });
+                }
+                renderPhotoPreviews();
+                saveDraft();
+            } catch (error) {
+                alert(error.message || 'Unable to process the selected photos.');
             }
         }
+
     }
+
+    renderCalendar();
+    loadDraft();
+    updateWizardView();
+    updatePublishStatus();
+    document.getElementById('listingForm').addEventListener('input', scheduleDraftSave);
+    document.getElementById('listingForm').addEventListener('change', scheduleDraftSave);
+    document.getElementById('publishToggle').addEventListener('change', () => {
+        updatePublishStatus();
+        saveDraft();
+    });
 });

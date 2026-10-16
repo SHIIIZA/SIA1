@@ -17,6 +17,12 @@
 .property-page {
     background: var(--cream);
     min-height: 100vh;
+    --cream-dark: var(--cream-dim);
+    --ink-light: var(--tm-ink-500);
+    --teal-50: var(--tm-teal-50);
+    --teal-300: #A6C9C2;
+    --teal-500: #2D8278;
+    --teal-600: #226C64;
 }
 
 .top-nav {

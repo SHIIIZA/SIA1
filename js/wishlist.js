@@ -156,6 +156,7 @@
     // DOM elements
     const wishlistGrid = document.getElementById("wishlistGrid");
     const wishlistEmpty = document.getElementById("wishlistEmpty");
+    const wishlistStatus = document.getElementById("wishlistStatus");
     const wishlistSort = document.getElementById("wishlistSort");
     const viewBtns = document.querySelectorAll(".view-btn");
     const userAvatarBtn = document.getElementById("userAvatarBtn");
@@ -185,11 +186,54 @@
         avatarPlaceholder.textContent = initials;
     }
 
-    // Load wishlist from localStorage
+    function readLocalWishlist() {
+        try {
+            const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
+            return saved.filter(item => String(item.userId) === String(user.id));
+        } catch (error) {
+            console.error("Unable to read the saved wishlist:", error);
+            return [];
+        }
+    }
+
+    function saveLocalWishlist(items) {
+        const allItems = (() => {
+            try {
+                return JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
+            } catch (error) {
+                console.error("Unable to read the saved wishlist before updating it:", error);
+                return [];
+            }
+        })();
+        const otherUsers = allItems.filter(item => String(item.userId) !== String(user.id));
+        localStorage.setItem("tripmate_wishlist", JSON.stringify([...otherUsers, ...items]));
+    }
+
+    try {
+        const hostListings = JSON.parse(localStorage.getItem("tripmate_listings") || "[]");
+        hostListings.forEach(listing => {
+            propertyData[listing.id] = {
+                id: listing.id,
+                name: listing.title || "TripMate stay",
+                type: listing.propertyType || "House rental",
+                location: listing.location || "Philippines",
+                price: Number(listing.pricePerNight) || 0,
+                rating: Number(listing.rating) || 5,
+                reviews: Number(listing.reviews) || 0,
+                guests: Number(listing.maxGuests) || 1,
+                amenities: listing.amenities || [],
+                img: listing.images?.[0] || ""
+            };
+        });
+    } catch (error) {
+        console.error("Unable to load locally saved host listings:", error);
+    }
+
+    // Load remote and browser-saved entries together so local/demo saves survive an empty API response.
     async function loadWishlist() {
         try {
             const rows = await apiRequest("/wishlist");
-            const userWishlist = rows.map(item => {
+            const remoteWishlist = rows.map(item => {
                 const listing = item.listings;
                 if (listing) {
                     propertyData[listing.id] = {
@@ -205,12 +249,34 @@
                         img: listing.images?.[0] || ""
                     };
                 }
-                return { propertyId: listing?.id || item.listing_id, savedAt: item.created_at };
+                const propertyId = String(listing?.id ?? item.listing_id);
+                if (!propertyData[propertyId]) {
+                    propertyData[propertyId] = {
+                        id: propertyId,
+                        name: "Saved stay",
+                        type: "Stay",
+                        location: "Location unavailable",
+                        price: 0,
+                        rating: 0,
+                        reviews: 0,
+                        guests: 1,
+                        amenities: [],
+                        img: ""
+                    };
+                }
+                return { propertyId, savedAt: item.created_at || new Date().toISOString() };
             });
-            renderWishlist(userWishlist);
-        } catch {
-            const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-            renderWishlist(wishlist.filter((item) => item.userId === user.id));
+            const merged = new Map(remoteWishlist.map(item => [String(item.propertyId), item]));
+            readLocalWishlist().forEach(item => {
+                const propertyId = String(item.propertyId);
+                if (!merged.has(propertyId)) merged.set(propertyId, { ...item, propertyId });
+            });
+            if (wishlistStatus) wishlistStatus.textContent = "";
+            renderWishlist([...merged.values()]);
+        } catch (error) {
+            console.error("Unable to load the remote wishlist:", error);
+            if (wishlistStatus) wishlistStatus.textContent = "Your saved stays could not be synced. Showing stays saved in this browser.";
+            renderWishlist(readLocalWishlist());
         }
     }
 
@@ -220,6 +286,7 @@
         if (wishlist.length === 0) {
             wishlistGrid.hidden = true;
             wishlistEmpty.hidden = false;
+            wishlistGrid.innerHTML = "";
             return;
         }
 
@@ -228,7 +295,16 @@
 
         const sorted = sortWishlist([...wishlist], currentSort);
         wishlistGrid.innerHTML = sorted
-            .map((item) => createWishlistCard(item, propertyData[item.propertyId]))
+            .map((item) => createWishlistCard(item, propertyData[String(item.propertyId)] || {
+                id: item.propertyId,
+                name: "Saved stay",
+                type: "Stay",
+                location: "Listing details unavailable",
+                price: 0,
+                rating: 0,
+                reviews: 0,
+                img: ""
+            }))
             .join("");
     }
 
@@ -254,7 +330,7 @@
     function createWishlistCard(item, property) {
         if (!property) return "";
 
-        const savedDate = new Date(item.savedAt).toLocaleDateString("en-PH", {
+        const savedDate = new Date(item.savedAt || Date.now()).toLocaleDateString("en-PH", {
             month: "short",
             day: "numeric",
             year: "numeric"
@@ -262,7 +338,7 @@
 
         return `
             <article class="wishlist-card" data-property-id="${property.id}">
-                <a href="property.html?id=${property.id}" class="wishlist-image-link">
+                <a href="property.html?id=${encodeURIComponent(property.id)}" class="wishlist-image-link">
                     <div class="wishlist-image">
                         <img src="${property.img}" alt="${property.name}" loading="lazy">
                         <span class="wishlist-badge">${property.type}</span>
@@ -271,7 +347,7 @@
                 <div class="wishlist-content">
                     <div class="wishlist-header">
                         <h3 class="wishlist-title">
-                            <a href="property.html?id=${property.id}">${property.name}</a>
+                            <a href="property.html?id=${encodeURIComponent(property.id)}">${property.name}</a>
                         </h3>
                         <button class="wishlist-remove" data-property-id="${property.id}" aria-label="Remove from wishlist">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -292,7 +368,7 @@
                     </div>
                     <div class="wishlist-footer">
                         <span class="wishlist-price"><b>${peso(property.price)}</b> <span>/ night</span></span>
-                        <a href="property.html?id=${property.id}" class="btn-primary btn-sm">View Details</a>
+                        <a href="property.html?id=${encodeURIComponent(property.id)}" class="btn-primary btn-sm">View Details</a>
                     </div>
                     <p class="wishlist-saved">Saved on ${savedDate}</p>
                 </div>
@@ -316,26 +392,36 @@
     });
 
     // Remove from wishlist (event delegation)
-    wishlistGrid?.addEventListener("click", (e) => {
+    wishlistGrid?.addEventListener("click", async (e) => {
         const removeBtn = e.target.closest(".wishlist-remove");
         if (!removeBtn) return;
         e.preventDefault();
         e.stopPropagation();
 
         const propertyId = removeBtn.dataset.propertyId;
-        removeFromWishlist(propertyId);
+        removeBtn.disabled = true;
+        await removeFromWishlist(propertyId);
     });
 
     async function removeFromWishlist(propertyId) {
+        const localWishlist = readLocalWishlist();
+        const matchingLocal = localWishlist.some(item => String(item.propertyId) === String(propertyId));
         try {
             const rows = await apiRequest("/wishlist");
-            const item = rows.find(row => String(row.listing_id) === String(propertyId));
+            const item = rows.find(row => String(row.listing_id ?? row.listings?.id) === String(propertyId));
             if (item) await apiRequest(`/wishlist/${item.id}`, { method: "DELETE" });
-        } catch {
-            const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-            localStorage.setItem("tripmate_wishlist", JSON.stringify(wishlist.filter(item => !(item.userId === user.id && item.propertyId === propertyId))));
+        } catch (error) {
+            console.error("Unable to remove the stay from the remote wishlist:", error);
+            if (!matchingLocal) {
+                if (wishlistStatus) wishlistStatus.textContent = "This stay could not be removed from your account. Please try again.";
+                const button = wishlistGrid.querySelector(`.wishlist-remove[data-property-id="${CSS.escape(String(propertyId))}"]`);
+                if (button) button.disabled = false;
+                return;
+            }
+            if (wishlistStatus) wishlistStatus.textContent = "Removed from this browser, but the account wishlist could not be synced.";
         }
-        loadWishlist();
+        saveLocalWishlist(localWishlist.filter(item => String(item.propertyId) !== String(propertyId)));
+        await loadWishlist();
     }
 
     // User dropdown toggle

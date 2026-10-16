@@ -2,6 +2,13 @@
    TripMate — Wishlist Styles
    ========================================== */
 
+.wishlist-page {
+    --teal-50: #F2F7F5;
+    --teal-200: #C8DFDA;
+    --teal-600: #226C64;
+    --ink-light: #687571;
+}
+
 .wishlist-page .dashboard-container {
     grid-template-columns: 1fr;
 }
@@ -130,7 +137,7 @@
 .wishlist-image {
     position: relative;
     aspect-ratio: 16 / 10;
-    overflow: hidden.
+    overflow: hidden;
 }
 
 .wishlist-image img {
@@ -226,7 +233,7 @@
 .wishlist-rating {
     display: flex;
     align-items: center;
-    gap: 4px.
+    gap: 4px;
 }
 
 .wishlist-rating svg {
@@ -238,7 +245,7 @@
     align-items: center;
     justify-content: space-between;
     padding-top: 12px;
-    border-top: 1px solid var(--cream-dark).
+    border-top: 1px solid var(--cream-dark);
 }
 
 .wishlist-price {
@@ -289,7 +296,7 @@
         grid-column: 2;
         flex-direction: row;
         align-items: center;
-        justify-content: space-between.
+        justify-content: space-between;
     }
 
     .wishlist-grid[data-view="list"] .wishlist-saved {
@@ -297,14 +304,14 @@
     }
 
     .wishlist-meta {
-        flex-wrap: wrap.
+        flex-wrap: wrap;
     }
 }
 
 @media (max-width: 480px) {
     .wishlist-grid[data-view="list"] .wishlist-card {
         grid-template-columns: 1fr;
-        gap: 8px.
+        gap: 8px;
     }
 
     .wishlist-grid[data-view="list"] .wishlist-image {
@@ -315,12 +322,12 @@
     .wishlist-grid[data-view="list"] .wishlist-footer {
         grid-column: 1;
         flex-direction: column;
-        align-items: stretch.
+        align-items: stretch;
     }
 
     .wishlist-grid[data-view="list"] .btn-sm {
         width: 100%;
-        text-align: center.
+        text-align: center;
     }
 }
 /* homepage.css's .btn-primary is styled cream-on-dark-hero for the homepage/stays

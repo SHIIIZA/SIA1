@@ -88,7 +88,8 @@
                 reviews: Number(item.reviews) || 0,
                 guests: Number(item.maxGuests) || 1,
                 amenities: item.amenities || [],
-                img: item.images?.[0] || ""
+                img: item.images?.[0] || "",
+                source: "local"
             });
         });
     } catch { /* Ignore malformed local data and keep demo stays available. */ }
@@ -107,7 +108,8 @@
                 reviews: Number(item.review_count) || 0,
                 guests: Number(item.max_guests),
                 amenities: item.amenities || [],
-                img: item.images?.[0] || ""
+                img: item.images?.[0] || "",
+                source: "database"
             }));
             render();
         } catch (error) {
@@ -133,7 +135,8 @@
     const currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
     try {
         const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-        saved.filter(item => !currentUser || item.userId === currentUser.id).forEach(item => state.favorites.add(item.propertyId));
+        saved.filter(item => currentUser && String(item.userId) === String(currentUser.id))
+            .forEach(item => state.favorites.add(String(item.propertyId)));
     } catch { /* Keep an empty wishlist when local data is malformed. */ }
 
     const grid = document.getElementById("staysGrid");
@@ -160,7 +163,7 @@
     });
 
     function cardHTML(l) {
-        const isFav = state.favorites.has(l.id);
+        const isFav = state.favorites.has(String(l.id));
         const detailUrl = `property.html?id=${encodeURIComponent(l.id)}`;
         return `
       <article class="listing-card" data-id="${l.id}">
@@ -390,28 +393,68 @@
         const card = favBtn.closest(".listing-card");
         if (!card) return;
         const id = card.dataset.id;
-        if (state.favorites.has(id)) {
-            state.favorites.delete(id);
+        const selected = listings.find(item => String(item.id) === String(id));
+        if (!selected) return;
+        const key = String(id);
+        const wasFavorite = state.favorites.has(key);
+        if (wasFavorite) {
+            state.favorites.delete(key);
             favBtn.classList.remove("is-active");
         } else {
             if (!currentUser) {
                 window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
                 return;
             }
-            state.favorites.add(id);
+            state.favorites.add(key);
             favBtn.classList.add("is-active");
         }
+
         if (currentUser) {
             try {
+                const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
+                const userSaved = saved.filter(item => String(item.userId) === String(currentUser.id) &&
+                    String(item.propertyId) !== key);
+                if (!wasFavorite) {
+                    userSaved.push({
+                        userId: currentUser.id,
+                        propertyId: key,
+                        savedAt: new Date().toISOString()
+                    });
+                }
+                const otherUsers = saved.filter(item => String(item.userId) !== String(currentUser.id));
+                localStorage.setItem("tripmate_wishlist", JSON.stringify([...otherUsers, ...userSaved]));
+            } catch (error) {
+                console.error("Unable to save the wishlist in this browser:", error);
+            }
+        }
+
+        if (currentUser && selected.source === "database") {
+            try {
                 const existing = await apiRequest("/wishlist");
-                const saved = existing.find(item => String(item.listing_id) === String(id));
-                if (state.favorites.has(id) && !saved) {
-                    await apiRequest("/wishlist", { method: "POST", body: JSON.stringify({ listing_id: Number(id) }) });
-                } else if (!state.favorites.has(id) && saved) {
+                const saved = existing.find(item => String(item.listing_id ?? item.listings?.id) === key);
+                if (!wasFavorite && !saved) {
+                    await apiRequest("/wishlist", { method: "POST", body: JSON.stringify({ listing_id: selected.id }) });
+                } else if (wasFavorite && saved) {
                     await apiRequest(`/wishlist/${saved.id}`, { method: "DELETE" });
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Unable to sync the wishlist with the account:", error);
+                if (wasFavorite) state.favorites.add(key);
+                else state.favorites.delete(key);
+                favBtn.classList.toggle("is-active", wasFavorite);
+                try {
+                    const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
+                    const otherUsers = saved.filter(item => String(item.userId) !== String(currentUser.id));
+                    const userSaved = saved.filter(item => String(item.userId) === String(currentUser.id) &&
+                        String(item.propertyId) !== key);
+                    if (wasFavorite) {
+                        userSaved.push({ userId: currentUser.id, propertyId: key, savedAt: new Date().toISOString() });
+                    }
+                    localStorage.setItem("tripmate_wishlist", JSON.stringify([...otherUsers, ...userSaved]));
+                } catch (storageError) {
+                    console.error("Unable to restore the browser wishlist after sync failed:", storageError);
+                }
+                alert("Your wishlist could not be synced with your account. Please try again.");
             }
         }
     });
