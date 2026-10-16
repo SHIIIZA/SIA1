@@ -215,7 +215,7 @@ export function initializeAdminAccount() {
     if (!adminAccountPromise) adminAccountPromise = ensureAdminAccount();
     return adminAccountPromise;
 }
-
+ 
 function signToken(user) {
     const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + 7 * 86400000 })).toString("base64url");
     const signature = createHmac("sha256", config.jwtSecret).update(payload).digest("base64url");

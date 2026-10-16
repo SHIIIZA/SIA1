@@ -171,7 +171,20 @@ body.booking-page {
 }
 
 .block-icon {
-    font-size: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--tm-radius-sm);
+    background: var(--tm-teal-50);
+    border: 1px solid var(--tm-teal-100);
+    color: var(--tm-teal-800);
+    flex-shrink: 0;
+}
+
+.block-icon svg {
+    stroke: var(--tm-teal-800);
 }
 
 .field {

@@ -22,7 +22,7 @@
             <a href="homepage.html" class="logo">
                 <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
             </a>
-            <div class="nav-links">
+            <div class="nav-links" id="primaryNavLinks">
                 <a href="stays.html">Stays</a>
                 <a href="homepage.html#how">How it works</a>
                 <a href="signup.html?type=host">Become a Host</a>
@@ -92,7 +92,6 @@
                         <path d="M21 21l-4.3-4.3" />
                     </svg>
                 </button>
-                <button class="save-search-btn" id="saveSearchBtn" type="button" aria-label="Save this search">Save search</button>
             </div>
         </div>
     </div>
@@ -203,29 +202,34 @@
     </main>
 
     <!-- ============ FOOTER (reused from homepage) ============ -->
-     <footer>
+    <footer>
         <div class="footer-top">
             <div class="footer-brand">
-                <a href="#" class="logo">
-                    <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
-                </a>
+                <div class="logo">
+                    <span class="logo-mark">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12L11 4L21 12L19 12L19 20H13V14H9V20H5V12H3Z" fill="white" />
+                        </svg>
+                    </span>
+                    TripMate
+                </div>
                 <p>A Filipino-built platform for booking hotels and house rentals across the Philippines.</p>
             </div>
             <div class="footer-cols">
                 <div class="footer-col">
                     <h4>Explore</h4>
                     <a href="stays.html">Stays</a>
-                    <a href="#how">How it works</a>
-                    <a href="host.html">Become a Host</a>
+                    <a href="homepage.html#how">How it works</a>
+                    <a href="signup.html?type=host">Become a Host</a>
                 </div>
                 <div class="footer-col">
                     <h4>Support</h4>
-                    <a href="#">Cancellation policy</a>
-                    <a href="#">Contact us</a>
+                    <a href="cancellation.html">Cancellation policy</a>
+                    <a href="contactus.html">Contact us</a>
                 </div>
                 <div class="footer-col">
                     <h4>Company</h4>
-                    <a href="#">About</a>
+                    <a href="about.html">About</a>
                 </div>
             </div>
         </div>
@@ -238,63 +242,8 @@
  
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/nav-auth.js"></script>
     <script src="js/stays.js"></script>
-    <script>
-        // Initialize user menu on stays page
-        (function() {
-            const user = JSON.parse(localStorage.getItem("tripmate_user") || "null");
-            const session = JSON.parse(localStorage.getItem("tripmate_session") || "null");
-            const isLoggedIn = !!user && !!session;
-
-            const navGetStarted = document.getElementById("navGetStarted");
-            const navLogin = document.getElementById("navLogin");
-            const userMenu = document.getElementById("userMenu");
-            const avatarPlaceholder = document.getElementById("avatarPlaceholder");
-            const dropdownName = document.getElementById("dropdownName");
-            const dropdownEmail = document.getElementById("dropdownEmail");
-            const logoutBtn = document.getElementById("logoutBtn");
-            const userAvatarBtn = document.getElementById("userAvatarBtn");
-            const userDropdown = document.getElementById("userDropdown");
-
-            if (isLoggedIn) {
-                // Show logged-in state
-                if (navGetStarted) navGetStarted.style.display = "none";
-                if (navLogin) navLogin.style.display = "none";
-                if (userMenu) userMenu.style.display = "flex";
-
-                // Populate user info
-                if (dropdownName) dropdownName.textContent = user.name || "Guest";
-                if (dropdownEmail) dropdownEmail.textContent = user.email || "";
-                if (user.name && avatarPlaceholder) {
-                    const initials = user.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-                    avatarPlaceholder.textContent = initials;
-                }
-            }
-
-            // Dropdown toggle
-            if (userAvatarBtn && userDropdown) {
-                userAvatarBtn.addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    userDropdown.classList.toggle("open");
-                });
-            }
-
-            document.addEventListener("click", (e) => {
-                if (userDropdown && userAvatarBtn && !userAvatarBtn.contains(e.target) && !userDropdown.contains(e.target)) {
-                    userDropdown.classList.remove("open");
-                }
-            });
-
-            // Logout
-            if (logoutBtn) {
-                logoutBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    logoutUser();
-                    window.location.href = "homepage.html";
-                });
-            }
-        })();
-    </script>
 </body>
-
+ 
 </html>

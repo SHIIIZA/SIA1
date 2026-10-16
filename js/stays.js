@@ -1,6 +1,9 @@
 (function () {
     "use strict";
 
+    /* ---------------------------------------------------------
+       Dataset
+    --------------------------------------------------------- */
     let listings = [
         {
             id: "happy-hut", name: "Happy Hut", type: "Cabin",
@@ -91,9 +94,23 @@
                 img: item.images?.[0] || ""
             });
         });
-    } catch { /* Ignore malformed local data and keep demo stays available. */ }
+    }
+
+    function loadHostListings() {
+        try {
+            const stored = JSON.parse(localStorage.getItem("tripmate_listings") || "[]");
+            if (!Array.isArray(stored)) return;
+            addListings(
+                stored.filter(item => item && (item.status === "published" || item.status === "active")),
+                "host"
+            );
+        } catch (error) {
+            console.warn("Unable to load locally saved stays:", error.message);
+        }
+    }
 
     async function loadDatabaseListings() {
+        if (typeof apiRequest !== "function") return;
         try {
             const remoteListings = await apiRequest("/listings");
             const remoteIds = new Set(remoteListings.map(item => String(item.id)));
@@ -111,12 +128,18 @@
             })));
             render();
         } catch (error) {
-            console.warn("Database listings unavailable:", error.message);
+            console.warn("Database listings unavailable; showing local stays:", error.message);
         }
     }
 
+    listings = listings.map(item => ({ ...item, source: "demo" }));
+    loadHostListings();
+
     const peso = (n) => "\u20B1" + Math.round(n).toLocaleString("en-PH");
 
+    /* ---------------------------------------------------------
+       State
+    --------------------------------------------------------- */
     const priceBounds = { min: 800, max: 6000 };
     const state = {
         search: "",
@@ -186,10 +209,13 @@
       </article>`;
     }
 
+    /* ---------------------------------------------------------
+       Filtering + sorting
+    --------------------------------------------------------- */
     function applyFilters() {
         let out = listings.filter((l) => {
             if (state.search) {
-                const hay = (l.name + " " + l.location).toLowerCase();
+                const hay = [l.name, l.location, l.type, ...l.amenities].join(" ").toLowerCase();
                 if (!hay.includes(state.search.toLowerCase())) return false;
             }
             if (state.types.size && !state.types.has(l.type)) return false;
@@ -215,25 +241,19 @@
 
     function render() {
         const results = applyFilters();
-        if (resultsCount) resultsCount.textContent = `${results.length} stay${results.length === 1 ? "" : "s"}`;
-        if (grid) {
-            grid.innerHTML = results.map(cardHTML).join("");
-            grid.style.display = results.length === 0 ? "none" : "grid";
-        }
-        if (emptyState) emptyState.hidden = results.length !== 0;
+        resultsCount.textContent = `${results.length} stay${results.length === 1 ? "" : "s"}`;
+        grid.innerHTML = results.map(cardHTML).join("");
+        emptyState.hidden = results.length !== 0;
+        grid.style.display = results.length === 0 ? "none" : "grid";
         renderChips();
-        const params = new URLSearchParams();
-        if (state.search) params.set("search", state.search);
-        if (state.sort !== "recommended") params.set("sort", state.sort);
-        if (state.minPrice !== priceBounds.min) params.set("minPrice", state.minPrice);
-        if (state.maxPrice !== priceBounds.max) params.set("maxPrice", state.maxPrice);
-        window.history.replaceState({}, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
     }
 
+    /* ---------------------------------------------------------
+       Active filter chips
+    --------------------------------------------------------- */
     function renderChips() {
-        if (!activeChips) return;
         const chips = [];
-        if (state.search) chips.push({ key: "search", label: `"${state.search}"` });
+        if (state.search) chips.push({ key: "search", label: `"${escapeHtml(state.search)}"` });
         state.types.forEach((t) => chips.push({ key: "type", value: t, label: t }));
         state.amenities.forEach((a) => chips.push({ key: "amenity", value: a, label: a }));
         if (state.minRating > 0) chips.push({ key: "rating", label: `${state.minRating}+ rating` });
@@ -243,20 +263,20 @@
         }
 
         activeChips.innerHTML = chips.map((c) =>
-            `<span class="chip" data-key="${c.key}" data-value="${c.value || ""}">${c.label}<button type="button" aria-label="Remove filter">&times;</button></span>`
+            `<span class="chip" data-key="${c.key}" data-value="${escapeHtml(c.value || "")}">${c.label}<button type="button" aria-label="Remove filter">&times;</button></span>`
         ).join("");
     }
 
-    activeChips?.addEventListener("click", (e) => {
+    activeChips.addEventListener("click", (e) => {
         const chip = e.target.closest(".chip");
         if (!chip) return;
         const key = chip.dataset.key;
         const value = chip.dataset.value;
-        if (key === "search") { state.search = ""; if (searchInput) searchInput.value = ""; }
+        if (key === "search") { state.search = ""; searchInput.value = ""; }
         if (key === "type") { state.types.delete(value); syncCheckboxes("#typeList", state.types); }
         if (key === "amenity") { state.amenities.delete(value); syncCheckboxes("#amenityList", state.amenities); }
-        if (key === "rating") { state.minRating = 0; const r0 = document.querySelector('input[name="rating"][value="0"]'); if (r0) r0.checked = true; }
-        if (key === "guests") { state.guests = 1; if (filterGuestCount) filterGuestCount.textContent = "1"; }
+        if (key === "rating") { state.minRating = 0; document.querySelector('input[name="rating"][value="0"]').checked = true; }
+        if (key === "guests") { state.guests = 1; filterGuestCount.textContent = "1"; }
         if (key === "price") { resetPriceRange(); }
         render();
     });
@@ -267,32 +287,28 @@
         });
     }
 
-    searchInput?.addEventListener("input", () => {
+    /* ---------------------------------------------------------
+       Search
+    --------------------------------------------------------- */
+    searchInput.addEventListener("input", () => {
         state.search = searchInput.value.trim();
         render();
     });
-    document.getElementById("heroSearchBtn")?.addEventListener("click", () => {
-        document.querySelector(".stays-main")?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("heroSearchBtn").addEventListener("click", () => {
+        document.querySelector(".stays-main").scrollIntoView({ behavior: "smooth" });
     });
 
-    document.getElementById("saveSearchBtn")?.addEventListener("click", async () => {
-        if (!currentUser) {
-            window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
-            return;
-        }
-        try {
-            await apiRequest("/saved-searches", { method: "POST", body: JSON.stringify({ search_name: state.search || "Trip search", filters: { search: state.search, minPrice: state.minPrice, maxPrice: state.maxPrice, sort: state.sort, guests: state.guests } }) });
-            showToast("Search saved.");
-        } catch (error) {
-            showToast(error.message || "Unable to save search.", true);
-        }
-    });
-
-    sortSelect?.addEventListener("change", () => {
+    /* ---------------------------------------------------------
+       Sort
+    --------------------------------------------------------- */
+    sortSelect.addEventListener("change", () => {
         state.sort = sortSelect.value;
         render();
     });
 
+    /* ---------------------------------------------------------
+       Property type + amenities checkboxes
+    --------------------------------------------------------- */
     document.querySelectorAll("#typeList input").forEach((cb) => {
         cb.addEventListener("change", () => {
             cb.checked ? state.types.add(cb.value) : state.types.delete(cb.value);
@@ -306,6 +322,9 @@
         });
     });
 
+    /* ---------------------------------------------------------
+       Rating radios
+    --------------------------------------------------------- */
     document.querySelectorAll('input[name="rating"]').forEach((r) => {
         r.addEventListener("change", () => {
             state.minRating = Number(r.value);
@@ -313,33 +332,38 @@
         });
     });
 
-    document.getElementById("filterGuestMinus")?.addEventListener("click", () => {
+    /* ---------------------------------------------------------
+       Guest stepper
+    --------------------------------------------------------- */
+    document.getElementById("filterGuestMinus").addEventListener("click", () => {
         if (state.guests > 1) {
             state.guests -= 1;
-            if (filterGuestCount) filterGuestCount.textContent = state.guests;
+            filterGuestCount.textContent = state.guests;
             render();
         }
     });
-    document.getElementById("filterGuestPlus")?.addEventListener("click", () => {
+    document.getElementById("filterGuestPlus").addEventListener("click", () => {
         if (state.guests < 10) {
             state.guests += 1;
-            if (filterGuestCount) filterGuestCount.textContent = state.guests;
+            filterGuestCount.textContent = state.guests;
             render();
         }
     });
 
+    /* ---------------------------------------------------------
+       Dual price range slider
+    --------------------------------------------------------- */
     function updatePriceUI() {
-        if (!priceMin || !priceMax || !priceFill) return;
         let lo = Number(priceMin.value);
         let hi = Number(priceMax.value);
         if (lo > hi - 200) {
-            lo = hi - 200;
-            priceMin.value = lo;
+            if (this === priceMin) { lo = hi - 200; priceMin.value = lo; }
+            else { hi = lo + 200; priceMax.value = hi; }
         }
         state.minPrice = lo;
         state.maxPrice = hi;
-        if (priceMinLabel) priceMinLabel.textContent = lo.toLocaleString("en-PH");
-        if (priceMaxLabel) priceMaxLabel.textContent = hi.toLocaleString("en-PH");
+        priceMinLabel.textContent = lo.toLocaleString("en-PH");
+        priceMaxLabel.textContent = hi.toLocaleString("en-PH");
 
         const range = priceBounds.max - priceBounds.min;
         const leftPct = ((lo - priceBounds.min) / range) * 100;
@@ -411,28 +435,34 @@
         state.guests = 1;
         state.sort = "recommended";
 
-        if (searchInput) searchInput.value = "";
-        if (sortSelect) sortSelect.value = "recommended";
+        searchInput.value = "";
+        sortSelect.value = "recommended";
         document.querySelectorAll("#typeList input, #amenityList input").forEach((cb) => (cb.checked = false));
-        const r0 = document.querySelector('input[name="rating"][value="0"]');
-        if (r0) r0.checked = true;
-        if (filterGuestCount) filterGuestCount.textContent = "1";
+        document.querySelector('input[name="rating"][value="0"]').checked = true;
+        filterGuestCount.textContent = "1";
         resetPriceRange();
         render();
     }
-    document.getElementById("clearFilters")?.addEventListener("click", clearAll);
-    document.getElementById("emptyClearBtn")?.addEventListener("click", clearAll);
+    document.getElementById("clearFilters").addEventListener("click", clearAll);
+    document.getElementById("emptyClearBtn").addEventListener("click", clearAll);
 
+    /* ---------------------------------------------------------
+       Mobile filter drawer
+    --------------------------------------------------------- */
     const filtersPanel = document.getElementById("filtersPanel");
-    document.getElementById("filtersToggle")?.addEventListener("click", () => filtersPanel?.classList.add("is-open"));
-    document.getElementById("filtersClose")?.addEventListener("click", () => filtersPanel?.classList.remove("is-open"));
+    document.getElementById("filtersToggle").addEventListener("click", () => filtersPanel.classList.add("is-open"));
+    document.getElementById("filtersClose").addEventListener("click", () => filtersPanel.classList.remove("is-open"));
 
+    /* ---------------------------------------------------------
+       Mobile nav (same behaviour as homepage.js)
+    --------------------------------------------------------- */
     const navToggle = document.querySelector(".nav-toggle");
     const navLinks = document.querySelector(".nav-links");
     if (navToggle && navLinks) {
         navToggle.addEventListener("click", () => {
             const isOpen = navLinks.style.display === "flex";
             navLinks.style.display = isOpen ? "none" : "flex";
+            navToggle.setAttribute("aria-expanded", String(!isOpen));
             navLinks.style.flexDirection = "column";
             navLinks.style.position = "absolute";
             navLinks.style.top = "70px";
@@ -447,13 +477,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const incomingSearch = urlParams.get('search');
-    const incomingCheckIn = urlParams.get('checkin');
-    const incomingCheckOut = urlParams.get('checkout');
-    const incomingSort = urlParams.get('sort');
-    const incomingMinPrice = Number(urlParams.get('minPrice'));
-    const incomingMaxPrice = Number(urlParams.get('maxPrice'));
-
-    if (incomingSearch && searchInput) {
+    if (incomingSearch) {
         state.search = incomingSearch;
         searchInput.value = incomingSearch;
     }

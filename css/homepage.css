@@ -56,7 +56,7 @@ nav {
     justify-content: space-between;
     padding: 28px clamp(20px, 5vw, 64px) 0;
     position: relative;
-    z-index: 5;
+    z-index: 20;
 }
 
 .logo {
@@ -176,7 +176,8 @@ nav {
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    min-width: 220px;
+    width: min(280px, calc(100vw - 32px));
+    min-width: 0;
     background: var(--white);
     border: 1px solid var(--cream-dark);
     border-radius: 16px;
@@ -877,6 +878,67 @@ footer {
 }
 
 @media (max-width: 600px) {
+    nav {
+        padding-top: 18px;
+    }
+
+    .logo-img,
+    .logo img {
+        height: 40px;
+    }
+
+    .nav-auth {
+        gap: 0;
+    }
+
+    .user-dropdown {
+        position: fixed;
+        top: 70px;
+        right: 16px;
+        width: min(280px, calc(100vw - 32px));
+        max-height: calc(100vh - 86px);
+        overflow-y: auto;
+    }
+
+    .hero {
+        overflow: visible;
+    }
+
+    .hero-body {
+        padding-top: 42px;
+        padding-bottom: 52px;
+    }
+
+    .hero-copy h1 {
+        font-size: clamp(36px, 11vw, 52px);
+    }
+
+    .stay-card {
+        max-width: none;
+    }
+
+    .search-wrap {
+        margin: -26px 16px 0;
+    }
+
+    .search-bar {
+        display: block;
+    }
+
+    .search-field {
+        padding: 15px 18px;
+        border-bottom: 1px solid var(--cream-dim);
+    }
+
+    .search-field:last-of-type {
+        border-bottom: none;
+    }
+
+    .search-btn {
+        width: 100%;
+        min-height: 50px;
+    }
+
     .listings-grid {
         grid-template-columns: 1fr;
     }
