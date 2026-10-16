@@ -20,69 +20,13 @@ const config = {
     apiUrl: process.env.NEON_API_URL || env.NEON_API_URL,
     authUrl: process.env.NEON_AUTH_URL || env.NEON_AUTH_URL,
     apiKey: process.env.NEON_API_KEY || env.NEON_API_KEY,
-    databaseUrl: process.env.DATABASE_URL || process.env.NEON_DATABASE_URL || process.env.NETLIFY_DATABASE_URL || env.DATABASE_URL || env.NEON_DATABASE_URL || env.NETLIFY_DATABASE_URL,
-    paymongoSecretKey: String(process.env.PAYMONGO_SECRET_KEY || env.PAYMONGO_SECRET_KEY || "").trim(),
+    databaseUrl: process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || env.NETLIFY_DATABASE_URL || env.DATABASE_URL,
     jwtSecret: process.env.JWT_SECRET || env.JWT_SECRET || "change-this-secret",
-    port: Number(process.env.PORT || env.PORT || 3000),
-    frontendUrl: process.env.FRONTEND_URL || env.FRONTEND_URL || "http://localhost:3000"
+    port: Number(process.env.PORT || env.PORT || 3000)
 };
-
-function isPlaceholder(value) {
-    return !value || /(?:replace_with|user:password@host|change-this)/i.test(value);
-}
-
-function getFrontendUrl(req) {
-    if (!isPlaceholder(config.frontendUrl) && config.frontendUrl !== "http://localhost:3000") {
-        return config.frontendUrl.replace(/\/$/, "");
-    }
-
-    const forwardedProto = req.headers["x-forwarded-proto"] || "http";
-    const protocol = String(forwardedProto).split(",")[0].trim();
-    const host = req.headers["x-forwarded-host"] || req.headers.host;
-    return host ? `${protocol}://${host}`.replace(/\/$/, "") : "http://localhost:3000";
-}
 
 const ADMIN_USERNAME = "admin";
 const ADMIN_PASSWORD = "admin1234";
-
-const CATALOG_LISTINGS = [
-    {
-        title: "Happy Hut", property_type: "Cabin", location: "San Felipe, Zambales",
-        price_per_night: 2000, max_guests: 4, bedrooms: 1, bathrooms: 1,
-        images: ["https://cf.bstatic.com/xdata/images/hotel/max1024x768/630810990.jpg?k=f0a258fd952f19c7285f4e99e64664bc423cd779166b639a29d87037cb90b2ac&o="],
-        amenities: ["Wifi", "Kitchen", "Beachfront", "Pet friendly"]
-    },
-    {
-        title: "Baey bogan Homestay", property_type: "House rental", location: "Sagada, Mountain Province",
-        price_per_night: 1800, max_guests: 4, bedrooms: 2, bathrooms: 1,
-        images: ["https://cf.bstatic.com/xdata/images/hotel/max1024x768/184656762.jpg?k=03df05cdd232e5aec61fb79b29314d5d84e8eb5904f33efa84a05dd9b1800e80&o="],
-        amenities: ["Wifi", "Kitchen", "Air conditioning"]
-    },
-    {
-        title: "Baguio Holiday Villas", property_type: "Villa", location: "Baguio City, Benguet",
-        price_per_night: 4300, max_guests: 6, bedrooms: 3, bathrooms: 2,
-        images: ["https://pix8.agoda.net/hotelImages/275905/0/2bfa720cb4d3471781e35efcbe6c3dfe.jpg?ce=2&s=375x"],
-        amenities: ["Wifi", "Kitchen", "Air conditioning", "Pet friendly"]
-    },
-    {
-        title: "Sunset Villa", property_type: "Villa", location: "Coron, Palawan",
-        price_per_night: 5200, max_guests: 8, bedrooms: 4, bathrooms: 3,
-        images: ["https://discovery.s14-host.com/qkUByrarp5PILHjccAD3jHDhtozxLY-metaU3Vuc2V0LVZpbGxhLURlbHV4ZS1WZXJhbmRhLmpwZw==-.jpg"],
-        amenities: ["Wifi", "Pool", "Kitchen", "Beachfront"]
-    },
-    {
-        title: "Kubo Homestay", property_type: "Cabin", location: "El Nido, Palawan",
-        price_per_night: 3600, max_guests: 4, bedrooms: 2, bathrooms: 1,
-        images: ["https://a0.muscache.com/im/pictures/d64b6a63-3599-4fa3-a6dc-3062a952202b.jpg?im_w=720"],
-        amenities: ["Wifi", "Beachfront"]
-    },
-    {
-        title: "Ivatan Stone House", property_type: "House rental", location: "Basco, Batanes",
-        price_per_night: 2600, max_guests: 2, bedrooms: 1, bathrooms: 1,
-        images: ["https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/1d/9d/8d/house-of-dakay-in-ivana.jpg?w=900&h=500&s=1"],
-        amenities: ["Wifi", "Kitchen", "Pet friendly"]
-    }
-];
 
 let sql = null;
 let databaseConfigError = null;
@@ -95,7 +39,7 @@ if (config.databaseUrl) {
 }
 
 if (!sql && (!config.apiUrl || !config.apiKey)) {
-    console.warn("Missing Neon DATABASE_URL/NEON_DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
+    console.warn("Missing NETLIFY_DATABASE_URL/DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
 }
 
 function json(res, status, data) {
@@ -221,28 +165,6 @@ async function neon(path, options = {}) {
     return data;
 }
 
-async function paymongo(path, options = {}) {
-    if (isPlaceholder(config.paymongoSecretKey) || !/^sk_(test|live)_/i.test(config.paymongoSecretKey)) {
-        throw Object.assign(new Error("PayMongo is not configured. Set PAYMONGO_SECRET_KEY on the server."), { status: 503 });
-    }
-    const response = await fetch(`https://api.paymongo.com/v1${path}`, {
-        ...options,
-        headers: {
-            Authorization: `Basic ${Buffer.from(`${config.paymongoSecretKey}:`).toString("base64")}`,
-            "Content-Type": "application/json",
-            ...(options.headers || {})
-        }
-    });
-    const text = await response.text();
-    let data;
-    try { data = text ? JSON.parse(text) : null; } catch { data = { error: text }; }
-    if (!response.ok) {
-        const message = data?.errors?.[0]?.detail || data?.error || `PayMongo request failed (${response.status})`;
-        throw Object.assign(new Error(message), { status: response.status });
-    }
-    return data;
-}
-
 async function databaseHealth() {
     if (databaseConfigError) return { configured: false, error: databaseConfigError };
     if (sql) {
@@ -293,31 +215,7 @@ export function initializeAdminAccount() {
     if (!adminAccountPromise) adminAccountPromise = ensureAdminAccount();
     return adminAccountPromise;
 }
-
-export async function initializeCatalogListings() {
-    if (!sql && (!config.apiUrl || !config.apiKey)) return;
-    const adminRows = await neon(`/users?username=eq.${ADMIN_USERNAME}&select=id`);
-    const hostId = adminRows[0]?.id;
-    if (!hostId) return;
-
-    const existing = await neon("/listings?select=title");
-    const existingTitles = new Set(existing.map(item => String(item.title || "").toLowerCase()));
-    for (const listing of CATALOG_LISTINGS) {
-        if (existingTitles.has(listing.title.toLowerCase())) continue;
-        await neon("/listings", {
-            method: "POST",
-            body: JSON.stringify({
-                ...listing,
-                host_id: hostId,
-                description: `A verified TripMate ${listing.property_type.toLowerCase()} in ${listing.location}.`,
-                cleaning_fee: 0,
-                status: "published",
-                rules: {}
-            })
-        });
-    }
-}
-
+ 
 function signToken(user) {
     const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + 7 * 86400000 })).toString("base64url");
     const signature = createHmac("sha256", config.jwtSecret).update(payload).digest("base64url");
@@ -346,25 +244,6 @@ function safeUser(user) {
     };
 }
 
-function safeAdminUser(user) {
-    if (!user) return null;
-    const { password_hash, ...safe } = user;
-    return {
-        id: safe.id,
-        name: safe.name,
-        username: safe.username || "",
-        email: safe.email,
-        phone: safe.phone || "",
-        role: safe.role || "guest",
-        businessName: safe.business_name || "",
-        verified: Boolean(safe.verified),
-        declined: Boolean(safe.declined),
-        isActive: safe.is_active !== false,
-        createdAt: safe.created_at,
-        updatedAt: safe.updated_at
-    };
-}
-
 export async function routeApi(req, res, url) {
     const body = ["POST", "PATCH", "PUT"].includes(req.method) ? await readBody(req) : {};
     const user = authUser(req);
@@ -374,15 +253,10 @@ export async function routeApi(req, res, url) {
 
     if (req.method === "GET" && url.pathname === "/api/health") {
         const database = await databaseHealth();
-        const paymongoKeyLoaded = Boolean(config.paymongoSecretKey);
-        const paymongoKeyFormatValid = /^sk_(test|live)_/i.test(config.paymongoSecretKey);
         return json(res, 200, {
             ok: true,
             databaseConfigured: database.configured,
             databaseError: database.error || null,
-            paymongoConfigured: !isPlaceholder(config.paymongoSecretKey) && paymongoKeyFormatValid,
-            paymongoKeyLoaded,
-            paymongoKeyFormatValid,
             authConfigured: Boolean(config.authUrl || config.databaseUrl)
         });
     }
@@ -404,79 +278,11 @@ export async function routeApi(req, res, url) {
             bookings: bookingRows.map((item) => ({
                 id: String(item.id), guestName: item.users?.name || String(item.guest_id), guestEmail: item.users?.email || "",
                 guestPhone: item.users?.phone || "", listingId: String(item.listing_id), checkIn: item.check_in,
-                checkOut: item.check_out, guests: item.guest_count, amount: Number(item.total_amount),
+                checkOut: item.check_out, guests: item.guest_count, amount: Number(item.subtotal),
                 status: item.status === "confirmed" ? "Confirmed" : item.status === "cancelled" ? "Cancelled" : "Pending",
                 createdAt: new Date(item.created_at).getTime()
             }))
         });
-    }
-
-    const adminUserRoute = url.pathname.match(/^\/api\/admin\/users(?:\/(\d+))?$/);
-    if (adminUserRoute) {
-        const admin = requireAdmin();
-        const userId = adminUserRoute[1];
-
-        if (req.method === "GET") {
-            const rows = await neon(`/users${userId ? `?id=eq.${userId}` : "?select=*"}`);
-            return json(res, 200, rows.map(safeAdminUser));
-        }
-
-        if (req.method === "POST" && !userId) {
-            const name = String(body.name || "").trim();
-            const email = String(body.email || "").trim().toLowerCase();
-            const password = String(body.password || "");
-            const role = ["guest", "host", "admin"].includes(body.role) ? body.role : "guest";
-            if (!name || !email || !/^\S+@\S+\.\S+$/.test(email)) return json(res, 400, { error: "A valid name and email are required." });
-            if (password.length < 8) return json(res, 400, { error: "Password must be at least 8 characters." });
-            const existing = await neon(`/users?email=eq.${encodeURIComponent(email)}&select=id`);
-            if (existing[0]) return json(res, 409, { error: "A user with that email already exists." });
-            const rows = await neon("/users", {
-                method: "POST",
-                body: JSON.stringify({
-                    name, email, username: body.username || null, password_hash: await hashPassword(password), role,
-                    business_name: body.businessName || "", phone: body.phone || "", verified: Boolean(body.verified),
-                    declined: false, is_active: body.isActive !== false
-                })
-            });
-            return json(res, 201, safeAdminUser(rows[0]));
-        }
-
-        if ((req.method === "PATCH" || req.method === "DELETE") && !userId) {
-            return json(res, 400, { error: "A user id is required." });
-        }
-
-        const currentRows = await neon(`/users?id=eq.${userId}&select=*`);
-        const target = currentRows[0];
-        if (!target) return json(res, 404, { error: "User not found." });
-
-        if (req.method === "DELETE") {
-            if (String(target.id) === String(admin.id)) return json(res, 400, { error: "You cannot delete the account currently in use." });
-            if (target.role === "admin") {
-                const admins = await neon("/users?role=eq.admin&is_active=eq.true&select=id");
-                if (admins.length <= 1) return json(res, 400, { error: "The last active admin cannot be deleted." });
-            }
-            await neon(`/users?id=eq.${userId}`, { method: "DELETE" });
-            return json(res, 200, { ok: true, id: Number(userId) });
-        }
-
-        const updates = {};
-        ["name", "email", "username", "business_name", "phone", "role", "verified", "declined", "is_active"].forEach((key) => {
-            if (body[key] !== undefined) updates[key] = body[key];
-        });
-        if (updates.role && !["guest", "host", "admin"].includes(updates.role)) return json(res, 400, { error: "Invalid user role." });
-        if (updates.email) updates.email = String(updates.email).trim().toLowerCase();
-        if (body.password !== undefined) {
-            if (String(body.password).length < 8) return json(res, 400, { error: "Password must be at least 8 characters." });
-            updates.password_hash = await hashPassword(String(body.password));
-        }
-        if (String(target.id) === String(admin.id) && updates.role && updates.role !== "admin") return json(res, 400, { error: "You cannot remove your own admin access." });
-        if (target.role === "admin" && updates.is_active === false) {
-            const admins = await neon("/users?role=eq.admin&is_active=eq.true&select=id");
-            if (admins.length <= 1) return json(res, 400, { error: "The last active admin cannot be deactivated." });
-        }
-        updates.updated_at = new Date().toISOString();
-        const rows = await neon(`/users?id=eq.${userId}`, { method: "PATCH", body: JSON.stringify(updates) });
-        return json(res, 200, safeAdminUser(rows[0]));
     }
 
     if (req.method === "POST" && url.pathname === "/api/admin/sync") {
@@ -627,107 +433,6 @@ export async function routeApi(req, res, url) {
         return json(res, 200, await neon(`/bookings?guest_id=eq.${current.id}&select=*&order=created_at.desc`));
     }
 
-    if (req.method === "POST" && url.pathname === "/api/payments/checkout") {
-        const current = requireAuth();
-        const listingId = Number(body.listing_id);
-        const totalAmount = Math.round(Number(body.total_amount));
-        const checkIn = String(body.check_in || "");
-        const checkOut = String(body.check_out || "");
-        if (!Number.isInteger(listingId) || listingId <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(checkIn) || !/^\d{4}-\d{2}-\d{2}$/.test(checkOut) || totalAmount <= 0) {
-            return json(res, 400, { error: "A valid listing, stay dates, and booking amount are required." });
-        }
-
-        const listingRows = await neon(`/listings?id=eq.${listingId}&status=eq.published&select=id,title`);
-        if (!listingRows[0]) return json(res, 404, { error: "This stay is no longer available." });
-
-        const bookingRows = await neon("/bookings", {
-            method: "POST",
-            body: JSON.stringify({
-                listing_id: listingId,
-                guest_id: current.id,
-                check_in: checkIn,
-                check_out: checkOut,
-                guest_count: Number(body.guest_count) || 1,
-                subtotal: Number(body.subtotal) || 0,
-                cleaning_fee: Number(body.cleaning_fee) || 0,
-                service_fee: Number(body.service_fee) || 0,
-                taxes: Number(body.taxes) || 0,
-                total_amount: totalAmount,
-                payment_method: body.payment_method || "qrph",
-                special_requests: body.special_requests || null,
-                terms_accepted: body.terms_accepted === true,
-                status: "pending"
-            })
-        });
-        const booking = bookingRows[0];
-        if (!booking) return json(res, 500, { error: "Unable to create the booking." });
-
-        const paymentMethodTypes = { qrph: "qrph" };
-        const paymentMethod = String(body.payment_method || "qrph").toLowerCase();
-        if (!paymentMethodTypes[paymentMethod]) {
-            await neon(`/bookings?id=eq.${booking.id}`, { method: "DELETE" }).catch(() => {});
-            return json(res, 400, { error: "Choose QR Ph as the payment method." });
-        }
-        try {
-            const session = await paymongo("/checkout_sessions", {
-                method: "POST",
-                body: JSON.stringify({
-                    data: {
-                        attributes: {
-                            line_items: [{
-                                currency: "PHP",
-                                amount: totalAmount * 100,
-                                name: listingRows[0].title,
-                                quantity: 1
-                            }],
-                            payment_method_types: [paymentMethodTypes[paymentMethod]],
-                            description: `TripMate booking ${booking.id}`,
-                            success_url: `${getFrontendUrl(req)}/booking.html?payment=success&booking_id=${booking.id}`,
-                            cancel_url: `${getFrontendUrl(req)}/booking.html?payment=cancelled&booking_id=${booking.id}`,
-                            metadata: { booking_id: String(booking.id) }
-                        }
-                    }
-                })
-            });
-            const sessionId = session?.data?.id;
-            const checkoutUrl = session?.data?.attributes?.checkout_url;
-            if (!sessionId || !checkoutUrl) throw new Error("PayMongo did not return a checkout URL.");
-
-            await neon("/payments", {
-                method: "POST",
-                body: JSON.stringify({
-                    booking_id: booking.id,
-                    payment_method: paymentMethod,
-                    amount: totalAmount,
-                    status: "pending",
-                    transaction_reference: sessionId
-                })
-            });
-            return json(res, 201, { booking_id: booking.id, session_id: sessionId, checkout_url: checkoutUrl });
-        } catch (error) {
-            await neon(`/bookings?id=eq.${booking.id}`, { method: "DELETE" }).catch(() => {});
-            throw error;
-        }
-    }
-
-    if (req.method === "GET" && url.pathname === "/api/payments/confirm") {
-        const current = requireAuth();
-        const bookingId = Number(url.searchParams.get("booking_id"));
-        const sessionId = url.searchParams.get("session_id");
-        if (!bookingId || !sessionId) return json(res, 400, { error: "A booking and payment session are required." });
-        const bookings = await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}&select=*`);
-        if (!bookings[0]) return json(res, 404, { error: "Booking not found." });
-        const session = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}`);
-        const payments = Array.isArray(session?.data?.attributes?.payments) ? session.data.attributes.payments : [];
-        const paid = session?.data?.attributes?.payment_intent?.status === "succeeded" ||
-            session?.data?.attributes?.status === "paid" ||
-            payments.some(payment => payment?.attributes?.status === "paid");
-        if (!paid) return json(res, 409, { error: "Payment has not been completed yet." });
-        await neon(`/bookings?id=eq.${bookingId}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() }) });
-        await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}`, { method: "PATCH", body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() }) });
-        return json(res, 200, { ok: true, booking_id: bookingId });
-    }
-
     if (req.method === "POST" && url.pathname === "/api/bookings") {
         const current = requireAuth();
         const booking = { ...body, guest_id: current.id, status: "pending" };
@@ -805,7 +510,5 @@ const server = createServer(async (req, res) => {
 
 if (process.argv[1] && /(?:^|[\\/])server\.js$/.test(process.argv[1])) {
     server.listen(config.port, () => console.log(`TripMate running at http://localhost:${config.port}`));
-    initializeAdminAccount()
-        .then(initializeCatalogListings)
-        .catch(error => console.error("Unable to seed TripMate catalog:", error.message));
+    initializeAdminAccount().catch(error => console.error("Unable to seed admin account:", error.message));
 }
