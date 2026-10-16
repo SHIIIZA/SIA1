@@ -1,7 +1,10 @@
 (function () {
     "use strict";
 
-    let listings = [
+    /* ---------------------------------------------------------
+       Dataset
+    --------------------------------------------------------- */
+    const listings = [
         {
             id: "happy-hut", name: "Happy Hut", type: "Cabin",
             location: "San Felipe, Zambales", price: 2000, rating: 4.92, reviews: 86, guests: 4,
@@ -75,48 +78,12 @@
             img: "https://pix8.agoda.net/hotelImages/85348252/0/b294dc4f9636bff3a7f896491fd591cc.jpg?ce=3&s=600x"
         }
     ];
-    try {
-        const hostListings = JSON.parse(localStorage.getItem("tripmate_listings") || "[]");
-        hostListings.filter(item => item.status === "published" || item.status === "active").forEach(item => {
-            listings.push({
-                id: item.id,
-                name: item.title || "TripMate stay",
-                type: item.propertyType || "House rental",
-                location: item.location || "Philippines",
-                price: Number(item.pricePerNight) || 0,
-                rating: Number(item.rating) || 5,
-                reviews: Number(item.reviews) || 0,
-                guests: Number(item.maxGuests) || 1,
-                amenities: item.amenities || [],
-                img: item.images?.[0] || ""
-            });
-        });
-    } catch { /* Ignore malformed local data and keep demo stays available. */ }
-
-    async function loadDatabaseListings() {
-        try {
-            const remoteListings = await apiRequest("/listings");
-            const remoteIds = new Set(remoteListings.map(item => String(item.id)));
-            listings = listings.filter(item => !remoteIds.has(String(item.id))).concat(remoteListings.map(item => ({
-                id: item.id,
-                name: item.title,
-                type: item.property_type,
-                location: item.location,
-                price: Number(item.price_per_night),
-                rating: Number(item.rating) || 5,
-                reviews: Number(item.review_count) || 0,
-                guests: Number(item.max_guests),
-                amenities: item.amenities || [],
-                img: item.images?.[0] || ""
-            })));
-            render();
-        } catch (error) {
-            console.warn("Database listings unavailable:", error.message);
-        }
-    }
 
     const peso = (n) => "\u20B1" + Math.round(n).toLocaleString("en-PH");
 
+    /* ---------------------------------------------------------
+       State
+    --------------------------------------------------------- */
     const priceBounds = { min: 800, max: 6000 };
     const state = {
         search: "",
@@ -130,12 +97,9 @@
         favorites: new Set()
     };
 
-    const currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
-    try {
-        const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-        saved.filter(item => !currentUser || item.userId === currentUser.id).forEach(item => state.favorites.add(item.propertyId));
-    } catch { /* Keep an empty wishlist when local data is malformed. */ }
-
+    /* ---------------------------------------------------------
+       DOM refs
+    --------------------------------------------------------- */
     const grid = document.getElementById("staysGrid");
     const resultsCount = document.getElementById("resultsCount");
     const emptyState = document.getElementById("emptyState");
@@ -149,16 +113,18 @@
     const priceMaxLabel = document.getElementById("priceMaxLabel");
     const filterGuestCount = document.getElementById("filterGuestCount");
 
+    /* ---------------------------------------------------------
+       Populate type counts (static, based on full dataset)
+    --------------------------------------------------------- */
     document.querySelectorAll("#typeList .checkbox-row").forEach((row) => {
-        const input = row.querySelector("input");
-        if (input) {
-            const val = input.value;
-            const count = listings.filter((l) => l.type === val).length;
-            const countEl = row.querySelector(".check-count");
-            if (countEl) countEl.textContent = count;
-        }
+        const val = row.querySelector("input").value;
+        const count = listings.filter((l) => l.type === val).length;
+        row.querySelector(".check-count").textContent = count;
     });
 
+    /* ---------------------------------------------------------
+       Card markup
+    --------------------------------------------------------- */
     function cardHTML(l) {
         const isFav = state.favorites.has(l.id);
         return `
@@ -186,6 +152,9 @@
       </article>`;
     }
 
+    /* ---------------------------------------------------------
+       Filtering + sorting
+    --------------------------------------------------------- */
     function applyFilters() {
         let out = listings.filter((l) => {
             if (state.search) {
@@ -215,23 +184,17 @@
 
     function render() {
         const results = applyFilters();
-        if (resultsCount) resultsCount.textContent = `${results.length} stay${results.length === 1 ? "" : "s"}`;
-        if (grid) {
-            grid.innerHTML = results.map(cardHTML).join("");
-            grid.style.display = results.length === 0 ? "none" : "grid";
-        }
-        if (emptyState) emptyState.hidden = results.length !== 0;
+        resultsCount.textContent = `${results.length} stay${results.length === 1 ? "" : "s"}`;
+        grid.innerHTML = results.map(cardHTML).join("");
+        emptyState.hidden = results.length !== 0;
+        grid.style.display = results.length === 0 ? "none" : "grid";
         renderChips();
-        const params = new URLSearchParams();
-        if (state.search) params.set("search", state.search);
-        if (state.sort !== "recommended") params.set("sort", state.sort);
-        if (state.minPrice !== priceBounds.min) params.set("minPrice", state.minPrice);
-        if (state.maxPrice !== priceBounds.max) params.set("maxPrice", state.maxPrice);
-        window.history.replaceState({}, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
     }
 
+    /* ---------------------------------------------------------
+       Active filter chips
+    --------------------------------------------------------- */
     function renderChips() {
-        if (!activeChips) return;
         const chips = [];
         if (state.search) chips.push({ key: "search", label: `"${state.search}"` });
         state.types.forEach((t) => chips.push({ key: "type", value: t, label: t }));
@@ -247,16 +210,16 @@
         ).join("");
     }
 
-    activeChips?.addEventListener("click", (e) => {
+    activeChips.addEventListener("click", (e) => {
         const chip = e.target.closest(".chip");
         if (!chip) return;
         const key = chip.dataset.key;
         const value = chip.dataset.value;
-        if (key === "search") { state.search = ""; if (searchInput) searchInput.value = ""; }
+        if (key === "search") { state.search = ""; searchInput.value = ""; }
         if (key === "type") { state.types.delete(value); syncCheckboxes("#typeList", state.types); }
         if (key === "amenity") { state.amenities.delete(value); syncCheckboxes("#amenityList", state.amenities); }
-        if (key === "rating") { state.minRating = 0; const r0 = document.querySelector('input[name="rating"][value="0"]'); if (r0) r0.checked = true; }
-        if (key === "guests") { state.guests = 1; if (filterGuestCount) filterGuestCount.textContent = "1"; }
+        if (key === "rating") { state.minRating = 0; document.querySelector('input[name="rating"][value="0"]').checked = true; }
+        if (key === "guests") { state.guests = 1; filterGuestCount.textContent = "1"; }
         if (key === "price") { resetPriceRange(); }
         render();
     });
@@ -267,32 +230,28 @@
         });
     }
 
-    searchInput?.addEventListener("input", () => {
+    /* ---------------------------------------------------------
+       Search
+    --------------------------------------------------------- */
+    searchInput.addEventListener("input", () => {
         state.search = searchInput.value.trim();
         render();
     });
-    document.getElementById("heroSearchBtn")?.addEventListener("click", () => {
-        document.querySelector(".stays-main")?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("heroSearchBtn").addEventListener("click", () => {
+        document.querySelector(".stays-main").scrollIntoView({ behavior: "smooth" });
     });
 
-    document.getElementById("saveSearchBtn")?.addEventListener("click", async () => {
-        if (!currentUser) {
-            window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
-            return;
-        }
-        try {
-            await apiRequest("/saved-searches", { method: "POST", body: JSON.stringify({ search_name: state.search || "Trip search", filters: { search: state.search, minPrice: state.minPrice, maxPrice: state.maxPrice, sort: state.sort, guests: state.guests } }) });
-            showToast("Search saved.");
-        } catch (error) {
-            showToast(error.message || "Unable to save search.", true);
-        }
-    });
-
-    sortSelect?.addEventListener("change", () => {
+    /* ---------------------------------------------------------
+       Sort
+    --------------------------------------------------------- */
+    sortSelect.addEventListener("change", () => {
         state.sort = sortSelect.value;
         render();
     });
 
+    /* ---------------------------------------------------------
+       Property type + amenities checkboxes
+    --------------------------------------------------------- */
     document.querySelectorAll("#typeList input").forEach((cb) => {
         cb.addEventListener("change", () => {
             cb.checked ? state.types.add(cb.value) : state.types.delete(cb.value);
@@ -306,6 +265,9 @@
         });
     });
 
+    /* ---------------------------------------------------------
+       Rating radios
+    --------------------------------------------------------- */
     document.querySelectorAll('input[name="rating"]').forEach((r) => {
         r.addEventListener("change", () => {
             state.minRating = Number(r.value);
@@ -313,33 +275,38 @@
         });
     });
 
-    document.getElementById("filterGuestMinus")?.addEventListener("click", () => {
+    /* ---------------------------------------------------------
+       Guest stepper
+    --------------------------------------------------------- */
+    document.getElementById("filterGuestMinus").addEventListener("click", () => {
         if (state.guests > 1) {
             state.guests -= 1;
-            if (filterGuestCount) filterGuestCount.textContent = state.guests;
+            filterGuestCount.textContent = state.guests;
             render();
         }
     });
-    document.getElementById("filterGuestPlus")?.addEventListener("click", () => {
+    document.getElementById("filterGuestPlus").addEventListener("click", () => {
         if (state.guests < 10) {
             state.guests += 1;
-            if (filterGuestCount) filterGuestCount.textContent = state.guests;
+            filterGuestCount.textContent = state.guests;
             render();
         }
     });
 
+    /* ---------------------------------------------------------
+       Dual price range slider
+    --------------------------------------------------------- */
     function updatePriceUI() {
-        if (!priceMin || !priceMax || !priceFill) return;
         let lo = Number(priceMin.value);
         let hi = Number(priceMax.value);
         if (lo > hi - 200) {
-            lo = hi - 200;
-            priceMin.value = lo;
+            if (this === priceMin) { lo = hi - 200; priceMin.value = lo; }
+            else { hi = lo + 200; priceMax.value = hi; }
         }
         state.minPrice = lo;
         state.maxPrice = hi;
-        if (priceMinLabel) priceMinLabel.textContent = lo.toLocaleString("en-PH");
-        if (priceMaxLabel) priceMaxLabel.textContent = hi.toLocaleString("en-PH");
+        priceMinLabel.textContent = lo.toLocaleString("en-PH");
+        priceMaxLabel.textContent = hi.toLocaleString("en-PH");
 
         const range = priceBounds.max - priceBounds.min;
         const leftPct = ((lo - priceBounds.min) / range) * 100;
@@ -349,60 +316,35 @@
     }
 
     function resetPriceRange() {
-        if (priceMin) priceMin.value = priceBounds.min;
-        if (priceMax) priceMax.value = priceBounds.max;
-        updatePriceUI();
+        priceMin.value = priceBounds.min;
+        priceMax.value = priceBounds.max;
+        updatePriceUI.call(priceMin);
     }
 
-    priceMin?.addEventListener("input", function () { updatePriceUI(); render(); });
-    priceMax?.addEventListener("input", function () { updatePriceUI(); render(); });
+    priceMin.addEventListener("input", function () { updatePriceUI.call(this); render(); });
+    priceMax.addEventListener("input", function () { updatePriceUI.call(this); render(); });
 
-    grid?.addEventListener("click", async (e) => {
-        const bookBtn = e.target.closest(".listing-book");
-        if (bookBtn) {
-            const card = bookBtn.closest(".listing-card");
-            if (card) {
-                const id = card.dataset.id;
-                const selected = listings.find((item) => item.id === id);
-                if (selected) {
-                    localStorage.setItem("selectedStay", JSON.stringify(selected));
-                }
-            }
-            return;
-        }
-
+    /* ---------------------------------------------------------
+       Favorites (heart toggle, in-memory)
+    --------------------------------------------------------- */
+    grid.addEventListener("click", (e) => {
         const favBtn = e.target.closest('[data-action="fav"]');
         if (!favBtn) return;
         e.preventDefault();
         const card = favBtn.closest(".listing-card");
-        if (!card) return;
         const id = card.dataset.id;
         if (state.favorites.has(id)) {
             state.favorites.delete(id);
             favBtn.classList.remove("is-active");
         } else {
-            if (!currentUser) {
-                window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
-                return;
-            }
             state.favorites.add(id);
             favBtn.classList.add("is-active");
         }
-        if (currentUser) {
-            try {
-                const existing = await apiRequest("/wishlist");
-                const saved = existing.find(item => String(item.listing_id) === String(id));
-                if (state.favorites.has(id) && !saved) {
-                    await apiRequest("/wishlist", { method: "POST", body: JSON.stringify({ listing_id: Number(id) }) });
-                } else if (!state.favorites.has(id) && saved) {
-                    await apiRequest(`/wishlist/${saved.id}`, { method: "DELETE" });
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        }
     });
 
+    /* ---------------------------------------------------------
+       Clear all filters
+    --------------------------------------------------------- */
     function clearAll() {
         state.search = "";
         state.types.clear();
@@ -411,22 +353,27 @@
         state.guests = 1;
         state.sort = "recommended";
 
-        if (searchInput) searchInput.value = "";
-        if (sortSelect) sortSelect.value = "recommended";
+        searchInput.value = "";
+        sortSelect.value = "recommended";
         document.querySelectorAll("#typeList input, #amenityList input").forEach((cb) => (cb.checked = false));
-        const r0 = document.querySelector('input[name="rating"][value="0"]');
-        if (r0) r0.checked = true;
-        if (filterGuestCount) filterGuestCount.textContent = "1";
+        document.querySelector('input[name="rating"][value="0"]').checked = true;
+        filterGuestCount.textContent = "1";
         resetPriceRange();
         render();
     }
-    document.getElementById("clearFilters")?.addEventListener("click", clearAll);
-    document.getElementById("emptyClearBtn")?.addEventListener("click", clearAll);
+    document.getElementById("clearFilters").addEventListener("click", clearAll);
+    document.getElementById("emptyClearBtn").addEventListener("click", clearAll);
 
+    /* ---------------------------------------------------------
+       Mobile filter drawer
+    --------------------------------------------------------- */
     const filtersPanel = document.getElementById("filtersPanel");
-    document.getElementById("filtersToggle")?.addEventListener("click", () => filtersPanel?.classList.add("is-open"));
-    document.getElementById("filtersClose")?.addEventListener("click", () => filtersPanel?.classList.remove("is-open"));
+    document.getElementById("filtersToggle").addEventListener("click", () => filtersPanel.classList.add("is-open"));
+    document.getElementById("filtersClose").addEventListener("click", () => filtersPanel.classList.remove("is-open"));
 
+    /* ---------------------------------------------------------
+       Mobile nav (same behaviour as homepage.js)
+    --------------------------------------------------------- */
     const navToggle = document.querySelector(".nav-toggle");
     const navLinks = document.querySelector(".nav-links");
     if (navToggle && navLinks) {
@@ -445,28 +392,19 @@
         });
     }
 
+    /* ---------------------------------------------------------
+       Pick up destination passed from the homepage search box
+    --------------------------------------------------------- */
     const urlParams = new URLSearchParams(window.location.search);
     const incomingSearch = urlParams.get('search');
-    const incomingCheckIn = urlParams.get('checkin');
-    const incomingCheckOut = urlParams.get('checkout');
-    const incomingSort = urlParams.get('sort');
-    const incomingMinPrice = Number(urlParams.get('minPrice'));
-    const incomingMaxPrice = Number(urlParams.get('maxPrice'));
-
-    if (incomingSearch && searchInput) {
+    if (incomingSearch) {
         state.search = incomingSearch;
         searchInput.value = incomingSearch;
     }
-    if (incomingCheckIn) localStorage.setItem('trip_checkin', incomingCheckIn);
-    if (incomingCheckOut) localStorage.setItem('trip_checkout', incomingCheckOut);
-    if (["recommended", "price-asc", "price-desc", "rating-desc"].includes(incomingSort)) {
-        state.sort = incomingSort;
-        if (sortSelect) sortSelect.value = incomingSort;
-    }
-    if (incomingMinPrice >= priceBounds.min && incomingMinPrice <= priceBounds.max && priceMin) priceMin.value = incomingMinPrice;
-    if (incomingMaxPrice >= priceBounds.min && incomingMaxPrice <= priceBounds.max && priceMax) priceMax.value = incomingMaxPrice;
 
-    updatePriceUI();
+    /* ---------------------------------------------------------
+       Init
+    --------------------------------------------------------- */
+    updatePriceUI.call(priceMin);
     render();
-    loadDatabaseListings();
 })();
