@@ -84,7 +84,12 @@
 }
 
 .page-hero-body { padding: 80px clamp(20px, 5vw, 64px) 150px; }
-.contact-main { padding: 0 clamp(20px, 5vw, 64px) 100px; margin-top: -90px; }
+.contact-main {
+	position: relative;
+	z-index: 6;
+	padding: 0 clamp(20px, 5vw, 64px) 100px;
+	margin-top: -90px;
+}
 .contact-panel { padding: 40px 36px; }
 .contact-card { padding: 40px clamp(24px, 4vw, 44px); }
 .contact-faq { padding: 0 clamp(20px, 5vw, 64px) 110px; }

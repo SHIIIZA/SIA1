@@ -16,7 +16,7 @@
 <body class="property-page">
 
     <header class="top-nav">
-        <a href="homepage.html" class="logo">
+        <a href="homepage.html" class="logo brand-lockup" aria-label="TripMate home">
             <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
         </a>
         <a href="stays.html" class="back-link">
@@ -26,19 +26,19 @@
     </header>
 
     <main>
-        <!-- Hero Gallery -->
-        <section class="property-hero">
-            <div class="gallery-main">
-                <img id="mainImage" src="" alt="" class="gallery-main-img">
+        <div class="property-detail-grid">
+            <div class="property-gallery-column">
+                <section class="property-hero">
+                    <div class="gallery-main">
+                        <img id="mainImage" src="" alt="" class="gallery-main-img">
+                    </div>
+                    <div class="gallery-thumbs" id="galleryThumbs" role="list" aria-label="Property photos">
+                        <!-- Thumbnails injected by JS -->
+                    </div>
+                </section>
             </div>
-            <div class="gallery-thumbs" id="galleryThumbs" role="list" aria-label="Property photos">
-                <!-- Thumbnails injected by JS -->
-            </div>
-        </section>
 
-        <!-- Property Info -->
-        <div class="property-layout">
-            <section class="property-main">
+            <div class="property-summary-column">
                 <div class="property-header">
                     <span class="property-badge" id="propertyType"></span>
                     <h1 id="propertyName"></h1>
@@ -46,10 +46,69 @@
                     <div class="property-rating">
                         <span class="stars" id="propertyStars"></span>
                         <span class="rating-value" id="propertyRatingValue"></span>
-                        <span class="rating-count" id="propertyReviewCount"></span>
                     </div>
                 </div>
 
+                <aside class="booking-panel" id="bookingPanel">
+                    <div class="booking-card">
+                        <div class="booking-price">
+                            <span class="nightly" id="nightlyPrice">₱0</span>
+                            <span class="per-night">/ night</span>
+                        </div>
+
+                        <form id="bookingForm" class="booking-form" novalidate>
+                            <div class="booking-field">
+                                <label for="checkinDate">Check-in</label>
+                                <input type="date" id="checkinDate" name="checkin" required>
+                            </div>
+                            <div class="booking-field">
+                                <label for="checkoutDate">Check-out</label>
+                                <input type="date" id="checkoutDate" name="checkout" required>
+                            </div>
+                            <div class="booking-field">
+                                <label for="guestCount">Guests</label>
+                                <div class="guest-stepper">
+                                    <button type="button" class="step-btn" id="guestMinus" aria-label="Fewer guests">−</button>
+                                    <input type="number" id="guestCount" name="guests" value="1" min="1" max="10" readonly>
+                                    <button type="button" class="step-btn" id="guestPlus" aria-label="More guests">+</button>
+                                </div>
+                            </div>
+
+                            <div class="booking-breakdown" id="bookingBreakdown">
+                                <!-- Price breakdown injected by JS -->
+                            </div>
+
+                            <button type="submit" class="btn-primary btn-block" id="bookNowBtn">
+                                Reserve
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 12h14M13 6l6 6-6 6" />
+                                </svg>
+                            </button>
+
+                            <p class="booking-note">You won't be charged yet. Payment is collected after host confirmation.</p>
+                        </form>
+
+                        <div class="booking-trust">
+                            <div class="trust-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                <span>Secure payment</span>
+                            </div>
+                            <div class="trust-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                <span>Host guarantee</span>
+                            </div>
+                            <div class="trust-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+                                <span>Verified host</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <div class="property-layout">
+            <section class="property-main">
                 <div class="property-host" id="propertyHost">
                     <!-- Host info injected by JS -->
                 </div>
@@ -75,73 +134,7 @@
                     </ul>
                 </section>
 
-                <section class="property-section">
-                    <h2>Reviews</h2>
-                    <div class="reviews-summary" id="reviewsSummary">
-                        <!-- Injected by JS -->
-                    </div>
-                    <div class="reviews-list" id="reviewsList">
-                        <!-- Injected by JS -->
-                    </div>
-                </section>
             </section>
-
-            <!-- Booking Panel (Sticky on desktop) -->
-            <aside class="booking-panel" id="bookingPanel">
-                <div class="booking-card">
-                    <div class="booking-price">
-                        <span class="nightly" id="nightlyPrice">₱0</span>
-                        <span class="per-night">/ night</span>
-                    </div>
-
-                    <form id="bookingForm" class="booking-form" novalidate>
-                        <div class="booking-field">
-                            <label for="checkinDate">Check-in</label>
-                            <input type="date" id="checkinDate" name="checkin" required>
-                        </div>
-                        <div class="booking-field">
-                            <label for="checkoutDate">Check-out</label>
-                            <input type="date" id="checkoutDate" name="checkout" required>
-                        </div>
-                        <div class="booking-field">
-                            <label for="guestCount">Guests</label>
-                            <div class="guest-stepper">
-                                <button type="button" class="step-btn" id="guestMinus" aria-label="Fewer guests">−</button>
-                                <input type="number" id="guestCount" name="guests" value="1" min="1" max="10" readonly>
-                                <button type="button" class="step-btn" id="guestPlus" aria-label="More guests">+</button>
-                            </div>
-                        </div>
-
-                        <div class="booking-breakdown" id="bookingBreakdown">
-                            <!-- Price breakdown injected by JS -->
-                        </div>
-
-                        <button type="submit" class="btn-primary btn-block" id="bookNowBtn">
-                            Reserve
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M5 12h14M13 6l6 6-6 6" />
-                            </svg>
-                        </button>
-
-                        <p class="booking-note">You won't be charged yet. Payment is collected after host confirmation.</p>
-                    </form>
-
-                    <div class="booking-trust">
-                        <div class="trust-item">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            <span>Secure payment</span>
-                        </div>
-                        <div class="trust-item">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                            <span>Host guarantee</span>
-                        </div>
-                        <div class="trust-item">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-                            <span>Verified host</span>
-                        </div>
-                    </div>
-                </div>
-            </aside>
         </div>
     </main>
 
@@ -153,7 +146,7 @@
     <footer>
         <div class="footer-top">
             <div class="footer-brand">
-                <a href="homepage.html" class="logo">
+                <a href="homepage.html" class="logo brand-lockup" aria-label="TripMate home">
                     <img src="images/tripmate.svg" alt="TripMate" class="logo-img">
                 </a>
                 <p>A Filipino-built platform for booking hotels and house rentals across the Philippines.</p>

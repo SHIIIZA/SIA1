@@ -7,6 +7,47 @@ body.stays-page {
     background: var(--cream);
 }
 
+/* Show the SVG icon view beside the text wordmark. */
+.stays-page .logo-mark {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    border-radius: 12px;
+    background: transparent;
+}
+
+.stays-page .logo-mark .logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.stays-page .logo-wordmark {
+    display: inline-block;
+    color: var(--cream);
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.stays-page footer .logo-mark {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 10px;
+}
+
+.stays-page footer .logo-wordmark {
+    color: var(--cream);
+    font-size: 22px;
+}
+
 /* ---------- Compact hero ---------- */
 .stays-hero {
     min-height: 46vh;

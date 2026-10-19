@@ -18,6 +18,18 @@
   force = true
 
 [[redirects]]
+  from = "/stays"
+  to = "/stays.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/property"
+  to = "/property.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/home"
   to = "/homepage.html"
   status = 301

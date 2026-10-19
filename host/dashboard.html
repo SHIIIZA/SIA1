@@ -15,8 +15,10 @@
     <!-- Top Navigation -->
     <header class="dashboard-nav stagger-in stagger-in-1">
         <a href="dashboard.html" class="logo">
-            <img src="../images/tripmate.svg" alt="TripMate" class="logo-img"
-                onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-fallback',textContent:'TripMate'}))">
+            <span class="logo-mark" aria-hidden="true">
+                <img src="../images/tripmate.svg#svgView(viewBox(70,440,510,620))" alt="" class="logo-img">
+            </span>
+            <span class="logo-wordmark">TripMate</span>
             <span class="host-badge">Host</span>
         </a>
         <nav class="dashboard-tabs">
@@ -34,9 +36,9 @@
                     <span class="dropdown-email" id="dropdownEmail">juan.host@example.com</span>
                 </div>
                 <hr class="dropdown-divider">
-                <a href="../profile.html" class="dropdown-item">
+                <a href="dashboard.html" class="dropdown-item">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    <span>Profile Settings</span>
+                    <span>Host Overview</span>
                 </a>
                 <hr class="dropdown-divider">
                 <a href="#" class="dropdown-item" id="logoutBtn">
@@ -54,7 +56,7 @@
                 <div class="sidebar-header">
                     <h2>Host Menu</h2>
                 </div>
-                <nav class="sidebar-nav">
+                <nav class="sidebar-nav" aria-label="Host dashboard sections">
                     <button class="sidebar-tab active" data-tab="overview">
                         <svg class="sidebar-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                         <span class="sidebar-tab-label">Overview</span>
@@ -72,7 +74,7 @@
                         <span class="sidebar-tab-label">Earnings</span>
                     </button>
                 </nav>
-                <div style="margin-top: 2rem;">
+                <div class="sidebar-create-listing">
                     <a href="listings.html?action=new" class="btn btn-primary" style="width: 100%;">+ Create Listing</a>
                 </div>
             </aside>
@@ -114,7 +116,8 @@
                             <h2>Recent Bookings</h2>
                             <button class="btn btn-secondary btn-sm" onclick="document.querySelector('[data-tab=\'bookings\']').click()">View all</button>
                         </div>
-                        <div class="table-container">
+                        <p class="table-scroll-hint">Scroll sideways to see all booking details and actions.</p>
+                        <div class="table-container" tabindex="0" role="region" aria-label="Recent bookings">
                             <table class="host-table">
                                 <thead>
                                     <tr>
@@ -162,7 +165,8 @@
                 <!-- BOOKINGS SECTION -->
                 <div id="bookingsSection" class="tab-section" style="display: none;">
                     <div class="host-section">
-                        <div class="table-container">
+                        <p class="table-scroll-hint">Scroll sideways to see all booking details and actions.</p>
+                        <div class="table-container" tabindex="0" role="region" aria-label="All bookings">
                             <table class="host-table">
                                 <thead>
                                     <tr>
@@ -206,7 +210,8 @@
                     </div>
                     <div class="host-section">
                         <div class="section-header"><h2>Recent earnings</h2></div>
-                        <div class="table-container">
+                        <p class="table-scroll-hint">Scroll sideways to see all earnings details.</p>
+                        <div class="table-container" tabindex="0" role="region" aria-label="Recent earnings">
                             <table class="host-table">
                                 <thead>
                                     <tr><th>Property</th><th>Stay dates</th><th>Status</th><th>Amount</th></tr>

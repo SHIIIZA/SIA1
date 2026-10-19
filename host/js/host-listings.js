@@ -17,8 +17,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const previewGrid = document.getElementById('photoPreviewGrid');
     const calendarGrid = document.getElementById('hostCalendarGrid');
     const calendarMonthLabel = document.getElementById('calendarMonthLabel');
-    const filterAmenities = amenities => (Array.isArray(amenities) ? amenities : [])
-        .filter(amenity => !/(smoke.?alarm|first.?aid)/i.test(String(amenity)));
+    const allowedAmenities = ['Wifi', 'Pool', 'Kitchen', 'Air conditioning', 'Beachfront', 'Pet friendly'];
+    const normalizeAmenity = amenity => {
+        const value = String(amenity || '').trim().toLowerCase();
+        return allowedAmenities.find(item => item.toLowerCase() === value) || null;
+    };
+    const filterAmenities = amenities => [...new Set(
+        (Array.isArray(amenities) ? amenities : []).map(normalizeAmenity).filter(Boolean)
+    )];
+    const normalizePropertyType = value => {
+        const normalized = String(value || '').trim().toLowerCase();
+        if (normalized === 'house' || normalized.includes('house')) return 'house';
+        if (normalized === 'apartment' || normalized.includes('condo') || normalized.includes('apartment')) return 'apartment';
+        if (normalized === 'hotel' || normalized.includes('hotel')) return 'hotel';
+        if (normalized === 'guesthouse' || normalized.includes('guest house')) return 'guesthouse';
+        return '';
+    };
     
     // DOM Elements
     const steps = document.querySelectorAll('.wizard-step');
@@ -31,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     nextBtn.addEventListener('click', () => {
         if (currentStep < totalSteps) {
+            if (!validateStep(currentStep)) return;
             // Save current step data before moving
             saveDraft();
             currentStep++;
@@ -90,13 +105,100 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             nextBtn.textContent = 'Next';
         }
+        if (currentStep === totalSteps) updateReviewSummary();
+    }
+
+    function showStepError(message) {
+        let error = document.getElementById('wizardError');
+        if (!error) {
+            error = document.createElement('p');
+            error.id = 'wizardError';
+            error.className = 'wizard-error';
+            document.querySelector('.wizard-footer-inner').prepend(error);
+        }
+        error.textContent = message;
+        error.focus?.();
+    }
+
+    function clearStepError() {
+        document.getElementById('wizardError')?.remove();
+    }
+
+    function validateStep(step) {
+        clearStepError();
+        if (step === 1) {
+            const name = document.getElementById('propertyName').value.trim();
+            const type = document.getElementById('propertyType').value;
+            const address = document.getElementById('propertyAddress').value.trim();
+            if (!name) {
+                showStepError('Add a property name before continuing.');
+                document.getElementById('propertyName').focus();
+                return false;
+            }
+            if (!type) {
+                showStepError('Choose a property type before continuing.');
+                document.getElementById('propertyType').focus();
+                return false;
+            }
+            if (address.length < 5) {
+                showStepError('Enter a complete location or address before continuing.');
+                document.getElementById('propertyAddress').focus();
+                return false;
+            }
+            if (Number(document.getElementById('guests').value) < 1) {
+                showStepError('Set the maximum number of guests to at least 1.');
+                return false;
+            }
+        }
+        if (step === 2 && Number(document.getElementById('basePrice').value) <= 0) {
+            showStepError('Enter a nightly price greater than ₱0 before continuing.');
+            document.getElementById('basePrice').focus();
+            return false;
+        }
+        if (step === 7) {
+            return validateStep(1) && validateStep(2);
+        }
+        return true;
+    }
+
+    function updateReviewSummary() {
+        const summary = document.getElementById('reviewSummary');
+        if (!summary) return;
+        const name = document.getElementById('propertyName').value.trim() || 'Untitled property';
+        const type = document.getElementById('propertyType').selectedOptions[0]?.textContent || 'Property';
+        const address = document.getElementById('propertyAddress').value.trim() || 'Address not added';
+        const price = Number(document.getElementById('basePrice').value) || 0;
+        const guests = Number(document.getElementById('guests').value) || 0;
+        const amenities = filterAmenities([...document.querySelectorAll('input[name="amenity"]:checked')].map(input => input.value));
+        summary.innerHTML = `
+            <div class="review-summary-heading">
+                <span>Listing summary</span>
+                <strong>${name.replace(/[<>&"']/g, '')}</strong>
+            </div>
+            <dl class="review-summary-list">
+                <div><dt>Type</dt><dd>${type}</dd></div>
+                <div><dt>Location</dt><dd>${address.replace(/[<>&"']/g, '')}</dd></div>
+                <div><dt>Nightly price</dt><dd>₱${price.toLocaleString()}</dd></div>
+                <div><dt>Capacity</dt><dd>${guests} guest${guests === 1 ? '' : 's'}</dd></div>
+                <div><dt>Amenities</dt><dd>${amenities.length ? amenities.join(', ') : 'None selected'}</dd></div>
+                <div><dt>Photos</dt><dd>${uploadedPhotos.length} photo${uploadedPhotos.length === 1 ? '' : 's'}${uploadedPhotos.length ? ' · first photo is the cover' : ''}</dd></div>
+            </dl>
+        `;
     }
 
     function saveDraft() {
+        let previousData = {};
+        try {
+            previousData = JSON.parse(localStorage.getItem(draftKey) || 'null')?.data || {};
+        } catch (error) {
+            console.error('Unable to preserve the saved listing identity:', error);
+        }
         const draft = {
             currentStep,
             hostId: user.id,
             data: {
+                listingId: previousData.listingId,
+                createdAt: previousData.createdAt,
                 basics: {
                     title: document.getElementById('propertyName').value,
                     propertyType: document.getElementById('propertyType').value,
@@ -115,9 +217,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 rules: {
                     checkInTime: document.getElementById('checkInTime').value,
                     checkOutTime: document.getElementById('checkOutTime').value,
-                    smoking: document.getElementById('ruleSmoking').checked,
-                    pets: document.getElementById('rulePets').checked,
-                    parties: document.getElementById('ruleParties').checked,
                     custom: document.getElementById('customRules').value
                 },
                 availability: {
@@ -126,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     blockedDates: [...blockedDates]
                 },
                 images: uploadedPhotos.map(photo => photo.dataUrl).filter(Boolean),
-                publish: document.getElementById('publishToggle').checked,
+                publish: true,
                 lastSaved: new Date().toISOString()
             }
         };
@@ -204,10 +303,46 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadDraft() {
         let draft;
         try {
-            draft = JSON.parse(localStorage.getItem(draftKey) || 'null');
+            const editId = new URLSearchParams(window.location.search).get('edit');
+            const savedListings = JSON.parse(localStorage.getItem('tripmate_listings') || '[]');
+            const existingListing = Array.isArray(savedListings)
+                ? savedListings.find(item => String(item.id) === String(editId) && String(item.hostId) === String(user.id))
+                : null;
+            if (existingListing) {
+                draft = {
+                    currentStep: 1,
+                    hostId: user.id,
+                    data: {
+                        listingId: String(existingListing.id),
+                        createdAt: existingListing.createdAt,
+                        basics: {
+                            title: existingListing.title,
+                            propertyType: normalizePropertyType(existingListing.propertyType),
+                            maxGuests: existingListing.maxGuests,
+                            bedrooms: existingListing.bedrooms,
+                            bathrooms: existingListing.bathrooms,
+                            location: existingListing.location || existingListing.address
+                        },
+                        pricing: {
+                            pricePerNight: existingListing.pricePerNight,
+                            cleaningFee: existingListing.cleaningFee,
+                            securityDeposit: existingListing.securityDeposit,
+                            weeklyDiscount: existingListing.weeklyDiscount
+                        },
+                        amenities: filterAmenities(existingListing.amenities),
+                        rules: existingListing.rules || {},
+                        availability: existingListing.availability || {},
+                        images: Array.isArray(existingListing.images) ? existingListing.images : []
+                    }
+                };
+            }
+            if (!draft) draft = JSON.parse(localStorage.getItem(draftKey) || 'null');
             const legacyDraft = JSON.parse(localStorage.getItem('host_listing_draft') || 'null');
             if (!draft && legacyDraft?.hostId != null && String(legacyDraft.hostId) === String(user.id)) {
                 draft = legacyDraft;
+            }
+            if (draft?.data?.listingId && new URLSearchParams(window.location.search).get('edit')) {
+                localStorage.setItem(draftKey, JSON.stringify(draft));
             }
         } catch (error) {
             console.error('Unable to read the saved host listing draft:', error);
@@ -224,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (value !== undefined && value !== null) document.getElementById(id).value = value;
         };
         setValue('propertyName', basics.title);
-        setValue('propertyType', basics.propertyType);
+        setValue('propertyType', normalizePropertyType(basics.propertyType));
         setValue('guests', basics.maxGuests);
         setValue('bedrooms', basics.bedrooms);
         setValue('bathrooms', basics.bathrooms);
@@ -238,10 +373,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setValue('customRules', rules.custom);
         setValue('minStay', availability.minStay);
         setValue('maxStay', availability.maxStay);
-        document.getElementById('ruleSmoking').checked = Boolean(rules.smoking);
-        document.getElementById('rulePets').checked = rules.pets !== false;
-        document.getElementById('ruleParties').checked = Boolean(rules.parties);
-        document.getElementById('publishToggle').checked = Boolean(draft.data.publish);
         const selectedAmenities = new Set(filterAmenities(draft.data.amenities));
         document.querySelectorAll('input[name="amenity"]').forEach(input => {
             input.checked = selectedAmenities.has(input.value);
@@ -250,61 +381,97 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedPhotos = (draft.data.images || []).map(dataUrl => ({ dataUrl, url: dataUrl }));
         currentStep = Math.min(totalSteps, Math.max(1, Number(draft.currentStep) || 1));
         updatePricingPreview();
-        updatePublishStatus();
         renderPhotoPreviews();
         renderCalendar();
     }
 
     async function publishListing() {
+        if (!validateStep(1) || !validateStep(2)) return;
         saveDraft();
         const draft = JSON.parse(localStorage.getItem(draftKey) || '{}');
         const basics = draft.data?.basics || {};
         const pricing = draft.data?.pricing || {};
-        if (!basics.title || !basics.location || !pricing.pricePerNight || Number(pricing.pricePerNight) <= 0) {
-            alert('Complete the property name, address, and nightly price before publishing.');
-            return;
-        }
-        const requestBody = JSON.stringify({
+        const listingId = draft.data?.listingId || `host-${user.id}-${Date.now()}`;
+        const isEditing = Boolean(draft.data?.listingId);
+        const images = uploadedPhotos.map(photo => photo.dataUrl).filter(Boolean);
+        const localListing = {
+            id: String(listingId),
             title: basics.title,
-            property_type: basics.propertyType || 'house',
+            propertyType: basics.propertyType || 'house',
             location: basics.location,
-            price_per_night: Number(pricing.pricePerNight),
-            cleaning_fee: Number(pricing.cleaningFee) || 0,
-            max_guests: Number(basics.maxGuests) || 1,
-            bedrooms: Number(basics.bedrooms) || 1,
-            bathrooms: Number(basics.bathrooms) || 1,
+            address: basics.location,
+            pricePerNight: Number(pricing.pricePerNight),
+            cleaningFee: Number(pricing.cleaningFee) || 0,
+            securityDeposit: Number(pricing.securityDeposit) || 0,
+            weeklyDiscount: Number(pricing.weeklyDiscount) || 0,
+            maxGuests: Number(basics.maxGuests) || 1,
+            bedrooms: Number(basics.bedrooms) || 0,
+            bathrooms: Number(basics.bathrooms) || 0,
             amenities: filterAmenities(draft.data.amenities),
             rules: draft.data.rules || {},
-            images: uploadedPhotos.map(photo => photo.dataUrl).filter(Boolean),
-            status: document.getElementById('publishToggle')?.checked ? 'published' : 'draft'
+            availability: draft.data.availability || {},
+            images,
+            rating: 5,
+            reviews: 0,
+            reviewCount: 0,
+            hostId: String(user.id),
+            hostUsername: String(user.username || user.name || '').trim(),
+            hostName: String(user.name || user.username || 'Host').trim(),
+            hostAvatar: String(user.avatar || user.profilePicture || '').trim(),
+            status: 'published',
+            createdAt: draft.data.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        const requestBody = JSON.stringify({
+            title: localListing.title,
+            property_type: localListing.propertyType,
+            location: localListing.location,
+            price_per_night: localListing.pricePerNight,
+            cleaning_fee: localListing.cleaningFee,
+            max_guests: localListing.maxGuests,
+            bedrooms: localListing.bedrooms,
+            bathrooms: localListing.bathrooms,
+            amenities: localListing.amenities,
+            rules: localListing.rules,
+            images: localListing.images,
+            status: 'published'
         });
         if (requestBody.length > 950000) {
             alert('This listing is too large to upload. Remove some photos and try again.');
             return;
         }
+        let listings = [];
         try {
-            await apiRequest('/host/listings', {
-                method: 'POST',
-                body: requestBody
-            });
+            listings = JSON.parse(localStorage.getItem('tripmate_listings') || '[]');
+            if (!Array.isArray(listings)) listings = [];
         } catch (error) {
-            alert(error.message || 'Unable to save listing to Neon.');
+            console.error('Unable to read local listings:', error);
+        }
+        const existingIndex = listings.findIndex(item => String(item.id) === localListing.id);
+        if (existingIndex >= 0) listings[existingIndex] = localListing;
+        else listings.push(localListing);
+        try {
+            localStorage.setItem('tripmate_listings', JSON.stringify(listings));
+        } catch (error) {
+            console.error('Unable to save the published listing locally:', error);
+            alert('The listing could not be saved in this browser. Remove a few photos or free local storage and try again.');
             return;
         }
         localStorage.removeItem(draftKey);
-        alert(document.getElementById('publishToggle').checked ? 'Listing published successfully.' : 'Listing saved as a draft.');
+        if (!isEditing) {
+            try {
+                await apiRequest('/host/listings', {
+                    method: 'POST',
+                    body: requestBody
+                });
+            } catch (error) {
+                console.warn('Optional listing sync failed:', error.message);
+            }
+        }
+        alert(isEditing
+            ? 'Listing changes saved in this browser.'
+            : 'Listing published successfully. It is now visible on the Stays page.');
         window.location.href = 'dashboard.html';
-    }
-
-    function updatePublishStatus() {
-        const isPublished = document.getElementById('publishToggle').checked;
-        document.getElementById('statusLabel').textContent = isPublished ? 'Published' : 'Draft';
-        document.getElementById('statusHint').textContent = isPublished
-            ? 'Your listing will be visible to guests.'
-            : 'Your listing will be saved privately as a draft.';
-        nextBtn.textContent = currentStep === totalSteps
-            ? (isPublished ? 'Publish Listing' : 'Save Draft')
-            : 'Next';
     }
 
     async function encodePhoto(file) {
@@ -464,11 +631,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCalendar();
     loadDraft();
     updateWizardView();
-    updatePublishStatus();
+    updateReviewSummary();
     document.getElementById('listingForm').addEventListener('input', scheduleDraftSave);
     document.getElementById('listingForm').addEventListener('change', scheduleDraftSave);
-    document.getElementById('publishToggle').addEventListener('change', () => {
-        updatePublishStatus();
-        saveDraft();
-    });
 });

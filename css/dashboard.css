@@ -130,11 +130,39 @@ body {
   object-fit: contain;
 }
 
+.logo-mark {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  background: var(--cream);
+}
+
+.logo-mark .logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .logo-fallback {
   font-family: 'Fraunces', serif;
   font-size: 21px;
   font-weight: 600;
   color: var(--teal-900);
+}
+
+.logo-wordmark {
+  display: inline-block;
+  color: var(--teal-900);
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* Navigation Tabs */

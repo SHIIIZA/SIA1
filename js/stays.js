@@ -98,7 +98,8 @@
         try {
             const remoteListings = await apiRequest("/listings");
             if (!remoteListings.length) return;
-            listings = remoteListings.map(item => ({
+
+            const databaseListings = remoteListings.map(item => ({
                 id: item.id,
                 name: item.title,
                 type: item.property_type,
@@ -111,6 +112,29 @@
                 img: item.images?.[0] || "",
                 source: "database"
             }));
+
+            const normalize = (value) => String(value || "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, " ")
+                .trim();
+
+            databaseListings.forEach((remote) => {
+                const remoteId = String(remote.id);
+                const remoteName = normalize(remote.name);
+                const remoteLocation = normalize(remote.location);
+                const existing = listings.find((listing) => {
+                    if (String(listing.id) === remoteId) return true;
+                    return normalize(listing.name) === remoteName
+                        && normalize(listing.location) === remoteLocation;
+                });
+
+                if (existing) {
+                    Object.assign(existing, remote, { id: existing.id });
+                } else {
+                    listings.push(remote);
+                }
+            });
+
             render();
         } catch (error) {
             console.warn("Database listings unavailable:", error.message);

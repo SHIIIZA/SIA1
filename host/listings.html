@@ -15,9 +15,11 @@
     <!-- Navbar -->
     <nav class="wizard-nav">
         <a href="dashboard.html" class="logo">
-            <img src="../images/tripmateo.svg" alt="TripMate" class="logo-img"
-                onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'logo-fallback',textContent:'TripMate'}))">
-            <span class="host-badge" style="background: var(--coral); color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 6px;">HOST</span>
+            <span class="logo-mark" aria-hidden="true">
+                <img src="../images/tripmate.svg#svgView(viewBox(70,440,510,620))" alt="" class="logo-img">
+            </span>
+            <span class="logo-wordmark">TripMate</span>
+            <span class="host-badge">Host</span>
         </a>
         <button class="btn btn-secondary btn-sm" id="saveExitBtn">Save & Exit</button>
     </nav>
@@ -215,21 +217,14 @@
                     <p class="step-description">What amenities do you offer your guests?</p>
                     
                     <div class="amenities-group">
-                        <h4 class="amenities-title">Essentials</h4>
-                        <div class="checkbox-grid">
-                            <label class="checkbox-label"><input type="checkbox" name="amenity" value="wifi"> <span>Wi-Fi</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="amenity" value="tv"> <span>TV</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="amenity" value="kitchen"> <span>Kitchen</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="amenity" value="ac"> <span>Air Conditioning</span></label>
-                        </div>
-                    </div>
-                    
-                    <div class="amenities-group">
-                        <h4 class="amenities-title">Facilities</h4>
-                        <div class="checkbox-grid">
-                            <label class="checkbox-label"><input type="checkbox" name="amenity" value="pool"> <span>Pool</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="amenity" value="parking"> <span>Free Parking</span></label>
-                            <label class="checkbox-label"><input type="checkbox" name="amenity" value="gym"> <span>Gym</span></label>
+                        <h4 class="amenities-title">Choose what guests can count on</h4>
+                        <div class="amenity-grid">
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Wifi"><span class="amenity-card-icon" aria-hidden="true">⌁</span><span class="amenity-card-copy"><strong>Wifi</strong><small>Stay connected</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Pool"><span class="amenity-card-icon" aria-hidden="true">◌</span><span class="amenity-card-copy"><strong>Pool</strong><small>Make a splash</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Kitchen"><span class="amenity-card-icon" aria-hidden="true">⌂</span><span class="amenity-card-copy"><strong>Kitchen</strong><small>Cook with ease</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Air conditioning"><span class="amenity-card-icon" aria-hidden="true">✣</span><span class="amenity-card-copy"><strong>Air conditioning</strong><small>Keep it cool</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Beachfront"><span class="amenity-card-icon" aria-hidden="true">≈</span><span class="amenity-card-copy"><strong>Beachfront</strong><small>Steps from the shore</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Pet friendly"><span class="amenity-card-icon" aria-hidden="true">♡</span><span class="amenity-card-copy"><strong>Pet friendly</strong><small>Bring the whole family</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
                         </div>
                     </div>
 
@@ -251,33 +246,9 @@
                         </div>
                     </div>
 
-                    <div class="toggles-list" style="margin-bottom: 24px;">
-                        <label class="toggle-label">
-                            <span class="toggle-text">Smoking allowed</span>
-                            <div class="switch">
-                                <input type="checkbox" id="ruleSmoking">
-                                <span class="slider"></span>
-                            </div>
-                        </label>
-                        <label class="toggle-label">
-                            <span class="toggle-text">Pets allowed</span>
-                            <div class="switch">
-                                <input type="checkbox" id="rulePets" checked>
-                                <span class="slider"></span>
-                            </div>
-                        </label>
-                        <label class="toggle-label">
-                            <span class="toggle-text">Parties/events allowed</span>
-                            <div class="switch">
-                                <input type="checkbox" id="ruleParties">
-                                <span class="slider"></span>
-                            </div>
-                        </label>
-                    </div>
-
                     <div class="form-group">
-                        <label for="customRules">Custom Rules (Optional)</label>
-                        <textarea id="customRules" class="form-input" rows="4" placeholder="Any other rules guests should know about..."></textarea>
+                        <label for="customRules">Guest notes (Optional)</label>
+                        <textarea id="customRules" class="form-input" rows="4" placeholder="Share any important information guests should know before booking."></textarea>
                     </div>
                 </section>
 
@@ -329,19 +300,15 @@
                     <p class="step-description">Ready to share your property with the world?</p>
                     
                     <div class="publish-card">
-                        <div class="publish-status-toggle">
+                        <div class="publish-ready-panel">
                             <div>
-                                <h4>Listing Status</h4>
-                                <p id="statusHint" style="color: #6B6659; font-size: 13px;">Currently saved as a Draft.</p>
+                                <h4>Ready to publish?</h4>
+                                <p id="statusHint" style="color: #6B6659; font-size: 13px;">Your completed listing will appear on the Stays page.</p>
                             </div>
-                            <label class="toggle-label">
-                                <span class="toggle-text" id="statusLabel" style="font-weight: 600;">Draft</span>
-                                <div class="switch">
-                                    <input type="checkbox" id="publishToggle">
-                                    <span class="slider round"></span>
-                                </div>
-                            </label>
+                            <span class="publish-ready-badge">Public listing</span>
                         </div>
+
+                        <div id="reviewSummary" class="review-summary" aria-live="polite"></div>
                         
                         <div class="seo-preview">
                             <h4>Public Link</h4>

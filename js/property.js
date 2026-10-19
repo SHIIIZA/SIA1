@@ -130,7 +130,6 @@
             amenities: ["Wifi", "Kitchen", "Air conditioning"],
             images: [
                 "https://cf.bstatic.com/xdata/images/hotel/max1024x768/184656762.jpg?k=03df05cdd232e5aec61fb79b29314d5d84e8eb5904f33efa84a05dd9b1800e80&o=",
-                "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?q=80&w=800&auto=format&fit=crop",
                 "https://images.unsplash.com/photo-1580619305218-8423a7ef79b4?q=80&w=800&auto=format&fit=crop"
             ],
             description: "Cozy homestay in Sagada with mountain views and easy access to Echo Valley, Hanging Coffins, and Sumaguing Cave. Experience authentic Igorot hospitality in a comfortable home setting. Perfect base for exploring the Cordilleras.",
@@ -163,6 +162,82 @@
         }
     };
 
+    const fallbackStayData = {
+        "baguio-holiday-villas": {
+            name: "Baguio Holiday Villas", type: "Villa", location: "Baguio City, Benguet",
+            price: 4300, rating: 4.92, reviews: 128, guests: 6,
+            amenities: ["Wifi", "Kitchen", "Air conditioning", "Pet friendly"],
+            image: "https://pix8.agoda.net/hotelImages/275905/0/2bfa720cb4d3471781e35efcbe6c3dfe.jpg?ce=2&s=375x"
+        },
+        "alon-resort": {
+            name: "Alon Resort", type: "Resort", location: "General Luna, Siargao",
+            price: 2900, rating: 4.88, reviews: 171, guests: 4,
+            amenities: ["Wifi", "Beachfront", "Kitchen"],
+            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTVJ03F6aGc6mGqRA_pNPSmADp1ioMW0JHRVKb4OFcFnztKn03YanWUbPk&s=10"
+        },
+        "kubo-homestay": {
+            name: "Kubo Homestay", type: "Cabin", location: "El Nido, Palawan",
+            price: 3600, rating: 4.95, reviews: 97, guests: 4,
+            amenities: ["Wifi", "Beachfront"],
+            image: "https://a0.muscache.com/im/pictures/d64b6a63-3599-4fa3-a6dc-3062a952202b.jpg?im_w=720"
+        },
+        "ivatan-stone-house": {
+            name: "Ivatan Stone House", type: "House rental", location: "Basco, Batanes",
+            price: 2600, rating: 4.98, reviews: 41, guests: 2,
+            amenities: ["Wifi", "Kitchen", "Pet friendly"],
+            image: "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/25/1d/9d/8d/house-of-dakay-in-ivana.jpg?w=900&h=500&s=1"
+        },
+        "astoria-current": {
+            name: "Astoria Current", type: "Resort", location: "Boracay, Aklan",
+            price: 5800, rating: 4.9, reviews: 342, guests: 4,
+            amenities: ["Wifi", "Pool", "Beachfront", "Air conditioning"],
+            image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7DjJY2wWxNmj-AVl2FuBM8tT99YqVb3U2AO-5srMWWAkFKwRowBoNAb9I&s=10"
+        },
+        "sunset-villa": {
+            name: "Sunset Villa", type: "Villa", location: "Coron, Palawan",
+            price: 5200, rating: 4.94, reviews: 118, guests: 8,
+            amenities: ["Wifi", "Pool", "Kitchen", "Beachfront"],
+            image: "https://discovery.s14-host.com/qkUByrarp5PILHjccAD3jHDhtozxLY-metaU3Vuc2V0LVZpbGxhLURlbHV4ZS1WZXJhbmRhLmpwZw==-.jpg"
+        },
+        "summit-ridge-hotel": {
+            name: "Summit Ridge Hotel", type: "Hotel", location: "Tagaytay, Cavite",
+            price: 3100, rating: 4.7, reviews: 256, guests: 2,
+            amenities: ["Wifi", "Air conditioning", "Pool"],
+            image: "https://q-xx.bstatic.com/xdata/images/hotel/max500/706396016.jpg?k=3529c641d8fd7b530aad8996d0a01cbf7ae799a6003388650f33a1823a3fd0d3&o="
+        },
+        "la-casa-ramirez": {
+            name: "La Casa Ramirez", type: "Hotel", location: "Vigan, Ilocos Sur",
+            price: 2200, rating: 4.8, reviews: 132, guests: 3,
+            amenities: ["Wifi", "Air conditioning"],
+            image: "https://pix8.agoda.net/property/63493626/0/3391d813834943320c8e241cfe585d82.jpeg?ce=3&s=600x"
+        },
+        "backpackers-travelers-inn": {
+            name: "Backpackers Travelers Inn", type: "Cabin", location: "Valencia, Negros Oriental",
+            price: 900, rating: 4.87, reviews: 74, guests: 10,
+            amenities: ["Wifi", "Pet friendly"],
+            image: "https://pix8.agoda.net/hotelImages/85348252/0/b294dc4f9636bff3a7f896491fd591cc.jpg?ce=3&s=600x"
+        }
+    };
+
+    Object.entries(fallbackStayData).forEach(([id, stay]) => {
+        propertyData[id] = {
+            id,
+            ...stay,
+            images: [stay.image],
+            description: `Enjoy a comfortable ${stay.type.toLowerCase()} in ${stay.location}, with thoughtful amenities for a relaxing TripMate stay.`,
+            host: {
+                name: "TripMate host",
+                avatar: "",
+                joined: new Date().getFullYear().toString(),
+                verified: true,
+                responseRate: 100,
+                responseTime: "within an hour"
+            },
+            houseRules: ["Check-in details provided after booking", "No smoking indoors", "Respect quiet hours"],
+            reviews: []
+        };
+    });
+
     // Utility functions
     const peso = (n) => "₱" + Math.round(n).toLocaleString("en-PH");
 
@@ -189,6 +264,52 @@
         return date.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" });
     }
 
+    function getStoredUsers() {
+        try {
+            const users = JSON.parse(localStorage.getItem("tripmate_users") || "[]");
+            return Array.isArray(users) ? users : [];
+        } catch (error) {
+            console.warn("Unable to read stored host profiles:", error.message);
+            return [];
+        }
+    }
+
+    function resolveHostIdentity(listing, fallbackHost = {}) {
+        const users = getStoredUsers();
+        const sessionUser = (() => {
+            try { return JSON.parse(localStorage.getItem("tripmate_user") || "null"); }
+            catch { return null; }
+        })();
+        const hostId = listing?.hostId ?? listing?.host_id;
+        const storedHost = users.find(user => hostId != null && String(user.id) === String(hostId))
+            || (sessionUser && hostId != null && String(sessionUser.id) === String(hostId) ? sessionUser : null);
+        const host = storedHost || {};
+        const name = String(
+            listing?.hostUsername
+            || listing?.host_username
+            || host.username
+            || listing?.hostName
+            || listing?.host_name
+            || host.name
+            || fallbackHost.name
+            || "Host"
+        ).trim() || "Host";
+        const avatar = String(
+            listing?.hostAvatar
+            || listing?.host_avatar
+            || host.avatar
+            || host.profilePicture
+            || fallbackHost.avatar
+            || ""
+        ).trim();
+        return {
+            ...fallbackHost,
+            name,
+            avatar,
+            joined: host.createdAt || fallbackHost.joined || new Date().getFullYear().toString()
+        };
+    }
+
     // Amenity icons mapping
     const amenityIcons = {
         "Wifi": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.5 16.5a5.5 5.5 0 0 1 7 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`,
@@ -203,7 +324,8 @@
     const urlParams = new URLSearchParams(window.location.search);
     const propertyId = urlParams.get("id") || "happy-hut";
     try {
-        const hostListing = JSON.parse(localStorage.getItem("tripmate_listings") || "[]").find(item => item.id === propertyId);
+        const hostListing = JSON.parse(localStorage.getItem("tripmate_listings") || "[]")
+            .find(item => String(item.id) === propertyId);
         if (hostListing) {
             propertyData[propertyId] = {
                 id: hostListing.id,
@@ -217,7 +339,7 @@
                 amenities: hostListing.amenities || [],
                 images: hostListing.images?.length ? hostListing.images : [""],
                 description: hostListing.description || "A stay listed by a TripMate host.",
-                host: { name: "TripMate host", avatar: "", joined: new Date().getFullYear().toString(), verified: true, responseRate: 100, responseTime: "within an hour" },
+                host: resolveHostIdentity(hostListing, { joined: new Date().getFullYear().toString(), verified: true, responseRate: 100, responseTime: "within an hour" }),
                 houseRules: [],
                 reviews: []
             };
@@ -233,13 +355,10 @@
     const propertyLocation = document.getElementById("propertyLocation");
     const propertyStars = document.getElementById("propertyStars");
     const propertyRatingValue = document.getElementById("propertyRatingValue");
-    const propertyReviewCount = document.getElementById("propertyReviewCount");
     const propertyHost = document.getElementById("propertyHost");
     const propertyDescription = document.getElementById("propertyDescription");
     const amenitiesGrid = document.getElementById("amenitiesGrid");
     const houseRules = document.getElementById("houseRules");
-    const reviewsSummary = document.getElementById("reviewsSummary");
-    const reviewsList = document.getElementById("reviewsList");
     const nightlyPrice = document.getElementById("nightlyPrice");
     const bookingBreakdown = document.getElementById("bookingBreakdown");
     const bookingForm = document.getElementById("bookingForm");
@@ -270,7 +389,13 @@
                     amenities: remote.amenities || [],
                     images: remote.images?.length ? remote.images : [""],
                     description: remote.description || "A stay listed by a TripMate host.",
-                    host: { name: "TripMate host", avatar: "", joined: new Date().getFullYear().toString(), verified: true, responseRate: 100, responseTime: "within an hour" },
+                    host: resolveHostIdentity({
+                        hostId: remote.host_id,
+                        hostUsername: remote.host_username,
+                        hostName: remote.host_name,
+                        hostAvatar: remote.host_avatar,
+                        hostCreatedAt: remote.host_created_at
+                    }, { joined: remote.host_created_at || new Date().getFullYear().toString(), verified: true, responseRate: 100, responseTime: "within an hour" }),
                     houseRules: [],
                     reviews: []
                 };
@@ -282,6 +407,11 @@
             window.location.href = "stays.html";
             return;
         }
+        const reviewCount = Array.isArray(property.reviews)
+            ? property.reviews.length
+            : Number(property.reviews) || 0;
+        property.reviews = Array.isArray(property.reviews) ? property.reviews : [];
+        property.reviewCount = reviewCount;
         document.title = `${property.name} — TripMate`;
 
         // Gallery
@@ -323,17 +453,40 @@
         propertyLocation.textContent = property.location;
         propertyStars.innerHTML = renderStars(property.rating);
         propertyRatingValue.textContent = property.rating.toFixed(2);
-        propertyReviewCount.textContent = `(${property.reviews} reviews)`;
 
         // Host
-        propertyHost.innerHTML = `
-            <img src="${property.host.avatar}" alt="${property.host.name}" class="host-avatar">
-            <div class="host-info">
-                <h3>Hosted by ${property.host.name}</h3>
-                <p>Joined ${property.host.joined} · ${property.host.responseRate}% response rate · ${property.host.responseTime}</p>
-                ${property.host.verified ? '<span class="host-verified"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg> Verified host</span>' : ''}
-            </div>
-        `;
+        const hostName = property.host.name || "Host";
+        const hostAvatar = property.host.avatar;
+        const hostAvatarElement = hostAvatar ? document.createElement("img") : document.createElement("div");
+        hostAvatarElement.className = "host-avatar";
+        if (hostAvatar) {
+            hostAvatarElement.src = hostAvatar;
+            hostAvatarElement.alt = hostName;
+            hostAvatarElement.addEventListener("error", () => {
+                const fallback = document.createElement("div");
+                fallback.className = "host-avatar host-avatar-fallback";
+                fallback.textContent = hostName.slice(0, 1).toUpperCase();
+                hostAvatarElement.replaceWith(fallback);
+            }, { once: true });
+        } else {
+            hostAvatarElement.classList.add("host-avatar-fallback");
+            hostAvatarElement.textContent = hostName.slice(0, 1).toUpperCase();
+            hostAvatarElement.setAttribute("aria-label", `${hostName} profile picture`);
+        }
+        const hostInfo = document.createElement("div");
+        hostInfo.className = "host-info";
+        const hostHeading = document.createElement("h3");
+        hostHeading.textContent = `Hosted by ${hostName}`;
+        const hostMeta = document.createElement("p");
+        hostMeta.textContent = `Joined ${property.host.joined} · ${property.host.responseRate}% response rate · ${property.host.responseTime}`;
+        hostInfo.append(hostHeading, hostMeta);
+        if (property.host.verified) {
+            const verified = document.createElement("span");
+            verified.className = "host-verified";
+            verified.textContent = "✓ Verified host";
+            hostInfo.append(verified);
+        }
+        propertyHost.replaceChildren(hostAvatarElement, hostInfo);
 
         // Description
         propertyDescription.textContent = property.description;
@@ -348,45 +501,6 @@
 
         // House rules
         houseRules.innerHTML = property.houseRules.map(rule => `<li>${rule}</li>`).join("");
-
-        // Reviews summary
-        const ratingDistribution = [5, 4, 3, 2, 1].map(stars => {
-            const count = property.reviews.filter(r => r.rating === stars).length;
-            const pct = property.reviews.length ? (count / property.reviews.length) * 100 : 0;
-            return { stars, count, pct };
-        });
-
-        reviewsSummary.innerHTML = `
-            <div class="reviews-score">
-                <div class="score">${property.rating.toFixed(2)}</div>
-                <div class="stars">${renderStars(property.rating)}</div>
-                <div style="margin-top: 4px; color: var(--ink-light); font-size: 0.9rem;">${property.reviews} reviews</div>
-            </div>
-            <div class="reviews-breakdown">
-                ${ratingDistribution.map(r => `
-                    <div class="review-bar">
-                        <label>${r.stars}★</label>
-                        <div class="bar"><div class="fill" style="width: ${r.pct}%"></div></div>
-                        <span class="count">${r.count}</span>
-                    </div>
-                `).join("")}
-            </div>
-        `;
-
-        // Reviews list
-        reviewsList.innerHTML = property.reviews.map(r => `
-            <div class="review-card">
-                <div class="review-header">
-                    <div class="review-author">
-                        <img src="${r.avatar}" alt="${r.author}">
-                        <strong>${r.author}</strong>
-                    </div>
-                    <span class="review-date">${formatDate(r.date)}</span>
-                </div>
-                <div class="stars" style="margin-bottom: 8px;">${renderStars(r.rating)}</div>
-                <p class="review-text">${r.text}</p>
-            </div>
-        `).join("");
 
         // Nightly price
         nightlyPrice.textContent = peso(property.price);
@@ -546,7 +660,7 @@
             location: property.location,
             price: property.price,
             rating: property.rating,
-            reviews: property.reviews.length,
+            reviews: property.reviewCount,
             guests: property.guests,
             img: property.images[0]
         }));
