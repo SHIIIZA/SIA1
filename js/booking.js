@@ -18,9 +18,10 @@
     // --- Retrieve Stored Listing Data or Fallback ---
     const storedStay = localStorage.getItem("selectedStay");
     const parsedStay = storedStay ? JSON.parse(storedStay) : null;
+    const requestedStayId = new URLSearchParams(window.location.search).get("id");
 
     const listing = {
-        id: parsedStay?.id || "pine-crest",
+        id: requestedStayId || parsedStay?.id || "pine-crest",
         name: parsedStay?.name || "Pine Crest Villa Retreat",
         location: parsedStay?.location || "Baguio City, Benguet, Luzon",
         rating: parsedStay?.rating || 4.92,
@@ -225,6 +226,46 @@
         if (el) el.textContent = pricing().total.toLocaleString("en-PH");
     }
 
+    async function resolvePublishedListingId() {
+        const numericId = Number(listing.id);
+        if (Number.isInteger(numericId) && numericId > 0) return numericId;
+
+        const normalize = (value) => String(value || "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim();
+        const slugify = (value) => normalize(value).replace(/\s+/g, "-");
+        const publishedListings = await apiRequest("/listings");
+        const match = publishedListings.find((item) =>
+            String(item.id) === String(listing.id) ||
+            slugify(item.title) === slugify(listing.id) ||
+            (normalize(item.title) === normalize(listing.name) &&
+                normalize(item.location) === normalize(listing.location))
+        );
+        if (!match) return null;
+
+        Object.assign(listing, {
+            id: Number(match.id),
+            name: match.title,
+            location: match.location,
+            ratePerNight: Number(match.price_per_night),
+            maxGuests: Number(match.max_guests) || listing.maxGuests,
+            img: match.images?.[0] || listing.img
+        });
+        state.guests = Math.min(state.guests, listing.maxGuests);
+        localStorage.setItem("selectedStay", JSON.stringify({
+            ...parsedStay,
+            id: listing.id,
+            name: listing.name,
+            location: listing.location,
+            price: listing.ratePerNight,
+            guests: listing.maxGuests,
+            img: listing.img
+        }));
+        renderSummaries();
+        return listing.id;
+    }
+
     // --- Review Panel Inputs & Stepper Controls ---
     const checkinInput = document.getElementById("checkin");
     const checkoutInput = document.getElementById("checkout");
@@ -360,19 +401,26 @@
         });
     });
 
-    // Added safety check: validate dates before jumping to Payment
-    document.getElementById("toPaymentBtn")?.addEventListener("click", () => {
-        if (new Date(state.checkOut) <= new Date(state.checkIn)) {
-            alert("Please make sure your check-out date is after your check-in date.");
-            return;
-        }
-        const listingId = typeof listing.id === 'string' ? listing.id : Number(listing.id);
-if (!listingId || (typeof listingId === 'number' && listingId <= 0)) {
-            showToast("This stay is a demo listing. Choose a published Neon stay to continue.", true);
-            return;
-        }
-        highestUnlocked = Math.max(highestUnlocked, 2);
-        goToStep(2);
+    document.getElementById("toPaymentBtn")?.addEventListener("click", async (event) => {
+if (new Date(state.checkOut) <= new Date(state.checkIn)) {
+    alert("Please make sure your check-out date is after your check-in date.");
+    return;
+}
+const button = event.currentTarget;
+button.disabled = true;
+try {
+    const listingId = await resolvePublishedListingId();
+    if (!listingId) {
+        showToast("This stay is not published in Neon and cannot be booked.", true);
+        return;
+    }
+    highestUnlocked = Math.max(highestUnlocked, 2);
+    goToStep(2);
+} catch (error) {
+    showToast(error.message || "Unable to verify this stay with Neon.", true);
+} finally {
+    button.disabled = false;
+}
     });
 
     document.getElementById("backToReviewBtn")?.addEventListener("click", () => goToStep(1));
@@ -519,6 +567,18 @@ if (!listingId || (typeof listingId === 'number' && listingId <= 0)) {
             return;
         }
 
+        let listingId;
+        try {
+            listingId = await resolvePublishedListingId();
+        } catch (error) {
+            showToast(error.message || "Unable to verify this stay with Neon.", true);
+            return;
+        }
+        if (!listingId) {
+            showToast("This stay is not published in Neon and cannot be booked.", true);
+            return;
+        }
+
         const p = pricing();
         const booking = {
             id: "BK-" + Date.now().toString(36).toUpperCase(),
@@ -543,11 +603,6 @@ if (!listingId || (typeof listingId === 'number' && listingId <= 0)) {
             status: "pending",
             createdAt: new Date().toISOString()
         };
-        const listingId = Number(listing.id);
-        if (!Number.isInteger(listingId) || listingId <= 0) {
-            showToast("Choose a stay published from the Neon database before confirming payment.", true);
-            return;
-        }
         try {
             const checkout = await apiRequest("/payments/checkout", {
                 method: "POST",
