@@ -727,12 +727,29 @@ export async function routeApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/payments/confirm") {
         const current = requireAuth();
         const bookingId = Number(url.searchParams.get("booking_id"));
-        const sessionId = url.searchParams.get("session_id");
-        if (!bookingId || !sessionId) return json(res, 400, { error: "A booking and payment session are required." });
+        let sessionId = url.searchParams.get("session_id");
+        if (!bookingId) return json(res, 400, { error: "A booking is required." });
         const bookings = await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}&select=*`);
         if (!bookings[0]) return json(res, 404, { error: "Booking not found." });
-        const paymentRows = await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}&select=id,status`);
-        if (!paymentRows[0]) return json(res, 404, { error: "Payment session not found for this booking." });
+        const paymentRows = sessionId
+            ? await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}&select=id,status,transaction_reference`)
+            : await neon(`/payments?booking_id=eq.${bookingId}&select=id,status,transaction_reference&order=created_at.desc`);
+        const payment = sessionId
+            ? paymentRows[0]
+            : paymentRows.find(item => item.status === "paid") ||
+                paymentRows.find(item => item.status === "pending" && item.transaction_reference);
+        if (!payment) return json(res, 404, { error: "Payment session not found for this booking." });
+        sessionId = payment.transaction_reference;
+        if (!sessionId) return json(res, 409, { error: "Payment session is not available yet." });
+        if (payment.status === "paid") {
+            if (bookings[0].status !== "confirmed") {
+                await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() })
+                });
+            }
+            return json(res, 200, { ok: true, booking_id: bookingId });
+        }
         const session = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}?expand[]=payments&expand[]=payment_intent`);
         const sessionAttributes = session?.data?.attributes || {};
         const payments = [

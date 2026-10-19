@@ -699,17 +699,16 @@
         const bookingId = params.get("booking_id") || pending?.bookingId;
         const callbackSessionId = params.get("checkout_session_id") || params.get("session_id");
         const sessionId = callbackSessionId || pending?.sessionId;
-        if (!paymentState && !bookingId && !sessionId) return false;
-        const pendingBookingMismatch = !callbackSessionId && pending?.bookingId &&
-            String(pending.bookingId) !== String(bookingId);
-        if (!bookingId || !sessionId || pendingBookingMismatch) {
+        if (!bookingId || (!paymentState && !sessionId)) return false;
+        if (!paymentState && pending?.bookingId && String(pending.bookingId) !== String(bookingId)) {
             showToast("We could not verify this payment session.", true);
             window.history.replaceState({}, document.title, "booking.html");
             return false;
         }
 
         try {
-            const confirmationUrl = `/payments/confirm?booking_id=${encodeURIComponent(bookingId)}&session_id=${encodeURIComponent(sessionId)}`;
+            const confirmationUrl = `/payments/confirm?booking_id=${encodeURIComponent(bookingId)}` +
+                (sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : "");
             for (let attempt = 0; ; attempt += 1) {
                 try {
                     await apiRequest(confirmationUrl);
