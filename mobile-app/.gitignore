@@ -6,3 +6,9 @@ local.properties
 .idea/
 *.jks
 *.keystore
+node_modules/
+www/
+android/.gradle/
+android/local.properties
+android/app/build/
+android/capacitor-cordova-android-plugins/build/

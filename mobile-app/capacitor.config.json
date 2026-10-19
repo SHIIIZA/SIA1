@@ -1,0 +1,12 @@
+{
+  "appId": "com.tripmate.mobile",
+  "appName": "TripMate",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "trypmate.netlify.app",
+      "checkout.paymongo.com"
+    ]
+  }
+}
