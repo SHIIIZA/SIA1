@@ -12,6 +12,26 @@ function routePath(event) {
         : `/api${withoutFunctionPrefix === "/" ? "/health" : withoutFunctionPrefix}`;
 }
 
+export function routeUrl(event) {
+    const url = new URL(routePath(event), "https://netlify.local");
+    const rawQuery = event.rawQueryString || event.rawQuery;
+    if (rawQuery) {
+        url.search = rawQuery.startsWith("?") ? rawQuery : `?${rawQuery}`;
+        return url;
+    }
+
+    const queryParameters = event.multiValueQueryStringParameters || event.queryStringParameters;
+    if (queryParameters) {
+        for (const [key, value] of Object.entries(queryParameters)) {
+            const values = Array.isArray(value) ? value : [value];
+            for (const item of values) {
+                if (item !== null && item !== undefined) url.searchParams.append(key, String(item));
+            }
+        }
+    }
+    return url;
+}
+
 function createRequest(event) {
     const request = new EventEmitter();
     request.method = event.httpMethod || "GET";
@@ -70,7 +90,7 @@ export async function handler(event) {
 
     const request = createRequest(event);
     const { response, completed } = createResponse();
-    const url = new URL(routePath(event), "https://netlify.local");
+    const url = routeUrl(event);
     const routePromise = routeApi(request, response, url);
 
     if (["POST", "PATCH", "PUT"].includes(method)) {
