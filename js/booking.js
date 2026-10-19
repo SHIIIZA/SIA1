@@ -682,9 +682,8 @@
     async function resumePaymentReturn() {
         const params = new URLSearchParams(window.location.search);
         const paymentState = params.get("payment");
-        if (!paymentState) return false;
 
-        if (paymentState !== "success") {
+        if (paymentState === "cancelled") {
             localStorage.removeItem("tripmate_pending_payment");
             showToast("Payment was not completed. You can review your trip and try again.", true);
             window.history.replaceState({}, document.title, "booking.html");
@@ -700,6 +699,7 @@
         const bookingId = params.get("booking_id") || pending?.bookingId;
         const callbackSessionId = params.get("checkout_session_id") || params.get("session_id");
         const sessionId = callbackSessionId || pending?.sessionId;
+        if (!paymentState && !bookingId && !sessionId) return false;
         const pendingBookingMismatch = !callbackSessionId && pending?.bookingId &&
             String(pending.bookingId) !== String(bookingId);
         if (!bookingId || !sessionId || pendingBookingMismatch) {

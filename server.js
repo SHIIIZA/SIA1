@@ -719,13 +719,17 @@ export async function routeApi(req, res, url) {
         if (!bookings[0]) return json(res, 404, { error: "Booking not found." });
         const paymentRows = await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}&select=id,status`);
         if (!paymentRows[0]) return json(res, 404, { error: "Payment session not found for this booking." });
-        const session = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}`);
-        const payments = Array.isArray(session?.data?.attributes?.payments) ? session.data.attributes.payments : [];
+        const session = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}?expand[]=payments&expand[]=payment_intent`);
+        const sessionAttributes = session?.data?.attributes || {};
+        const payments = [
+            ...(Array.isArray(sessionAttributes.payments) ? sessionAttributes.payments : []),
+            ...(Array.isArray(session?.included) ? session.included.filter(item => item?.type === "payment") : [])
+        ];
         const paymentStatuses = payments.map(payment =>
             String(payment?.attributes?.status || payment?.status || "").toLowerCase()
         );
-        const paymentIntentStatus = String(session?.data?.attributes?.payment_intent?.status || "").toLowerCase();
-        const checkoutStatus = String(session?.data?.attributes?.status || "").toLowerCase();
+        const paymentIntentStatus = String(sessionAttributes.payment_intent?.status || "").toLowerCase();
+        const checkoutStatus = String(sessionAttributes.status || "").toLowerCase();
         const paid = ["succeeded", "paid"].includes(paymentIntentStatus) ||
             ["succeeded", "paid"].includes(checkoutStatus) ||
             paymentStatuses.some(status => ["succeeded", "paid"].includes(status));
