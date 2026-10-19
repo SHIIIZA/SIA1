@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TripMate — Find your next escape across the Philippines</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,6 @@
         rel="stylesheet">
     <link rel="stylesheet" href="css/design-system.css">
     <link rel="stylesheet" href="css/homepage.css">
-    <script src="/js/mobile-navigation.js" defer></script>
 </head>
 
 <body>
@@ -171,11 +170,11 @@
                 <div class="dest-tag"><span class="name">Baguio</span></div>
             </div>
             <div class="dest-card">
-                <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80" alt="Batanes" loading="lazy">
+                <img src="https://www.thepoortraveler.net/wp-content/uploads/2014/06/Mahayaw-Arch-Sabtang-Island.jpg" alt="Batanes" loading="lazy">
                 <div class="dest-tag"><span class="name">Batanes</span></div>
             </div>
             <div class="dest-card">
-                <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop" alt="Boracay">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVYCEfJq7D8HVS5uD71ZGVh-MnyaZNiy_3qWVNfjpZuw&s=10" alt="Boracay">
                 <div class="dest-tag"><span class="name">Boracay</span></div>
             </div>
         </div>
@@ -251,7 +250,6 @@
         </div>
     </footer>
 
-    <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/homepage.js"></script>
     <script>
@@ -272,15 +270,7 @@
             const userAvatarBtn = document.getElementById("userAvatarBtn");
             const userDropdown = document.getElementById("userDropdown");
 
-            function updateUserMenu(user) {
-                const loggedIn = !!user && !!localStorage.getItem("tripmate_session");
-                if (!loggedIn) {
-                    if (navGetStarted) navGetStarted.style.display = "";
-                    if (navLogin) navLogin.style.display = "";
-                    if (userMenu) userMenu.style.display = "none";
-                    return;
-                }
-
+            if (isLoggedIn) {
                 // Show logged-in state
                 if (navGetStarted) navGetStarted.style.display = "none";
                 if (navLogin) navLogin.style.display = "none";
@@ -294,11 +284,12 @@
                     avatarPlaceholder.textContent = initials;
                 }
 
-                if (adminSettingsBtn) adminSettingsBtn.style.display = user.role === "admin" ? "flex" : "none";
+                if (user.role === "admin" && adminSettingsBtn) {
+                    adminSettingsBtn.style.display = "flex";
+                } else if (adminSettingsBtn) {
+                    adminSettingsBtn.remove();
+                }
             }
-
-            updateUserMenu(isLoggedIn ? user : null);
-            window.addEventListener("tripmate-user-updated", event => updateUserMenu(event.detail));
 
             // Dropdown toggle
             if (userAvatarBtn && userDropdown) {
