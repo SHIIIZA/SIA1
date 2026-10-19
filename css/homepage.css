@@ -894,7 +894,7 @@ footer {
 
 @media (max-width: 600px) {
     nav {
-        padding-top: max(48px, calc(18px + env(safe-area-inset-top, 0px)));
+        padding-top: max(76px, calc(18px + env(safe-area-inset-top, 0px)));
     }
 
     .logo-img,
