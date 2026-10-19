@@ -15,12 +15,13 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void handleOnBackPressed() {
                 WebView webView = getBridge() == null ? null : getBridge().getWebView();
-                if (webView != null && webView.canGoBack()) {
-                    webView.goBack();
-                    return;
-                }
+                if (webView == null) return;
 
-                if (webView != null && !isHomePage(webView.getUrl())) {
+                if (!isHomePage(webView.getUrl())) {
+                    if (webView.canGoBack()) {
+                        webView.goBack();
+                        return;
+                    }
                     webView.evaluateJavascript(
                             "window.location.replace(new URL('/homepage.html', window.location.origin).href)",
                             null

@@ -63,6 +63,15 @@
             adminSettingsBtn.style.display = (user.role || user.type || "guest") === "admin" ? "flex" : "none";
         }
 
+        window.addEventListener("tripmate-user-updated", event => {
+            if (!event.detail) {
+                window.location.href = "login.html?redirect=profile.html";
+                return;
+            }
+            user = event.detail;
+            populateUserInfo();
+        });
+
     }
 
     accountForm.addEventListener("submit", async (event) => {

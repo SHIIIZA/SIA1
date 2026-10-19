@@ -4,7 +4,11 @@ if (/\/(?:|index|homepage)\.html$/i.test(window.location.pathname)) {
     document.documentElement.classList.add("tripmate-homepage");
 }
 
-if (!/;\s*wv\)/i.test(navigator.userAgent)) {
+const isNativeWebView = /;\s*wv\)/i.test(navigator.userAgent) ||
+    (window.location.protocol === "https:" && window.location.hostname === "localhost") ||
+    window.location.protocol === "capacitor:";
+
+if (!isNativeWebView) {
 (() => {
     const history = window.history;
     const hadPreviousEntry = history.length > 1;

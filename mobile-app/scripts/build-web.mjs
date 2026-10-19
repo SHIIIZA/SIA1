@@ -1,4 +1,5 @@
 import { cp, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +8,12 @@ const mobileDirectory = resolve(scriptDirectory, "..");
 const repositoryDirectory = resolve(mobileDirectory, "..");
 const webDirectory = join(mobileDirectory, "www");
 const androidPublicDirectory = join(mobileDirectory, "android", "app", "src", "main", "assets", "public");
+const androidSdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT ||
+    join(process.env.LOCALAPPDATA || "", "Android", "Sdk");
+if (!process.env.ANDROID_HOME && !process.env.ANDROID_SDK_ROOT && existsSync(androidSdk)) {
+    process.env.ANDROID_HOME = androidSdk;
+    process.env.ANDROID_SDK_ROOT = androidSdk;
+}
 
 for (const directory of ["css", "host", "images", "js"]) {
     await cp(join(repositoryDirectory, directory), join(webDirectory, directory), {

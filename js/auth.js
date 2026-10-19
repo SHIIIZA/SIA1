@@ -75,8 +75,13 @@ function showToast(message, isError = false) {
 
 (function syncAccountFromApi() {
   const token = localStorage.getItem("tripmate_access_token");
-  if (!token || token === "local-demo-admin") return;
+  if (!token) return;
+  if (token === "local-demo-admin") {
+    logoutUser();
+    return;
+  }
 
+  let lastRefresh = 0;
   const refresh = () => apiGetCurrentUser().catch(error => {
     if (error.status === 401 || error.status === 404) {
       logoutUser();
@@ -84,15 +89,27 @@ function showToast(message, isError = false) {
     }
     console.error("Unable to refresh TripMate account from the API:", error);
   });
+  const refreshWhenVisible = () => {
+    if (document.visibilityState !== "hidden" && Date.now() - lastRefresh >= 30000) {
+      lastRefresh = Date.now();
+      refresh();
+    }
+  };
+  const startRefreshing = () => {
+    lastRefresh = Date.now();
+    refresh();
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+  };
 
   if (typeof apiGetCurrentUser === "function") {
-    refresh();
+    startRefreshing();
     return;
   }
 
   const apiScript = document.createElement("script");
   apiScript.src = new URL("/js/api.js", document.baseURI).href;
-  apiScript.addEventListener("load", refresh, { once: true });
+  apiScript.addEventListener("load", startRefreshing, { once: true });
   apiScript.addEventListener("error", () => {
     console.error("Unable to load the TripMate account API client.");
   }, { once: true });
