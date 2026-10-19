@@ -43,8 +43,10 @@ FRONTEND_URL=https://trypmate.netlify.app
 
 4. The `/api/*` rewrite in `netlify.toml` forwards to the `api` Netlify Function, so frontend calls continue using the existing relative `/api` paths.
 5. Verify the deployed bridge at `https://trypmate.netlify.app/api/health`.
+6. In PayMongo's Settings → Webhooks, add `https://trypmate.netlify.app/api/webhooks/paymongo` and subscribe to `checkout_session.payment.paid`. Use a PayMongo secret key in the same test/live mode as the webhook. The handler retrieves the session from PayMongo before marking a booking paid, and repeated deliveries are safe.
 
 For local Netlify-style testing, install the Netlify CLI and run `npm run netlify:dev`. The existing `npm start` command remains available for testing the local Node server directly.
 
 Checkout uses PayMongo Checkout Sessions for cards, GCash, and Maya. Keep `PAYMONGO_SECRET_KEY` and the Neon credentials in server or Netlify environment variables only. Use a `sk_test_` key while testing and switch to a live key for production. Never commit `.env` or add payment/database secrets to frontend JavaScript.
 
+Run the focused payment-webhook checks with `node --test server.test.js netlify/functions/api.test.js`.

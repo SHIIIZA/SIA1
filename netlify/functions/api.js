@@ -81,11 +81,13 @@ export async function handler(event) {
         return { statusCode: 204, headers, body: "" };
     }
 
-    try {
-        await initializeAdminAccount();
-        await initializeCatalogListings();
-    } catch (error) {
-        console.error("Unable to seed TripMate database:", error.message);
+    if (routePath(event) !== "/api/webhooks/paymongo") {
+        try {
+            await initializeAdminAccount();
+            await initializeCatalogListings();
+        } catch (error) {
+            console.error("Unable to seed TripMate database:", error.message);
+        }
     }
 
     const request = createRequest(event);

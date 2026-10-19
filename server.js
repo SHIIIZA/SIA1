@@ -111,10 +111,46 @@ function json(res, status, data) {
 function readBody(req) {
     return new Promise((resolve, reject) => {
         let body = "";
-        req.on("data", chunk => { body += chunk; if (body.length > 1_000_000) req.destroy(); });
-        req.on("end", () => { try { resolve(body ? JSON.parse(body) : {}); } catch { reject(new Error("Invalid JSON body")); } });
+        req.on("data", chunk => {
+            body += chunk;
+            if (body.length > 1_000_000) {
+                reject(Object.assign(new Error("Request body is too large."), { status: 413 }));
+                req.destroy();
+            }
+        });
+        req.on("end", () => {
+            req.rawBody = body;
+            try { resolve(body ? JSON.parse(body) : {}); } catch {
+                reject(Object.assign(new Error("Invalid JSON body."), { status: 400 }));
+            }
+        });
         req.on("error", reject);
     });
+}
+
+export function findVerifiedPaidCheckoutPayment(event, providerSession, payment) {
+    const eventSession = event?.data;
+    const session = providerSession?.data;
+    const attributes = session?.attributes;
+    const bookingReference = attributes?.metadata?.booking_id || attributes?.reference_number;
+    if (event?.type !== "checkout_session.payment.paid" ||
+        !eventSession?.id ||
+        eventSession.id !== session?.id ||
+        typeof event.livemode !== "boolean" ||
+        event.livemode !== attributes?.livemode ||
+        String(bookingReference || "") !== String(payment?.booking_id || "")) {
+        return null;
+    }
+
+    const expectedAmount = Math.round(Number(payment.amount) * 100);
+    if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) return null;
+    return (Array.isArray(attributes.payments) ? attributes.payments : []).find((providerPayment) => {
+        const paymentAttributes = providerPayment?.attributes;
+        return ["paid", "succeeded"].includes(String(paymentAttributes?.status || "").toLowerCase()) &&
+            String(paymentAttributes?.currency || "").toUpperCase() === "PHP" &&
+            Number.isFinite(Number(paymentAttributes?.amount)) &&
+            Math.round(Number(paymentAttributes.amount)) === expectedAmount;
+    }) || null;
 }
 
 const SQL_TABLES = new Set(["users", "listings", "bookings", "payments", "wishlists", "notifications", "reviews", "payouts", "saved_searches"]);
@@ -256,6 +292,59 @@ async function databaseHealth() {
     return { configured: Boolean(config.apiUrl && config.apiKey) };
 }
 
+async function creditCancelledBooking(paymentId, bookingId) {
+    if (!sql) {
+        throw Object.assign(new Error("Cancellation refunds require the Neon database connection."), { status: 503 });
+    }
+    await sql.query(`
+        INSERT INTO wallet_transactions (user_id, booking_id, amount, description)
+        SELECT b.guest_id,
+            b.id,
+            ROUND(GREATEST(
+                0,
+                p.amount - CASE
+                    WHEN b.check_in >= CURRENT_DATE + 7 THEN 0::numeric
+                    ELSE b.subtotal / GREATEST(1, b.check_out - b.check_in)
+                END
+            ), 2),
+            'Cancellation refund for booking #' || b.id
+        FROM bookings b
+        JOIN payments p ON p.booking_id = b.id
+        WHERE b.id = $1 AND p.id = $2
+            AND b.status = 'cancelled' AND p.status = 'paid'
+            AND ROUND(GREATEST(
+                0,
+                p.amount - CASE
+                    WHEN b.check_in >= CURRENT_DATE + 7 THEN 0::numeric
+                    ELSE b.subtotal / GREATEST(1, b.check_out - b.check_in)
+                END
+            ), 2) > 0
+        ON CONFLICT (booking_id) DO NOTHING
+    `, [bookingId, paymentId]);
+}
+
+async function recordVerifiedPayment(payment, booking) {
+    if (payment.status !== "paid") {
+        await neon(`/payments?id=eq.${payment.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() })
+        });
+    }
+
+    const bookingStatus = String(booking.status || "").toLowerCase();
+    if (bookingStatus === "cancelled") {
+        await creditCancelledBooking(payment.id, payment.booking_id);
+        return false;
+    }
+    if (bookingStatus === "completed") return false;
+
+    const updatedBookings = await neon(`/bookings?id=eq.${payment.booking_id}&status=in.(pending,confirmed)`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() })
+    });
+    return updatedBookings.length > 0;
+}
+
 async function hashPassword(password) {
     const salt = randomBytes(16).toString("hex");
     const derived = await scrypt(password, salt, 64);
@@ -371,6 +460,34 @@ export async function routeApi(req, res, url) {
     const requireAuth = () => { if (!user) throw Object.assign(new Error("Authentication required"), { status: 401 }); return user; };
     const requireHost = () => { const current = requireAuth(); if (current.role !== "host" && current.role !== "admin") throw Object.assign(new Error("Host access required"), { status: 403 }); return current; };
     const requireAdmin = () => { const current = requireAuth(); if (current.role !== "admin") throw Object.assign(new Error("Admin access required"), { status: 403 }); return current; };
+
+    if (req.method === "POST" && url.pathname === "/api/webhooks/paymongo") {
+        const webhook = body?.data;
+        if (webhook?.type !== "checkout_session.payment.paid") {
+            return json(res, 200, { received: true, ignored: true });
+        }
+        const sessionId = webhook?.data?.id;
+        if (!sessionId || typeof webhook.livemode !== "boolean") {
+            throw Object.assign(new Error("PayMongo webhook is missing its Checkout Session or mode."), { status: 400 });
+        }
+        const configuredLivemode = config.paymongoSecretKey.startsWith("sk_live_");
+        if (webhook.livemode !== configuredLivemode) {
+            throw Object.assign(new Error("PayMongo webhook mode does not match the configured API key."), { status: 400 });
+        }
+
+        const paymentRows = await neon(`/payments?transaction_reference=eq.${encodeURIComponent(sessionId)}&select=id,booking_id,amount,status`);
+        const payment = paymentRows[0];
+        if (!payment) throw Object.assign(new Error("Payment record is not available for this Checkout Session yet."), { status: 503 });
+
+        const providerSession = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}?expand[]=payments`);
+        if (!findVerifiedPaidCheckoutPayment(webhook, providerSession, payment)) {
+            throw Object.assign(new Error("PayMongo has not verified a matching paid Checkout Session."), { status: 409 });
+        }
+        const bookingRows = await neon(`/bookings?id=eq.${payment.booking_id}&select=id,status`);
+        if (!bookingRows[0]) throw Object.assign(new Error("Booking not found for this payment."), { status: 404 });
+        await recordVerifiedPayment(payment, bookingRows[0]);
+        return json(res, 200, { received: true, booking_id: payment.booking_id });
+    }
 
     if (req.method === "GET" && url.pathname === "/api/health") {
         const database = await databaseHealth();
@@ -732,8 +849,8 @@ export async function routeApi(req, res, url) {
         const bookings = await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}&select=*`);
         if (!bookings[0]) return json(res, 404, { error: "Booking not found." });
         const paymentRows = sessionId
-            ? await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}&select=id,status,transaction_reference`)
-            : await neon(`/payments?booking_id=eq.${bookingId}&select=id,status,transaction_reference&order=created_at.desc`);
+            ? await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}&select=id,booking_id,status,amount,transaction_reference`)
+            : await neon(`/payments?booking_id=eq.${bookingId}&select=id,booking_id,status,amount,transaction_reference&order=created_at.desc`);
         const payment = sessionId
             ? paymentRows[0]
             : paymentRows.find(item => item.status === "paid") ||
@@ -741,32 +858,28 @@ export async function routeApi(req, res, url) {
         if (!payment) return json(res, 404, { error: "Payment session not found for this booking." });
         sessionId = payment.transaction_reference;
         if (!sessionId) return json(res, 409, { error: "Payment session is not available yet." });
+        const bookingStatus = String(bookings[0].status || "").toLowerCase();
+        if (bookingStatus === "completed") {
+            return json(res, 409, { error: "This booking cannot be confirmed." });
+        }
+        if (bookingStatus === "cancelled" && payment.status === "paid") {
+            await creditCancelledBooking(payment.id, bookingId);
+            return json(res, 409, { error: "This booking cannot be confirmed." });
+        }
         if (payment.status === "paid") {
-            if (bookings[0].status !== "confirmed") {
-                await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}`, {
-                    method: "PATCH",
-                    body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() })
-                });
-            }
+            const confirmed = await recordVerifiedPayment(payment, bookings[0]);
+            if (!confirmed) return json(res, 409, { error: "This booking cannot be confirmed." });
             return json(res, 200, { ok: true, booking_id: bookingId });
         }
         const session = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}?expand[]=payments&expand[]=payment_intent`);
-        const sessionAttributes = session?.data?.attributes || {};
-        const payments = [
-            ...(Array.isArray(sessionAttributes.payments) ? sessionAttributes.payments : []),
-            ...(Array.isArray(session?.included) ? session.included.filter(item => item?.type === "payment") : [])
-        ];
-        const paymentStatuses = payments.map(payment =>
-            String(payment?.attributes?.status || payment?.status || "").toLowerCase()
-        );
-        const paymentIntentStatus = String(sessionAttributes.payment_intent?.status || "").toLowerCase();
-        const checkoutStatus = String(sessionAttributes.status || "").toLowerCase();
-        const paid = ["succeeded", "paid"].includes(paymentIntentStatus) ||
-            ["succeeded", "paid"].includes(checkoutStatus) ||
-            paymentStatuses.some(status => ["succeeded", "paid"].includes(status));
-        if (!paid) return json(res, 409, { error: "Payment has not been completed yet." });
-        await neon(`/bookings?id=eq.${bookingId}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() }) });
-        await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}`, { method: "PATCH", body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() }) });
+        const verifiedPayment = findVerifiedPaidCheckoutPayment({
+            type: "checkout_session.payment.paid",
+            livemode: session?.data?.attributes?.livemode,
+            data: { id: sessionId }
+        }, session, payment);
+        if (!verifiedPayment) return json(res, 409, { error: "Payment has not been completed yet." });
+        const confirmed = await recordVerifiedPayment(payment, bookings[0]);
+        if (!confirmed) return json(res, 409, { error: "This booking cannot be confirmed." });
         return json(res, 200, { ok: true, booking_id: bookingId });
     }
 
