@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { handler } from "./api.js";
+import { handler } from "../netlify/functions/api.js";
 
 test("Netlify handler decodes and routes a base64 webhook JSON body", async () => {
     const body = JSON.stringify({

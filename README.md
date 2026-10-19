@@ -49,4 +49,4 @@ For local Netlify-style testing, install the Netlify CLI and run `npm run netlif
 
 Checkout uses PayMongo Checkout Sessions for cards, GCash, and Maya. Keep `PAYMONGO_SECRET_KEY` and the Neon credentials in server or Netlify environment variables only. Use a `sk_test_` key while testing and switch to a live key for production. Never commit `.env` or add payment/database secrets to frontend JavaScript.
 
-Run the focused payment-webhook checks with `node --test server.test.js netlify/functions/api.test.js`.
+Run the focused payment-webhook checks with `node --test server.test.js tests/netlify-api.test.js`. Keep test files outside `netlify/functions/`, where Netlify discovers deployable functions.
