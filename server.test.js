@@ -1,6 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { findVerifiedPaidCheckoutPayment } from "./server.js";
+import { corsHeaders, findVerifiedPaidCheckoutPayment } from "./server.js";
+
+test("allows the Capacitor Android origin and rejects unrelated origins", () => {
+    const mobileHeaders = corsHeaders("https://localhost");
+    assert.equal(mobileHeaders["Access-Control-Allow-Origin"], "https://localhost");
+    assert.equal(mobileHeaders.Vary, "Origin");
+
+    const untrustedHeaders = corsHeaders("https://untrusted.example");
+    assert.notEqual(untrustedHeaders["Access-Control-Allow-Origin"], "https://untrusted.example");
+});
 
 function createWebhookFixture() {
     const event = {
