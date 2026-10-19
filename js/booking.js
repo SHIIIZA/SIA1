@@ -400,26 +400,13 @@
         });
     });
 
-    document.getElementById("toPaymentBtn")?.addEventListener("click", async (event) => {
-if (new Date(state.checkOut) <= new Date(state.checkIn)) {
-    alert("Please make sure your check-out date is after your check-in date.");
-    return;
-}
-const button = event.currentTarget;
-button.disabled = true;
-try {
-    const listingId = await resolvePublishedListingId();
-    if (!listingId) {
-        showToast("This stay is not published in Neon and cannot be booked.", true);
-        return;
-    }
-    highestUnlocked = Math.max(highestUnlocked, 2);
-    goToStep(2);
-} catch (error) {
-    showToast(error.message || "Unable to verify this stay with Neon.", true);
-} finally {
-    button.disabled = false;
-}
+    document.getElementById("toPaymentBtn")?.addEventListener("click", () => {
+        if (new Date(state.checkOut) <= new Date(state.checkIn)) {
+            alert("Please make sure your check-out date is after your check-in date.");
+            return;
+        }
+        highestUnlocked = Math.max(highestUnlocked, 2);
+        goToStep(2);
     });
 
     document.getElementById("backToReviewBtn")?.addEventListener("click", () => goToStep(1));
