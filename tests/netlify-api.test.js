@@ -20,3 +20,15 @@ test("Netlify handler decodes and routes a base64 webhook JSON body", async () =
     assert.equal(response.statusCode, 200);
     assert.deepEqual(JSON.parse(response.body), { received: true, ignored: true });
 });
+
+test("Netlify preflight permits the Capacitor app origin", async () => {
+    const response = await handler({
+        httpMethod: "OPTIONS",
+        path: "/api/listings",
+        headers: { origin: "https://localhost" }
+    });
+
+    assert.equal(response.statusCode, 204);
+    assert.equal(response.headers["Access-Control-Allow-Origin"], "https://localhost");
+    assert.match(response.headers["Access-Control-Allow-Headers"], /Authorization/);
+});

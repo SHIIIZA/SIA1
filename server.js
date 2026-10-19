@@ -98,12 +98,26 @@ if (!sql && (!config.apiUrl || !config.apiKey)) {
     console.warn("Missing Neon DATABASE_URL/NEON_DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
 }
 
+export function corsHeaders(origin) {
+    const configuredOrigin = String(process.env.FRONTEND_URL || env.FRONTEND_URL || "").replace(/\/$/, "");
+    const mobileOrigins = new Set(["https://localhost", "http://localhost", "capacitor://localhost"]);
+    const requestOrigin = String(origin || "").replace(/\/$/, "");
+    const responseOrigin = requestOrigin && (requestOrigin === configuredOrigin || mobileOrigins.has(requestOrigin))
+        ? requestOrigin
+        : configuredOrigin || "*";
+    return {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": responseOrigin,
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+        ...(requestOrigin === responseOrigin && responseOrigin !== "*" ? { Vary: "Origin" } : {})
+    };
+}
+
 function json(res, status, data) {
     res.writeHead(status, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Access-Control-Allow-Origin": process.env.FRONTEND_URL || env.FRONTEND_URL || "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS"
+        ...corsHeaders(res.requestOrigin),
+        "Content-Type": "application/json; charset=utf-8"
     });
     res.end(JSON.stringify(data));
 }
@@ -455,6 +469,7 @@ function safeAdminUser(user) {
 }
 
 export async function routeApi(req, res, url) {
+    res.requestOrigin = req.headers.origin;
     const body = ["POST", "PATCH", "PUT"].includes(req.method) ? await readBody(req) : {};
     const user = authUser(req);
     const requireAuth = () => { if (!user) throw Object.assign(new Error("Authentication required"), { status: 401 }); return user; };
@@ -997,11 +1012,7 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     try {
         if (req.method === "OPTIONS") {
-            res.writeHead(204, {
-                "Access-Control-Allow-Origin": process.env.FRONTEND_URL || env.FRONTEND_URL || "*",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization",
-                "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS"
-            });
+            res.writeHead(204, corsHeaders(req.headers.origin));
             res.end();
             return;
         }
