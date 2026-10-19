@@ -1,8 +1,8 @@
 (() => {
+    const isAndroidWebView = /;\s*wv\)/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
-        navigator.standalone === true ||
-        /;\s*wv\)/i.test(navigator.userAgent);
-    if (!isStandalone) return;
+        navigator.standalone === true;
+    if (!isStandalone || isAndroidWebView) return;
 
     const history = window.history;
     const hadPreviousEntry = history.length > 1;

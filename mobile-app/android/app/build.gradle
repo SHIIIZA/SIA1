@@ -1,0 +1,25 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.tripmate.mobile'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.tripmate.mobile'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+dependencies {
+    implementation project(':capacitor-android')
+    implementation 'androidx.activity:activity:1.9.2'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+}

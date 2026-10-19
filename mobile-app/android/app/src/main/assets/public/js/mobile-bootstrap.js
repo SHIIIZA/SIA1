@@ -1,6 +1,7 @@
 window.TRIPMATE_API_BASE = "https://trypmate.netlify.app/api";
 document.documentElement.classList.add("tripmate-native");
 
+if (!/;\s*wv\)/i.test(navigator.userAgent)) {
 (() => {
     const history = window.history;
     const hadPreviousEntry = history.length > 1;
@@ -25,6 +26,7 @@ document.documentElement.classList.add("tripmate-native");
         if (hadPreviousEntry) history.back();
     });
 })();
+}
 
 document.addEventListener("click", (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
