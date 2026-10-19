@@ -420,19 +420,29 @@
         mainImage.src = property.images[0];
         mainImage.alt = property.name;
 
+        galleryThumbs.addEventListener("click", (event) => {
+            const thumb = event.target.closest("button.thumb");
+            if (!thumb || !galleryThumbs.contains(thumb)) return;
+
+            const imageIndex = Number(thumb.dataset.imageIndex);
+            const image = property.images[imageIndex];
+            if (!Number.isInteger(imageIndex) || typeof image !== "string" || !image) return;
+
+            mainImage.src = image;
+            galleryThumbs.querySelectorAll(".thumb").forEach((item, index) => {
+                const isActive = index === imageIndex;
+                item.classList.toggle("active", isActive);
+                item.setAttribute("aria-pressed", String(isActive));
+            });
+        });
+
         property.images.forEach((img, i) => {
             const thumb = document.createElement("button");
             thumb.className = "thumb" + (i === 0 ? " active" : "");
+            thumb.type = "button";
+            thumb.dataset.imageIndex = String(i);
+            thumb.setAttribute("aria-pressed", String(i === 0));
             thumb.innerHTML = `<img src="${img}" alt="${property.name} - Photo ${i + 1}">`;
-            thumb.addEventListener("click", () => {
-                mainImage.style.opacity = 0;
-                setTimeout(() => {
-                    mainImage.src = img;
-                    mainImage.style.opacity = 1;
-                }, 150);
-                document.querySelectorAll(".thumb").forEach(t => t.classList.remove("active"));
-                thumb.classList.add("active");
-            });
             thumb.addEventListener("dblclick", () => {
                 if (imageLightbox && lightboxImage) {
                     lightboxImage.src = img;

@@ -115,10 +115,10 @@
     </div>
 
     <div class="search-wrap">
-        <div class="search-bar">
+        <form class="search-bar" action="stays.html" method="get">
             <div class="search-field">
                 <label>Destination</label>
-                <select id="destinationSelect">
+                <select id="destinationSelect" name="search">
                     <option value="">Where to?</option>
                     <option value="Baguio">Baguio</option>
                     <option value="Batanes">Batanes</option>
@@ -135,20 +135,20 @@
             </div>
             <div class="search-field">
                 <label>Check in</label>
-                <input type="date" id="checkinInput">
+                <input type="date" id="checkinInput" name="checkin">
             </div>
             <div class="search-field">
                 <label>Check out</label>
-                <input type="date" id="checkoutInput">
+                <input type="date" id="checkoutInput" name="checkout">
             </div>
-            <button class="search-btn" id="homeSearchBtn" type="button">
+            <button class="search-btn" id="homeSearchBtn" type="submit">
                 Search
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="7" />
                     <path d="M21 21l-4.3-4.3" />
                 </svg>
             </button>
-        </div>
+        </form>
     </div>
 
     <section id="destinations">
