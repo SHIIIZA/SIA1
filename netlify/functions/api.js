@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { initializeAdminAccount, initializeCatalogListings, routeApi } from "../../server.js";
+import { corsHeaders, initializeAdminAccount, initializeCatalogListings, routeApi } from "../../server.js";
 
 function routePath(event) {
     const rawPath = event.path || "/api/health";
@@ -71,11 +71,8 @@ function parseBody(event) {
 
 export async function handler(event) {
     const method = event.httpMethod || "GET";
-    const headers = {
-        "Access-Control-Allow-Origin": process.env.FRONTEND_URL || "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS"
-    };
+    const origin = event.headers?.origin || event.headers?.Origin;
+    const headers = corsHeaders(origin);
 
     if (method === "OPTIONS") {
         return { statusCode: 204, headers, body: "" };
