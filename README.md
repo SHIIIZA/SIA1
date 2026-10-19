@@ -50,3 +50,9 @@ For local Netlify-style testing, install the Netlify CLI and run `npm run netlif
 Checkout uses PayMongo Checkout Sessions for cards, GCash, and Maya. Keep `PAYMONGO_SECRET_KEY` and the Neon credentials in server or Netlify environment variables only. Use a `sk_test_` key while testing and switch to a live key for production. Never commit `.env` or add payment/database secrets to frontend JavaScript.
 
 Run the focused payment-webhook checks with `node --test server.test.js tests/netlify-api.test.js`. Keep test files outside `netlify/functions/`, where Netlify discovers deployable functions.
+
+## Android mobile app
+
+The native Android client is isolated in `mobile-app/` and uses Kotlin with the Gradle Android plugin. It calls the same `/api` routes on Netlify as the web app; Neon and PayMongo credentials remain server-side. It includes guest sign-in/registration, published stay browsing/search, saved stays, booking checkout via PayMongo, trip/payment status, cancellation, wallet, and API address settings.
+
+Open `mobile-app/` as a separate project in Android Studio, install Android SDK Platform 35, and run the `app` configuration, or build with `mobile-app/gradlew.bat assembleDebug`. The app defaults to `https://trypmate.netlify.app/api`. To use the local Node server from an Android emulator, set the API address in Account to `http://10.0.2.2:3000/api`; start the backend on the host machine first. Only the Android app folder contains Android build configuration, so Netlify continues discovering only `netlify/functions/api.js`.
