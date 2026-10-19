@@ -627,6 +627,20 @@ export async function routeApi(req, res, url) {
         return json(res, 200, await neon(`/bookings?guest_id=eq.${current.id}&select=*&order=created_at.desc`));
     }
 
+    if (req.method === "GET" && url.pathname === "/api/wallet") {
+        const current = requireAuth();
+        if (!sql) throw Object.assign(new Error("Wallet service requires the Neon database connection."), { status: 503 });
+        const [summary] = await sql.query(
+            "SELECT COALESCE(SUM(amount), 0)::numeric(10,2) AS balance FROM wallet_transactions WHERE user_id = $1",
+            [current.id]
+        );
+        const transactions = await sql.query(
+            "SELECT id, booking_id, amount, description, created_at FROM wallet_transactions WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20",
+            [current.id]
+        );
+        return json(res, 200, { balance: Number(summary?.balance) || 0, transactions });
+    }
+
     if (req.method === "POST" && url.pathname === "/api/payments/checkout") {
         const current = requireAuth();
         const listingId = Number(body.listing_id);
@@ -749,8 +763,63 @@ export async function routeApi(req, res, url) {
     const cancelBooking = url.pathname.match(/^\/api\/bookings\/(\d+)\/cancel$/);
     if (req.method === "PATCH" && cancelBooking) {
         const current = requireAuth();
-        const rows = await neon(`/bookings?id=eq.${cancelBooking[1]}&guest_id=eq.${current.id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled", updated_at: new Date().toISOString() }) });
+        if (!sql) throw Object.assign(new Error("Cancellation refunds require the Neon database connection."), { status: 503 });
+        const bookingId = Number(cancelBooking[1]);
+        const cancelled = await sql.query(`
+            WITH target AS MATERIALIZED (
+                SELECT b.*,
+                    (
+                        SELECT p.amount
+                        FROM payments p
+                        WHERE p.booking_id = b.id AND p.status = 'paid'
+                        ORDER BY p.paid_at DESC NULLS LAST, p.id DESC
+                        LIMIT 1
+                    ) AS paid_amount
+                FROM bookings b
+                WHERE b.id = $1 AND b.guest_id = $2
+                FOR UPDATE
+            ),
+            cancelled AS (
+                UPDATE bookings b
+                SET status = 'cancelled', updated_at = now()
+                FROM target t
+                WHERE b.id = t.id
+                    AND t.status NOT IN ('cancelled', 'completed')
+                    AND t.check_out >= CURRENT_DATE
+                RETURNING b.id, b.guest_id, b.check_in, b.check_out, b.subtotal
+            ),
+            wallet_refund AS (
+                INSERT INTO wallet_transactions (user_id, booking_id, amount, description)
+                SELECT c.guest_id,
+                    c.id,
+                    ROUND(GREATEST(
+                        0,
+                        t.paid_amount - CASE
+                            WHEN c.check_in >= CURRENT_DATE + 7 THEN 0::numeric
+                            ELSE c.subtotal / GREATEST(1, c.check_out - c.check_in)
+                        END
+                    ), 2),
+                    'Cancellation refund for booking #' || c.id
+                FROM cancelled c
+                JOIN target t ON t.id = c.id
+                WHERE t.paid_amount IS NOT NULL
+                    AND ROUND(GREATEST(
+                        0,
+                        t.paid_amount - CASE
+                            WHEN c.check_in >= CURRENT_DATE + 7 THEN 0::numeric
+                            ELSE c.subtotal / GREATEST(1, c.check_out - c.check_in)
+                        END
+                    ), 2) > 0
+                ON CONFLICT (booking_id) DO NOTHING
+                RETURNING id
+            )
+            SELECT id FROM cancelled
+        `, [bookingId, current.id]);
+        const rows = await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}&select=*`);
         if (!rows[0]) return json(res, 404, { error: "Booking not found." });
+        if (!cancelled.length && rows[0].status !== "cancelled") {
+            return json(res, 409, { error: "This booking cannot be cancelled because it is completed or has already ended." });
+        }
         return json(res, 200, rows[0]);
     }
 

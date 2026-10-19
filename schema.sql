@@ -80,6 +80,15 @@ CREATE TABLE IF NOT EXISTS payments (
     created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS wallet_transactions (
+    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    booking_id integer NOT NULL UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
+    amount numeric(10,2) NOT NULL CHECK (amount > 0),
+    description text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS wishlists (
     id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,

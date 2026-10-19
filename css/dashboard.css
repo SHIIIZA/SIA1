@@ -497,6 +497,62 @@ body {
   line-height: 1.6;
 }
 
+.wallet-panel {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.2fr);
+  gap: var(--space-lg);
+  margin: 0 0 var(--space-xl);
+  padding: clamp(20px, 3vw, 30px);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.wallet-summary {
+  padding: 8px 20px 8px 4px;
+  border-right: 1px solid var(--line);
+}
+
+.wallet-eyebrow,
+.wallet-activity h2 {
+  color: var(--teal-900);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.wallet-balance {
+  margin: 8px 0;
+  color: var(--teal-900);
+  font-family: 'Fraunces', serif;
+  font-size: clamp(28px, 3vw, 38px);
+}
+
+.wallet-note,
+.wallet-empty {
+  color: #6B6659;
+  font-size: 13px;
+}
+
+.wallet-activity h2 {
+  margin-bottom: 10px;
+}
+
+.wallet-transaction {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.wallet-transaction span:last-child {
+  color: var(--teal-700);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .mobile-menu-btn {
   display: none;
 }
@@ -1607,6 +1663,17 @@ footer {
   .trips-grid,
   .wishlist-grid[data-view="grid"] {
     grid-template-columns: 1fr;
+  }
+
+  .wallet-panel {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .wallet-summary {
+    padding: 0 0 var(--space-md);
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
   }
 
   .content-header h1 {

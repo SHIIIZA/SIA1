@@ -40,6 +40,8 @@
     const cancelledEmpty = document.getElementById("cancelledEmpty");
 
     const contentTitle = document.getElementById("contentTitle");
+    const walletBalance = document.getElementById("walletBalance");
+    const walletTransactions = document.getElementById("walletTransactions");
     const sidebarTabs = document.querySelectorAll(".sidebar-tab");
     const mobileMenuBtn = document.getElementById("mobileMenuBtn");
     const sidebar = document.getElementById("sidebar");
@@ -79,6 +81,32 @@
     if (avatarPlaceholder && user.name) {
         const initials = user.name.split(" ").filter(Boolean).map(n => n[0]).join("").toUpperCase().slice(0, 2);
         avatarPlaceholder.textContent = initials;
+    }
+
+    async function loadWallet() {
+        if (!walletBalance || !walletTransactions) return;
+        try {
+            const wallet = await apiRequest("/wallet");
+            walletBalance.textContent = Number(wallet.balance || 0).toLocaleString("en-PH", {
+                style: "currency",
+                currency: "PHP"
+            });
+            const transactions = Array.isArray(wallet.transactions) ? wallet.transactions : [];
+            walletTransactions.innerHTML = transactions.length
+                ? transactions.map(transaction => `
+                    <div class="wallet-transaction">
+                        <span>${escapeHtml(transaction.description || `Refund for booking #${transaction.booking_id}`)}</span>
+                        <span>+${Number(transaction.amount || 0).toLocaleString("en-PH", {
+                            style: "currency",
+                            currency: "PHP"
+                        })}</span>
+                    </div>
+                `).join("")
+                : '<p class="wallet-empty">No wallet credits yet.</p>';
+        } catch (error) {
+            walletBalance.textContent = "Unavailable";
+            walletTransactions.innerHTML = `<p class="wallet-empty">${escapeHtml(error.message || "Wallet could not be loaded.")}</p>`;
+        }
     }
 
     function readAllBookings() {
@@ -347,19 +375,15 @@
     // Cancel booking — updates the FULL bookings array (not the
     // per-user filtered copy) so other users' bookings are preserved.
     async function handleCancel(bookingId) {
-        if (!confirm("Are you sure you want to cancel this booking? This action cannot be undone.")) return;
+        if (!confirm("Cancel this booking? Any refund for a paid booking will be credited to your TripMate Wallet according to the cancellation policy. Unpaid bookings do not receive a refund.")) return;
 
         try {
             await apiRequest(`/bookings/${encodeURIComponent(bookingId)}/cancel`, { method: "PATCH" });
-        } catch {
-            const fullBookings = readAllBookings();
-            const index = fullBookings.findIndex(b => b.id === bookingId);
-            if (index === -1) return;
-            fullBookings[index].status = "cancelled";
-            fullBookings[index].cancelledAt = new Date().toISOString();
-            localStorage.setItem(BOOKINGS_KEY, JSON.stringify(fullBookings));
+            await Promise.all([loadBookings(), loadWallet()]);
+            alert("Booking cancelled. Any eligible refund is now shown in your TripMate Wallet.");
+        } catch (error) {
+            alert(error.message || "Unable to cancel this booking. Please try again.");
         }
-        loadBookings();
     }
 
     // Write review (placeholder)
@@ -377,4 +401,5 @@
 
     // Initialize
     loadBookings();
+    loadWallet();
 })();
