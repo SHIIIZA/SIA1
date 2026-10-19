@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TripMateMobile"
+rootProject.name = "TripMate"
 include(":app")

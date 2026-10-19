@@ -33,3 +33,10 @@ android {
 dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 }
+
+tasks.register<Copy>("tripMateDebugApk") {
+    dependsOn("assembleDebug")
+    from(layout.buildDirectory.file("outputs/apk/debug/app-debug.apk"))
+    into(layout.buildDirectory.dir("outputs/tripmate"))
+    rename { "TripMate.apk" }
+}
