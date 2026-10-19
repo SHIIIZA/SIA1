@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-25:/values-port/values-port.xml",
+            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-24:/values-port/values-port.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\setsa\\.gradle\\caches\\8.11.1\\transforms\\dda665aa4a1576cfb1759fb2bbcd5279\\transformed\\appcompat-1.7.0\\res\\values-port\\values-port.xml",
+                    "source": "C:\\Users\\setsa\\.gradle\\caches\\8.11.1\\transforms\\3c7457cdb6fb77b982c7077db2ad9499\\transformed\\appcompat-1.7.0\\res\\values-port\\values-port.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

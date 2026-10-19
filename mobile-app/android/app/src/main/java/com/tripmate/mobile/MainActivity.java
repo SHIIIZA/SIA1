@@ -1,5 +1,6 @@
 package com.tripmate.mobile;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
@@ -19,9 +20,24 @@ public class MainActivity extends BridgeActivity {
                     return;
                 }
 
+                if (webView != null && !isHomePage(webView.getUrl())) {
+                    webView.evaluateJavascript(
+                            "window.location.replace(new URL('/homepage.html', window.location.origin).href)",
+                            null
+                    );
+                    return;
+                }
+
                 setEnabled(false);
                 getOnBackPressedDispatcher().onBackPressed();
             }
         });
+    }
+
+    private boolean isHomePage(String url) {
+        if (url == null) return true;
+        String path = Uri.parse(url).getPath();
+        return path == null || path.isEmpty() || path.equals("/")
+                || path.equals("/index.html") || path.equals("/homepage.html");
     }
 }

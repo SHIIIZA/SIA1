@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
     business_name varchar(200),
     phone varchar(40),
     avatar text,
+    bio text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -23,6 +24,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT tr
 ALTER TABLE users ADD COLUMN IF NOT EXISTS business_name varchar(200);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS phone varchar(40);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text;
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique_idx ON users (lower(username)) WHERE username IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS listings (

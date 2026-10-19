@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { corsHeaders, findVerifiedPaidCheckoutPayment } from "./server.js";
+import { corsHeaders, findVerifiedPaidCheckoutPayment, routeApi } from "./server.js";
 
 test("allows the Capacitor Android origin and rejects unrelated origins", () => {
     const mobileHeaders = corsHeaders("https://localhost");
@@ -69,4 +69,28 @@ test("rejects webhook event types other than the paid checkout event", () => {
     const { event, providerSession, payment } = createWebhookFixture();
     event.type = "checkout_session.payment.failed";
     assert.equal(findVerifiedPaidCheckoutPayment(event, providerSession, payment), null);
+});
+
+test("rejects malformed DELETE request bodies before account authentication", async () => {
+    const request = {
+        method: "DELETE",
+        headers: {},
+        on(event, callback) {
+            if (event === "data") callback("{");
+            if (event === "end") callback();
+        }
+    };
+    let statusCode;
+    let responseBody;
+    const response = {
+        writeHead(status) { statusCode = status; },
+        end(body) { responseBody = body; }
+    };
+
+    await assert.rejects(
+        routeApi(request, response, new URL("https://test.local/api/me")),
+        { status: 400 }
+    );
+    assert.equal(statusCode, undefined);
+    assert.equal(responseBody, undefined);
 });

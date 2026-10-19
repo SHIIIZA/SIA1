@@ -375,6 +375,7 @@ async function verifyPassword(password, stored) {
 
 async function ensureAdminAccount() {
     if (!sql && (!config.apiUrl || !config.apiKey)) return;
+    if (sql) await sql.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bio text");
     const existing = await neon(`/users?username=eq.${ADMIN_USERNAME}&select=*`);
     const password_hash = await hashPassword(ADMIN_PASSWORD);
     const payload = {
@@ -470,7 +471,7 @@ function safeAdminUser(user) {
 
 export async function routeApi(req, res, url) {
     res.requestOrigin = req.headers.origin;
-    const body = ["POST", "PATCH", "PUT"].includes(req.method) ? await readBody(req) : {};
+    const body = ["POST", "PATCH", "PUT", "DELETE"].includes(req.method) ? await readBody(req) : {};
     const user = authUser(req);
     const requireAuth = () => { if (!user) throw Object.assign(new Error("Authentication required"), { status: 401 }); return user; };
     const requireHost = () => { const current = requireAuth(); if (current.role !== "host" && current.role !== "admin") throw Object.assign(new Error("Host access required"), { status: 403 }); return current; };
@@ -674,27 +675,65 @@ export async function routeApi(req, res, url) {
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/forgot") {
-        const email = String(body.email || "").trim().toLowerCase();
-        if (email) await neon(`/users?email=eq.${encodeURIComponent(email)}&select=id`);
-        return json(res, 200, { ok: true, message: "If an account exists, a reset link has been sent." });
+        return json(res, 501, { error: "Password reset email is not configured yet. Please contact TripMate support." });
     }
 
     if (req.method === "GET" && url.pathname === "/api/me") {
         const current = requireAuth();
         const rows = await neon(`/users?id=eq.${current.id}&select=*`);
+        if (!rows[0]) return json(res, 404, { error: "Account not found." });
         return json(res, 200, { user: safeUser(rows[0]) });
     }
 
     if (req.method === "PATCH" && url.pathname === "/api/me") {
         const current = requireAuth();
         const updates = {};
-        ["name", "email", "phone", "avatar"].forEach(key => { if (body[key] !== undefined) updates[key] = body[key]; });
+        ["name", "email", "phone", "avatar", "bio"].forEach(key => { if (body[key] !== undefined) updates[key] = body[key]; });
+        if (updates.name !== undefined) {
+            updates.name = String(updates.name).trim();
+            if (!updates.name || updates.name.length > 150) return json(res, 400, { error: "Name must be between 1 and 150 characters." });
+        }
+        if (updates.email !== undefined) {
+            updates.email = String(updates.email).trim().toLowerCase();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(updates.email)) return json(res, 400, { error: "Enter a valid email address." });
+            const existing = await neon(`/users?email=eq.${encodeURIComponent(updates.email)}&id=neq.${encodeURIComponent(current.id)}&select=id`);
+            if (existing[0]) return json(res, 409, { error: "A user with that email already exists." });
+        }
+        if (updates.phone !== undefined) {
+            updates.phone = String(updates.phone).trim();
+            if (updates.phone.length > 40) return json(res, 400, { error: "Phone number cannot exceed 40 characters." });
+        }
+        if (updates.bio !== undefined) {
+            updates.bio = String(updates.bio);
+            if (updates.bio.length > 2000) return json(res, 400, { error: "Bio cannot exceed 2000 characters." });
+        }
         const rows = await neon(`/users?id=eq.${current.id}`, { method: "PATCH", body: JSON.stringify({ ...updates, updated_at: new Date().toISOString() }) });
+        if (!rows[0]) return json(res, 404, { error: "Account not found." });
         return json(res, 200, { user: safeUser(rows[0]) });
+    }
+
+    if (req.method === "DELETE" && url.pathname === "/api/me") {
+        const current = requireAuth();
+        if (typeof body.password !== "string" || !body.password) {
+            return json(res, 400, { error: "Current password is required." });
+        }
+        const rows = await neon(`/users?id=eq.${current.id}&select=*`);
+        if (!rows[0] || !(await verifyPassword(body.password, rows[0].password_hash))) {
+            return json(res, 400, { error: "Current password is incorrect." });
+        }
+        if (rows[0].role === "admin") {
+            const admins = await neon("/users?role=eq.admin&is_active=eq.true&select=id");
+            if (admins.length <= 1) return json(res, 400, { error: "The last active admin account cannot be deleted." });
+        }
+        await neon(`/users?id=eq.${current.id}`, { method: "DELETE" });
+        return json(res, 200, { ok: true });
     }
 
     if (req.method === "PATCH" && url.pathname === "/api/me/password") {
         const current = requireAuth();
+        if (typeof body.currentPassword !== "string" || typeof body.newPassword !== "string") {
+            return json(res, 400, { error: "Current and new passwords are required." });
+        }
         const rows = await neon(`/users?id=eq.${current.id}&select=*`);
         if (!rows[0] || !(await verifyPassword(body.currentPassword, rows[0].password_hash))) return json(res, 400, { error: "Current password is incorrect." });
         if (!body.newPassword || body.newPassword.length < 8) return json(res, 400, { error: "New password must be at least 8 characters." });
@@ -702,10 +741,28 @@ export async function routeApi(req, res, url) {
         return json(res, 200, { ok: true });
     }
 
+    if (url.pathname === "/api/notifications/preferences" && req.method === "GET") {
+        const current = requireAuth();
+        const rows = await neon(`/notifications?user_id=eq.${current.id}&notification_type=eq.preferences&select=message`);
+        let preferences = { booking: true, payment: true, reminders: true, promo: false };
+        if (rows[0]?.message) {
+            try {
+                preferences = JSON.parse(rows[0].message);
+            } catch {
+                return json(res, 500, { error: "Saved notification preferences are invalid." });
+            }
+        }
+        return json(res, 200, { preferences });
+    }
+
     if (req.method === "POST" && url.pathname === "/api/notifications/preferences") {
         const current = requireAuth();
         const existing = await neon(`/notifications?user_id=eq.${current.id}&notification_type=eq.preferences&select=id`);
-        const payload = { user_id: current.id, title: "Notification preferences", message: JSON.stringify(body.preferences || {}), notification_type: "preferences", is_read: true };
+        const preferences = body.preferences;
+        if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) {
+            return json(res, 400, { error: "Notification preferences must be an object." });
+        }
+        const payload = { user_id: current.id, title: "Notification preferences", message: JSON.stringify(preferences), notification_type: "preferences", is_read: true };
         const rows = existing[0]
             ? await neon(`/notifications?id=eq.${existing[0].id}`, { method: "PATCH", body: JSON.stringify(payload) })
             : await neon("/notifications", { method: "POST", body: JSON.stringify(payload) });

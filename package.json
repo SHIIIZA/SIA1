@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "netlify:dev": "npx netlify dev"
+    "netlify:dev": "npx netlify dev",
+    "mobile:build": "node mobile-app/scripts/build-web.mjs && mobile-app\\android\\gradlew.bat -p mobile-app\\android assembleDebug"
   },
   "engines": {
     "node": ">=18"

@@ -80,4 +80,32 @@
       }
     }
   });
+
+  window.addEventListener("tripmate-user-updated", (event) => {
+    const user = event.detail;
+    const wrapper = document.querySelector(".nav-user-menu");
+    if (!wrapper) return;
+    if (!user) {
+      window.location.reload();
+      return;
+    }
+
+    const initials = (user.name || "U")
+      .split(" ")
+      .map(name => name[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+    const avatar = wrapper.querySelector("#navUserAvatarBtn");
+    if (avatar) avatar.textContent = initials;
+    const name = wrapper.querySelector(".dropdown-name");
+    const email = wrapper.querySelector(".dropdown-email");
+    if (name) name.textContent = user.name || "";
+    if (email) email.textContent = user.email || "";
+    const dashboard = wrapper.querySelector(".dropdown-item");
+    if (dashboard) {
+      dashboard.href = user.type === "host" ? "host/dashboard.html" : "dashboard.html";
+      dashboard.textContent = user.type === "host" ? "Host Dashboard" : "My Trips";
+    }
+  });
 })();

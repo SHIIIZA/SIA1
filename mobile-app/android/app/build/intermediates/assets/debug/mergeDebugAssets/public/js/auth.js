@@ -1,72 +1,16 @@
-/* TripMate — shared auth helpers (front-end demo, no real backend).
-   Canonical schema, used by login/signup/forgot-password and every
-   logged-in page (dashboard, host/dashboard, profile, wishlist, property):
-
-   localStorage:
-     tripmate_users    -> array of { id, name, email, password, type, businessName?, phone? }
-     tripmate_user     -> currently logged-in user object (password stripped)
-     tripmate_session  -> "true" while logged in (JSON-parseable AND truthy as a raw string)
-*/
-
-const USERS_KEY = "tripmate_users";
+/* TripMate session helpers. Account records and credentials are stored by the API. */
 const USER_KEY = "tripmate_user";
 const SESSION_KEY = "tripmate_session";
 
-function getUsers() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(USERS_KEY));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function findUser(email) {
-  const normalized = (email || "").trim().toLowerCase();
-  if (!normalized) return null;
-  return getUsers().find(u => (u.email || "").toLowerCase() === normalized) || null;
-}
-
-function findUserById(id) {
-  if (!id) return null;
-  return getUsers().find(u => u.id === id) || null;
-}
-
-function generateId() {
-  return "u_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-}
-
-function createUser({ name, email, password, type, businessName }) {
-  const users = getUsers();
-  const user = {
-    id: generateId(),
-    name,
-    email: email.trim(),
-    password,
-    type,
-    businessName: businessName || "",
-    phone: "",
-  };
-  users.push(user);
-  saveUsers(users);
-  return user;
-}
-
-/* Logs a user in: stores the session flag + a password-stripped copy
-   of the user record that dashboard/profile/wishlist/property pages read. */
-function loginUser(user) {
-  const { password, ...safeUser } = user;
-  localStorage.setItem(USER_KEY, JSON.stringify(safeUser));
-  localStorage.setItem(SESSION_KEY, JSON.stringify(true));
-}
-
 function logoutUser() {
+  if (typeof apiLogout === "function") {
+    apiLogout();
+    return;
+  }
+  localStorage.removeItem("tripmate_access_token");
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(SESSION_KEY);
+  window.dispatchEvent(new CustomEvent("tripmate-user-updated", { detail: null }));
 }
 
 function getCurrentUser() {
@@ -79,64 +23,6 @@ function getCurrentUser() {
 
 function isLoggedIn() {
   return !!getCurrentUser() && !!localStorage.getItem(SESSION_KEY);
-}
-
-/* Persists a partial update (e.g. from the profile page) to both the
-   master users array and, if it's the currently-logged-in user, the
-   mirrored session copy. Returns the updated (password-stripped) user,
-   or null if no user with that id exists. */
-function updateUser(id, updates) {
-  const users = getUsers();
-  const index = users.findIndex(u => u.id === id);
-  if (index === -1) return null;
-
-  // Never let a partial update silently wipe or leak the password field
-  // through a generic form submit.
-  const { password, id: _ignoredId, ...safeUpdates } = updates || {};
-  users[index] = { ...users[index], ...safeUpdates };
-  saveUsers(users);
-
-  const current = getCurrentUser();
-  if (current && current.id === id) {
-    const { password: _pw, ...safeUser } = users[index];
-    localStorage.setItem(USER_KEY, JSON.stringify(safeUser));
-  }
-
-  const { password: _pw2, ...result } = users[index];
-  return result;
-}
-
-/* Changes a user's password given their current password (used from the
-   logged-in profile page). Returns { ok: true } or { ok: false, error }. */
-function changePassword(id, currentPassword, newPassword) {
-  const users = getUsers();
-  const index = users.findIndex(u => u.id === id);
-  if (index === -1) return { ok: false, error: "User not found." };
-  if (users[index].password !== currentPassword) {
-    return { ok: false, error: "Current password is incorrect." };
-  }
-  if (!newPassword || newPassword.length < 8) {
-    return { ok: false, error: "New password must be at least 8 characters." };
-  }
-  users[index] = { ...users[index], password: newPassword };
-  saveUsers(users);
-  return { ok: true };
-}
-
-/* Resets a user's password directly by email (used from the
-   forgot-password page, standing in for an emailed-link flow in this
-   front-end-only demo). Returns { ok: true } or { ok: false, error }. */
-function resetPassword(email, newPassword) {
-  const user = findUser(email);
-  if (!user) return { ok: false, error: "No account found with that email." };
-  if (!newPassword || newPassword.length < 8) {
-    return { ok: false, error: "New password must be at least 8 characters." };
-  }
-  const users = getUsers();
-  const index = users.findIndex(u => u.id === user.id);
-  users[index] = { ...users[index], password: newPassword };
-  saveUsers(users);
-  return { ok: true };
 }
 
 function isValidEmail(email) {
@@ -186,3 +72,29 @@ function showToast(message, isError = false) {
   clearTimeout(toast._hideTimer);
   toast._hideTimer = setTimeout(() => toast.classList.remove("show"), 3200);
 }
+
+(function syncAccountFromApi() {
+  const token = localStorage.getItem("tripmate_access_token");
+  if (!token || token === "local-demo-admin") return;
+
+  const refresh = () => apiGetCurrentUser().catch(error => {
+    if (error.status === 401 || error.status === 404) {
+      logoutUser();
+      return;
+    }
+    console.error("Unable to refresh TripMate account from the API:", error);
+  });
+
+  if (typeof apiGetCurrentUser === "function") {
+    refresh();
+    return;
+  }
+
+  const apiScript = document.createElement("script");
+  apiScript.src = new URL("/js/api.js", document.baseURI).href;
+  apiScript.addEventListener("load", refresh, { once: true });
+  apiScript.addEventListener("error", () => {
+    console.error("Unable to load the TripMate account API client.");
+  }, { once: true });
+  document.head.appendChild(apiScript);
+})();

@@ -92,7 +92,7 @@ export async function handler(event) {
     const url = routeUrl(event);
     const routePromise = routeApi(request, response, url);
 
-    if (["POST", "PATCH", "PUT"].includes(method)) {
+    if (["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
         const body = parseBody(event);
         process.nextTick(() => {
             if (body) request.emit("data", body);

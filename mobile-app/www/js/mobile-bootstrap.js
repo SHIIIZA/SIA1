@@ -1,5 +1,8 @@
 window.TRIPMATE_API_BASE = "https://trypmate.netlify.app/api";
 document.documentElement.classList.add("tripmate-native");
+if (/\/(?:|index|homepage)\.html$/i.test(window.location.pathname)) {
+    document.documentElement.classList.add("tripmate-homepage");
+}
 
 if (!/;\s*wv\)/i.test(navigator.userAgent)) {
 (() => {

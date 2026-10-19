@@ -36,7 +36,7 @@
         return;
     }
 
-    const user = { ...currentUser };
+    let user = { ...currentUser };
 
     function populateUserInfo() {
         if (!dropdownName || !dropdownEmail || !avatarPlaceholder) return;
@@ -63,19 +63,9 @@
             adminSettingsBtn.style.display = (user.role || user.type || "guest") === "admin" ? "flex" : "none";
         }
 
-        const notifications = JSON.parse(localStorage.getItem(`tripmate_notifications_${user.id}`) || "null") || {
-            booking: true,
-            payment: true,
-            reminders: true,
-            promo: false
-        };
-
-        Object.entries(notificationInputs).forEach(([key, input]) => {
-            if (input) input.checked = notifications[key] !== false;
-        });
     }
 
-    accountForm.addEventListener("submit", (event) => {
+    accountForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         const firstName = firstNameInput.value.trim();
@@ -94,24 +84,25 @@
             return;
         }
 
-        const updatedUser = updateUser(user.id, {
-            name: `${firstName} ${lastName}`.trim(),
-            email,
-            phone,
-            bio
-        });
-
-        if (!updatedUser) {
-            showToast("Unable to save your profile.", true);
-            return;
+        const submitButton = accountForm.querySelector('[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
+        try {
+            user = await apiUpdateProfile({
+                name: `${firstName} ${lastName}`.trim(),
+                email,
+                phone,
+                bio
+            });
+            showToast("Profile updated successfully.");
+            populateUserInfo();
+        } catch (error) {
+            showToast(error.message || "Unable to save your profile.", true);
+        } finally {
+            if (submitButton) submitButton.disabled = false;
         }
-
-        localStorage.setItem("tripmate_user", JSON.stringify(updatedUser));
-        showToast("Profile updated successfully!");
-        populateUserInfo();
     });
 
-    securityForm.addEventListener("submit", (event) => {
+    securityForm.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         const currentPassword = currentPasswordInput.value;
@@ -133,45 +124,58 @@
             return;
         }
 
-        const result = changePassword(user.id, currentPassword, newPassword);
-        if (!result.ok) {
-            showToast(result.error || "Could not update password.", true);
-            return;
+        const submitButton = securityForm.querySelector('[type="submit"]');
+        if (submitButton) submitButton.disabled = true;
+        try {
+            await apiChangePassword(currentPassword, newPassword);
+            showToast("Password updated successfully.");
+            securityForm.reset();
+        } catch (error) {
+            showToast(error.message || "Could not update password.", true);
+        } finally {
+            if (submitButton) submitButton.disabled = false;
         }
-
-        showToast("Password updated successfully!");
-        securityForm.reset();
     });
 
+    async function saveNotifications() {
+        const preferences = Object.fromEntries(
+            Object.entries(notificationInputs).map(([key, input]) => [key, input?.checked !== false])
+        );
+        await apiSaveNotificationPreferences(preferences);
+    }
+
     Object.entries(notificationInputs).forEach(([key, input]) => {
-        input?.addEventListener("change", () => {
-            const notifications = Object.fromEntries(
-                Object.entries(notificationInputs).map(([name, checkbox]) => [name, checkbox?.checked !== false])
-            );
-            localStorage.setItem(`tripmate_notifications_${user.id}`, JSON.stringify(notifications));
-            showToast(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications updated.`);
+        input?.addEventListener("change", async () => {
+            const checked = input.checked;
+            input.disabled = true;
+            try {
+                await saveNotifications();
+                showToast(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications updated.`);
+            } catch (error) {
+                input.checked = !checked;
+                showToast(error.message || "Unable to save notification preferences.", true);
+            } finally {
+                input.disabled = false;
+            }
         });
     });
 
-    deleteAccountBtn.addEventListener("click", () => {
+    deleteAccountBtn?.addEventListener("click", async () => {
         if (!confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) return;
+        const password = prompt("Enter your current password to confirm account deletion.");
+        if (!password) return;
 
-        const users = JSON.parse(localStorage.getItem("tripmate_users") || "[]");
-        const filteredUsers = users.filter(item => item.id !== user.id);
-        localStorage.setItem("tripmate_users", JSON.stringify(filteredUsers));
-        localStorage.removeItem("tripmate_user");
-        localStorage.removeItem("tripmate_session");
-
-        const bookings = JSON.parse(localStorage.getItem("tripmate_bookings") || "[]");
-        localStorage.setItem("tripmate_bookings", JSON.stringify(bookings.filter(item => item.userId !== user.id)));
-
-        const wishlist = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
-        localStorage.setItem("tripmate_wishlist", JSON.stringify(wishlist.filter(item => item.userId !== user.id)));
-
-        showToast("Account deleted successfully.");
-        setTimeout(() => {
-            window.location.href = "homepage.html";
-        }, 1500);
+        deleteAccountBtn.disabled = true;
+        try {
+            await apiDeleteAccount(password);
+            showToast("Account deleted successfully.");
+            setTimeout(() => {
+                window.location.href = "homepage.html";
+            }, 1200);
+        } catch (error) {
+            showToast(error.message || "Unable to delete your account.", true);
+            deleteAccountBtn.disabled = false;
+        }
     });
 
     userAvatarBtn?.addEventListener("click", (event) => {
@@ -191,5 +195,33 @@
         window.location.href = "homepage.html";
     });
 
-    populateUserInfo();
+    (async () => {
+        try {
+            user = await apiGetCurrentUser();
+            populateUserInfo();
+            try {
+                const preferences = await apiGetNotificationPreferences();
+                Object.entries(notificationInputs).forEach(([key, input]) => {
+                    if (input && Object.prototype.hasOwnProperty.call(preferences, key)) {
+                        input.checked = preferences[key] !== false;
+                    }
+                });
+            } catch (error) {
+                showToast(error.message || "Unable to load notification preferences.", true);
+            }
+        } catch (error) {
+            if (error.status === 401) {
+                logoutUser();
+                window.location.href = "login.html?redirect=profile.html";
+                return;
+            }
+            showToast(error.message || "Unable to load your latest account details.", true);
+            const saveButtons = [accountForm, securityForm].flatMap(form =>
+                form ? Array.from(form.querySelectorAll('[type="submit"]')) : []
+            );
+            saveButtons.forEach(button => { button.disabled = true; });
+            Object.values(notificationInputs).forEach(input => { if (input) input.disabled = true; });
+            if (deleteAccountBtn) deleteAccountBtn.disabled = true;
+        }
+    })();
 })();

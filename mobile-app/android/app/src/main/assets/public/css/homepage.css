@@ -894,7 +894,7 @@ footer {
 
 @media (max-width: 600px) {
     nav {
-        padding-top: 18px;
+        padding-top: max(100px, calc(18px + env(safe-area-inset-top, 0px)));
     }
 
     .logo-img,
@@ -972,6 +972,6 @@ footer {
     }
 
     section {
-        padding: 48px 20px;
+        padding: 70px 20px;
     }
 }
