@@ -50,6 +50,14 @@
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
         <span>Admins</span>
       </button>
+      <button class="nav-item" data-view="cms">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <span>CMS &amp; Promotions</span>
+      </button>
+      <button class="nav-item" data-view="audit">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Audit Trail</span>
+      </button>
     </nav>
 
   </aside>
@@ -495,6 +503,109 @@
               <tbody id="adminsBody"></tbody>
             </table>
             <div class="empty-state" id="adminsEmpty" hidden><p>No admin accounts found.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CMS & PROMOTIONS ============ -->
+      <section class="view" id="view-cms">
+        <div class="page-head">
+          <div>
+            <h1>CMS &amp; Promotions</h1>
+            <p>Update homepage copy and manage booking promo codes.</p>
+          </div>
+        </div>
+
+        <div class="cms-notice" role="note">
+          These changes are stored in this browser only. They are not published to other visitors or devices until shared backend persistence is added.
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Homepage Content</h2>
+          </div>
+          <form id="cmsForm" novalidate>
+            <div class="field">
+              <label for="cmsHeadline">Hero headline</label>
+              <input type="text" id="cmsHeadline" maxlength="120" required>
+            </div>
+            <div class="field">
+              <label for="cmsDescription">Hero description</label>
+              <textarea id="cmsDescription" rows="3" maxlength="400" required></textarea>
+            </div>
+            <div class="field">
+              <label for="cmsFeaturedImage">Featured carousel image URL <span class="field-optional">(optional; use HTTPS)</span></label>
+              <input type="url" id="cmsFeaturedImage" placeholder="https://example.com/photo.jpg">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="cmsAnnouncement">Announcement banner text</label>
+                <input type="text" id="cmsAnnouncement" maxlength="180" placeholder="Share a promotion or important update">
+              </div>
+              <label class="checkbox-row cms-toggle">
+                <input type="checkbox" id="cmsAnnouncementEnabled">
+                Show announcement
+              </label>
+            </div>
+            <button type="submit" class="btn-primary">Save Homepage Content</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Booking Promo Codes</h2>
+          </div>
+          <p class="support-form-sub">Active codes can be applied in checkout on this browser. Discounts are percentages off the booking total.</p>
+          <form id="promotionForm" class="promotion-form" novalidate>
+            <div class="field">
+              <label for="promotionCode">Promo code</label>
+              <input type="text" id="promotionCode" maxlength="24" placeholder="e.g. ISLAND10" required>
+            </div>
+            <div class="field">
+              <label for="promotionDiscount">Discount (%)</label>
+              <input type="number" id="promotionDiscount" min="1" max="50" step="1" placeholder="10" required>
+            </div>
+            <div class="field">
+              <label for="promotionExpires">Expires on <span class="field-optional">(optional)</span></label>
+              <input type="date" id="promotionExpires">
+            </div>
+            <button type="submit" class="btn-primary">Add Promo</button>
+          </form>
+          <div class="table-wrap cms-table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Code</th><th>Discount</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="promotionsBody"></tbody>
+            </table>
+            <div class="empty-state" id="promotionsEmpty" hidden><p>No promo codes created yet.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ AUDIT TRAIL ============ -->
+      <section class="view" id="view-audit">
+        <div class="page-head">
+          <div>
+            <h1>Audit Trail</h1>
+            <p>Review administrative changes recorded in this browser.</p>
+          </div>
+          <div class="page-head-actions">
+            <button type="button" class="btn-outline" id="auditExportBtn">Export Log</button>
+          </div>
+        </div>
+        <div class="cms-notice" role="note">
+          Audit records are browser-local and can be edited or cleared by someone with access to this device; this is not a tamper-proof compliance log.
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Recent Admin Activity</h2>
+            <span class="audit-count" id="auditCount">0 events</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Date &amp; time</th><th>Administrator</th><th>Action</th><th>Details</th></tr></thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+            <div class="empty-state" id="auditEmpty" hidden><p>No admin changes have been recorded yet.</p></div>
           </div>
         </div>
       </section>

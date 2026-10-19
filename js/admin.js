@@ -18,6 +18,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const PROFILE_KEY = 'tripmate_admin_profile';
   const SINCE_KEY = 'tripmate_admin_since';
   const SETTINGS_KEY = 'tripmate_admin_settings';
+  const SITE_CONTENT_KEY = 'tripmate_site_content';
+  const PROMOTIONS_KEY = 'tripmate_promotions';
+  const AUDIT_KEY = 'tripmate_admin_audit';
+  const DEFAULT_SITE_CONTENT = {
+    headline: 'Wake up somewhere beautiful.',
+    description: 'From Batanes cliffs to Siargao coves — book vetted hotels and house rentals across all 7,641 islands, direct from local hosts.',
+    featuredImage: '',
+    announcement: '',
+    announcementEnabled: false,
+  };
+  const DEFAULT_PROMOTIONS = [
+    { code: 'TRIPMATE10', discount: 10, expiresAt: '', active: true },
+    { code: 'WELCOME05', discount: 5, expiresAt: '', active: true },
+  ];
+  const MAX_AUDIT_EVENTS = 500;
 
   const DEFAULT_AMENITIES = ['Free WiFi', 'Air Conditioning', 'Hot Shower', '24/7 Front Desk'];
   const COMMISSION_RATE = 0.12;
@@ -83,6 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  let cmsContent = { ...DEFAULT_SITE_CONTENT, ...loadObject(SITE_CONTENT_KEY, {}) };
+  let promotions = localStorage.getItem(PROMOTIONS_KEY) === null
+    ? DEFAULT_PROMOTIONS.map((promotion) => ({ ...promotion }))
+    : loadJSON(PROMOTIONS_KEY, []);
+  let auditEvents = loadJSON(AUDIT_KEY, []);
+  let renderAudit = () => {};
+
   let listings = loadJSON(LISTINGS_KEY, []);
   let bookings = loadJSON(BOOKINGS_KEY, []);
 
@@ -107,8 +129,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, 120);
   };
-  const persistListings = () => { save(LISTINGS_KEY, listings); syncAdminData(); };
-  const persistBookings = () => { save(BOOKINGS_KEY, bookings); syncAdminData(); };
+  const persistListings = (action = 'Listings updated', details = `${listings.length} listing(s) in admin inventory`) => {
+    save(LISTINGS_KEY, listings);
+    recordAudit(action, details);
+    syncAdminData();
+  };
+  const persistBookings = (action = 'Bookings updated', details = `${bookings.length} booking(s) in admin records`) => {
+    save(BOOKINGS_KEY, bookings);
+    recordAudit(action, details);
+    syncAdminData();
+  };
 
   const hydrateAdminData = async () => {
     if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') return;
@@ -127,9 +157,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveUsers = (users) => save(USERS_KEY, users);
 
   let adminProfile = loadObject(PROFILE_KEY, {
-    fullName: 'Admin', email: '', phone: '', emailNotifications: true, smsAlerts: false,
+    fullName: currentUser.name || currentUser.fullName || 'Admin',
+    email: currentUser.email || '',
+    phone: '',
+    emailNotifications: true,
+    smsAlerts: false,
   });
   const persistProfile = () => save(PROFILE_KEY, adminProfile);
+  const recordAudit = (action, details) => {
+    const actor = adminProfile.fullName || currentUser.name || currentUser.email || 'Admin';
+    auditEvents = [{
+      id: genId('audit_'),
+      timestamp: new Date().toISOString(),
+      actor,
+      action,
+      details: String(details || ''),
+    }, ...auditEvents].slice(0, MAX_AUDIT_EVENTS);
+    save(AUDIT_KEY, auditEvents);
+    renderAudit();
+  };
+  const persistCmsContent = (content) => {
+    localStorage.setItem(SITE_CONTENT_KEY, JSON.stringify(content));
+    cmsContent = content;
+    recordAudit('Homepage content updated', 'Saved homepage headline, description, featured image, or announcement settings.');
+  };
+  const persistPromotions = (nextPromotions, action, details) => {
+    localStorage.setItem(PROMOTIONS_KEY, JSON.stringify(nextPromotions));
+    promotions = nextPromotions;
+    recordAudit(action, details);
+  };
 
   const DEFAULT_ROWS_PER_PAGE = 8;
   let adminSettings = loadObject(SETTINGS_KEY, {
@@ -766,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
       () => {
         listings = listings.filter((l) => !inventorySelected.has(l.id));
         inventorySelected.clear();
-        persistListings();
+        persistListings('Listings deleted', `${count} listing(s) removed from inventory.`);
         renderInventory();
         renderDashboard();
         showToast(`${count} listing${count === 1 ? '' : 's'} deleted.`, 'success');
@@ -825,7 +881,7 @@ document.addEventListener('DOMContentLoaded', () => {
           : '';
         openConfirmModal('Delete listing?', `This will permanently remove "${listing.name}".${extra}`, () => {
           listings = listings.filter((l) => l.id !== listing.id);
-          persistListings();
+          persistListings('Listing deleted', `${listing.name} (${listing.id}).`);
           renderInventory();
           renderDashboard();
           showToast('Listing deleted.', 'success');
@@ -969,13 +1025,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (listingIdInput.value) {
       const listing = listingById(listingIdInput.value);
       if (listing) Object.assign(listing, payload);
+      persistListings('Listing updated', `${payload.name} (${listingIdInput.value}).`);
       showToast('Listing updated.', 'success');
     } else {
-      listings.unshift({ id: genId('l'), createdAt: Date.now(), ...payload });
+      const listing = { id: genId('l'), createdAt: Date.now(), ...payload };
+      listings.unshift(listing);
+      persistListings('Listing created', `${listing.name} (${listing.id}).`);
       showToast('Listing added.', 'success');
     }
 
-    persistListings();
     closeListingModal();
     renderInventory();
     renderDashboard();
@@ -1239,8 +1297,10 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     try {
-      if (userIdInput.value) await updateAdminUser(userIdInput.value, payload);
+      const isUpdate = Boolean(userIdInput.value);
+      if (isUpdate) await updateAdminUser(userIdInput.value, payload);
       else await createAdminUser(payload);
+      recordAudit(isUpdate ? 'User updated' : 'User created', `${payload.role} account ${payload.email}.`);
       closeUserModal();
       await renderUsers();
       await renderAdmins();
@@ -1263,7 +1323,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = adminUsers.find((item) => String(item.id) === String(id));
         if (user) openUserModal(user);
       } else if (toggle) {
-        await updateAdminUser(id, { isActive: toggle.dataset.active !== 'true' });
+        const isActive = toggle.dataset.active !== 'true';
+        await updateAdminUser(id, { isActive });
+        const user = adminUsers.find((item) => String(item.id) === String(id));
+        recordAudit(isActive ? 'User activated' : 'User deactivated', `${user?.email || id}.`);
         showToast('User access updated.', 'success');
       } else if (remove) {
         openConfirmModal('Delete user?', 'This permanently removes the account and any linked records.', async () => {
@@ -1272,6 +1335,8 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             await apiRequest(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
           }
+          const user = adminUsers.find((item) => String(item.id) === String(id));
+          recordAudit('User deleted', `${user?.email || id}.`);
           await renderUsers();
           showToast('User deleted.', 'success');
         });
@@ -1297,6 +1362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     try {
       await updateAdminUser(id, { role: 'guest' });
+      recordAudit('Admin access removed', `${user.email || id} was demoted to guest.`);
       await renderAdmins();
       showToast('Admin access removed.', 'success');
     } catch (error) {
@@ -1353,12 +1419,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (kind === 'listing') {
       const target = listingById(key);
       if (target) target.status = 'Verified';
-      persistListings();
+      persistListings('Listing verified', target?.name || key);
     } else {
       const list = getUsers();
       const target = list.find((u) => u.email === key);
       if (target) target.verified = true;
       saveUsers(list);
+      recordAudit('Host verified', application.applicantName);
     }
     renderVerification();
     renderDashboard();
@@ -1379,12 +1446,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isListing) {
           const target = listingById(key);
           if (target) target.status = 'Action Required';
-          persistListings();
+          persistListings('Listing verification rejected', target?.name || key);
         } else {
           const list = getUsers();
           const target = list.find((u) => u.email === key);
           if (target) target.declined = true;
           saveUsers(list);
+          recordAudit('Host verification rejected', application.applicantName);
         }
         renderVerification();
         renderDashboard();
@@ -1751,13 +1819,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (bookingIdInput.value) {
       const booking = bookingById(bookingIdInput.value);
       if (booking) Object.assign(booking, payload);
+      persistBookings('Booking updated', `${bookingIdInput.value}; status ${payload.status}.`);
       showToast('Booking updated.', 'success');
     } else {
-      bookings.unshift({ id: genId('b'), createdAt: Date.now(), ...payload });
+      const booking = { id: genId('b'), createdAt: Date.now(), ...payload };
+      bookings.unshift(booking);
+      persistBookings('Booking created', `${booking.id}; status ${payload.status}.`);
       showToast('Booking added.', 'success');
     }
 
-    persistBookings();
     closeBookingModal();
     renderTransactions();
     renderDashboard();
@@ -1820,6 +1890,7 @@ document.addEventListener('DOMContentLoaded', () => {
       smsAlerts: prefSmsInput.checked,
     };
     persistProfile();
+    recordAudit('Admin profile updated', 'Updated profile details or notification preferences.');
     applyAvatarEverywhere();
     showToast('Profile updated.', 'success');
   });
@@ -1948,19 +2019,26 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTransactions();
     renderDashboard();
     showToast('Settings saved.', 'success');
+    recordAudit('Admin settings updated', `Table density ${adminSettings.tableDensity}; ${rows} rows per page.`);
   });
 
   document.getElementById('settingsBackupBtn').addEventListener('click', () => {
-    if (!listings.length && !bookings.length) {
+    if (!listings.length && !bookings.length && !auditEvents.length &&
+        localStorage.getItem(SITE_CONTENT_KEY) === null &&
+        localStorage.getItem(PROMOTIONS_KEY) === null) {
       showToast('There\'s no data to back up yet.', 'error');
       return;
     }
+    recordAudit('Admin backup downloaded', 'Backup generated including this event.');
     const payload = {
       exportedAt: new Date().toISOString(),
       listings,
       bookings,
       adminProfile,
       adminSettings,
+      siteContent: cmsContent,
+      promotions,
+      auditEvents,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -1985,8 +2063,8 @@ document.addEventListener('DOMContentLoaded', () => {
       () => {
         listings = [];
         bookings = [];
-        persistListings();
-        persistBookings();
+        persistListings('Listings reset', 'All admin-managed listings were removed.');
+        persistBookings('Bookings reset', 'All admin-managed bookings were removed.');
         inventoryPage = 1;
         transactionsPage = 1;
         renderInventory();
@@ -1997,6 +2075,189 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('All listings and bookings were reset.', 'success');
       }
     );
+  });
+
+  /* =========================================================
+     CMS & PROMOTIONS
+  ========================================================= */
+  const cmsForm = document.getElementById('cmsForm');
+  const cmsHeadlineInput = document.getElementById('cmsHeadline');
+  const cmsDescriptionInput = document.getElementById('cmsDescription');
+  const cmsFeaturedImageInput = document.getElementById('cmsFeaturedImage');
+  const cmsAnnouncementInput = document.getElementById('cmsAnnouncement');
+  const cmsAnnouncementEnabledInput = document.getElementById('cmsAnnouncementEnabled');
+  const promotionsBody = document.getElementById('promotionsBody');
+  const promotionsEmpty = document.getElementById('promotionsEmpty');
+  const promotionForm = document.getElementById('promotionForm');
+
+  const renderCms = () => {
+    cmsHeadlineInput.value = cmsContent.headline || DEFAULT_SITE_CONTENT.headline;
+    cmsDescriptionInput.value = cmsContent.description || DEFAULT_SITE_CONTENT.description;
+    cmsFeaturedImageInput.value = cmsContent.featuredImage || '';
+    cmsAnnouncementInput.value = cmsContent.announcement || '';
+    cmsAnnouncementEnabledInput.checked = cmsContent.announcementEnabled === true;
+  };
+  RENDERERS.cms = () => {
+    renderCms();
+    renderPromotions();
+  };
+
+  cmsForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const headline = cmsHeadlineInput.value.trim();
+    const description = cmsDescriptionInput.value.trim();
+    const announcement = cmsAnnouncementInput.value.trim();
+    const featuredImage = cmsFeaturedImageInput.value.trim();
+
+    if (!headline || !description) {
+      showToast('Enter both a homepage headline and description.', 'error');
+      return;
+    }
+    if (cmsAnnouncementEnabledInput.checked && !announcement) {
+      showToast('Add announcement text or turn off the announcement.', 'error');
+      return;
+    }
+    if (featuredImage) {
+      try {
+        const imageUrl = new URL(featuredImage);
+        if (imageUrl.protocol !== 'https:' && imageUrl.protocol !== 'http:') throw new Error('Unsupported protocol');
+      } catch {
+        showToast('Enter a valid HTTP or HTTPS image URL.', 'error');
+        return;
+      }
+    }
+
+    const updatedContent = {
+      headline: headline.slice(0, 120),
+      description: description.slice(0, 400),
+      featuredImage,
+      announcement: announcement.slice(0, 180),
+      announcementEnabled: cmsAnnouncementEnabledInput.checked,
+    };
+    try {
+      persistCmsContent(updatedContent);
+      showToast('Homepage content saved on this browser.', 'success');
+    } catch (error) {
+      showToast(`Unable to save homepage content: ${error.message}`, 'error');
+    }
+  });
+
+  const isPromotionExpired = (promotion) =>
+    Boolean(promotion.expiresAt && promotion.expiresAt < new Date().toISOString().slice(0, 10));
+
+  function renderPromotions() {
+    promotionsEmpty.hidden = promotions.length !== 0;
+    promotionsBody.innerHTML = promotions.map((promotion) => {
+      const expired = isPromotionExpired(promotion);
+      const active = promotion.active === true && !expired;
+      const status = expired ? 'Expired' : active ? 'Active' : 'Inactive';
+      const badgeClass = expired ? 'red' : active ? 'green' : 'gray';
+      return `<tr>
+        <td><strong>${escapeHTML(promotion.code)}</strong></td>
+        <td>${Number(promotion.discount)}%</td>
+        <td>${promotion.expiresAt ? escapeHTML(formatDate(promotion.expiresAt)) : 'No expiry'}</td>
+        <td>${statusBadgeHTML(status, badgeClass)}</td>
+        <td><div class="row-actions">
+          <button type="button" class="link-btn" data-promo-action="toggle" data-code="${escapeHTML(promotion.code)}" ${expired ? 'disabled title="Expired codes cannot be activated"' : ''}>${active ? 'Deactivate' : 'Activate'}</button>
+          <button type="button" class="link-btn danger" data-promo-action="delete" data-code="${escapeHTML(promotion.code)}">Delete</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  promotionForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const code = document.getElementById('promotionCode').value.trim().toUpperCase();
+    const discount = Number(document.getElementById('promotionDiscount').value);
+    const expiresAt = document.getElementById('promotionExpires').value;
+    const today = new Date().toISOString().slice(0, 10);
+    if (!/^[A-Z0-9][A-Z0-9_-]{2,23}$/.test(code)) {
+      showToast('Use 3–24 letters, numbers, hyphens, or underscores for the code.', 'error');
+      return;
+    }
+    if (!Number.isInteger(discount) || discount < 1 || discount > 50) {
+      showToast('Discount must be a whole number from 1% to 50%.', 'error');
+      return;
+    }
+    if (expiresAt && expiresAt < today) {
+      showToast('The expiration date cannot be in the past.', 'error');
+      return;
+    }
+    if (promotions.some((promotion) => promotion.code === code)) {
+      showToast('That promo code already exists.', 'error');
+      return;
+    }
+
+    const nextPromotions = [{ code, discount, expiresAt, active: true, createdAt: new Date().toISOString() }, ...promotions];
+    try {
+      persistPromotions(nextPromotions, 'Promotion created', `${code} gives ${discount}% off${expiresAt ? ` through ${expiresAt}` : ''}.`);
+      promotionForm.reset();
+      renderPromotions();
+      showToast('Promo code created and activated.', 'success');
+    } catch (error) {
+      showToast(`Unable to save promo code: ${error.message}`, 'error');
+    }
+  });
+
+  promotionsBody.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-promo-action]');
+    if (!button) return;
+    const promotion = promotions.find((item) => item.code === button.dataset.code);
+    if (!promotion) return;
+
+    if (button.dataset.promoAction === 'delete' &&
+        !window.confirm(`Delete promo code ${promotion.code}?`)) return;
+
+    const nextPromotions = button.dataset.promoAction === 'delete'
+      ? promotions.filter((item) => item.code !== promotion.code)
+      : promotions.map((item) => item.code === promotion.code
+        ? { ...item, active: !item.active }
+        : item);
+    const action = button.dataset.promoAction === 'delete'
+      ? 'Promotion deleted'
+      : `Promotion ${promotion.active ? 'deactivated' : 'activated'}`;
+    try {
+      persistPromotions(nextPromotions, action, promotion.code);
+      renderPromotions();
+      showToast(button.dataset.promoAction === 'delete' ? 'Promo code deleted.' : 'Promo code status updated.', 'success');
+    } catch (error) {
+      showToast(`Unable to update promo code: ${error.message}`, 'error');
+    }
+  });
+
+  /* =========================================================
+     AUDIT TRAIL
+  ========================================================= */
+  const auditBody = document.getElementById('auditBody');
+  const auditEmpty = document.getElementById('auditEmpty');
+  const auditCount = document.getElementById('auditCount');
+  renderAudit = () => {
+    auditCount.textContent = `${auditEvents.length} event${auditEvents.length === 1 ? '' : 's'}`;
+    auditEmpty.hidden = auditEvents.length !== 0;
+    auditBody.innerHTML = auditEvents.map((entry) => `
+      <tr>
+        <td>${escapeHTML(new Date(entry.timestamp).toLocaleString('en-PH'))}</td>
+        <td>${escapeHTML(entry.actor)}</td>
+        <td><strong>${escapeHTML(entry.action)}</strong></td>
+        <td class="audit-detail">${escapeHTML(entry.details)}</td>
+      </tr>`).join('');
+  };
+  RENDERERS.audit = renderAudit;
+  renderCms();
+  renderPromotions();
+
+  document.getElementById('auditExportBtn').addEventListener('click', () => {
+    recordAudit('Audit log exported', 'Export generated including this event.');
+    const blob = new Blob([JSON.stringify(auditEvents, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tripmate-admin-audit-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast('Audit log exported.', 'success');
   });
 
   /* =========================================================

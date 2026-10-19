@@ -37,6 +37,25 @@
         "TRIPMATE10": 0.10,
         "WELCOME05": 0.05
     };
+    try {
+        const savedPromotions = localStorage.getItem("tripmate_promotions");
+        const promotions = savedPromotions === null ? null : JSON.parse(savedPromotions);
+        const today = new Date().toISOString().slice(0, 10);
+        if (Array.isArray(promotions)) {
+            Object.keys(PROMO_CODES).forEach(code => delete PROMO_CODES[code]);
+            promotions.forEach(promotion => {
+                const code = String(promotion?.code || "").trim().toUpperCase();
+                const discount = Number(promotion?.discount);
+                const isUnexpired = !promotion?.expiresAt || promotion.expiresAt >= today;
+                if (/^[A-Z0-9][A-Z0-9_-]{2,23}$/.test(code) && promotion.active === true &&
+                    isUnexpired && Number.isFinite(discount) && discount >= 1 && discount <= 50) {
+                    PROMO_CODES[code] = discount / 100;
+                }
+            });
+        }
+    } catch (error) {
+        console.warn("Unable to load saved promo codes:", error.message);
+    }
 
     // --- Utility Functions ---
     const todayStr = () => new Date().toISOString().split("T")[0];

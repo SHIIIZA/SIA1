@@ -2285,6 +2285,80 @@ body.is-compact-tables .row-thumb {
   .table-search {
     width: 100%;
   }
+}
+
+.cms-notice {
+  margin: 0 0 18px;
+  padding: 13px 16px;
+  border: 1px solid rgba(183, 121, 31, 0.25);
+  border-radius: var(--radius-md);
+  background: var(--amber-light);
+  color: #6b4e13;
+  font-size: 0.86rem;
+}
+
+#cmsForm .field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+
+#cmsForm .field textarea:focus {
+  border-color: var(--teal-700);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(26, 98, 89, 0.1);
+}
+
+.cms-toggle {
+  align-self: end;
+  min-height: 42px;
+}
+
+.promotion-form {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.2fr) minmax(110px, 0.7fr) minmax(160px, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.promotion-form .field {
+  margin: 0;
+}
+
+.promotion-form .btn-primary {
+  margin-bottom: 0;
+}
+
+.cms-table-wrap {
+  margin-top: 16px;
+}
+
+.audit-count {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.audit-detail {
+  max-width: 480px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .promotion-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .promotion-form {
+    grid-template-columns: 1fr;
+  }
   .field-row {
     grid-template-columns: 1fr;
     gap: 0;

@@ -63,11 +63,46 @@
 
             this.slides = await ApiService.getFeaturedStays();
             if (!this.slides || this.slides.length === 0) return;
+            this.applySiteContent();
 
             this.renderDots();
             this.bindEvents();
             this.update(0);
             this.startAutoplay();
+        }
+
+        applySiteContent() {
+            let content;
+            try {
+                content = JSON.parse(localStorage.getItem("tripmate_site_content") || "null");
+            } catch (error) {
+                console.warn("Unable to read saved homepage content:", error.message);
+                return;
+            }
+            if (!content || typeof content !== "object") return;
+
+            const headline = document.getElementById("homepageHeadline");
+            const description = document.getElementById("homepageDescription");
+            if (headline && typeof content.headline === "string") headline.textContent = content.headline;
+            if (description && typeof content.description === "string") description.textContent = content.description;
+
+            const announcement = document.getElementById("siteAnnouncement");
+            if (announcement) {
+                const message = typeof content.announcement === "string" ? content.announcement.trim() : "";
+                announcement.textContent = message;
+                announcement.hidden = content.announcementEnabled !== true || !message;
+            }
+
+            if (typeof content.featuredImage === "string" && content.featuredImage) {
+                try {
+                    const imageUrl = new URL(content.featuredImage);
+                    if (imageUrl.protocol === "https:" || imageUrl.protocol === "http:") {
+                        this.slides[0] = { ...this.slides[0], img: imageUrl.href };
+                    }
+                } catch (error) {
+                    console.warn("Saved homepage image URL is invalid:", error.message);
+                }
+            }
         }
 
         renderDots() {

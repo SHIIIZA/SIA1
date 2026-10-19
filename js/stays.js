@@ -129,7 +129,7 @@
                 });
 
                 if (existing) {
-                    Object.assign(existing, remote, { id: existing.id });
+                    Object.assign(existing, remote);
                 } else {
                     listings.push(remote);
                 }

@@ -626,7 +626,7 @@
         bookingForm.dataset.serviceFee = serviceFee;
     }
 
-    function handleBooking(e) {
+    async function handleBooking(e) {
         e.preventDefault();
 
         const checkin = checkinDate.value;
@@ -652,6 +652,43 @@
                 window.location.href = `login.html?redirect=${encodeURIComponent(redirectTarget)}`;
             }, 1000);
             return;
+        }
+
+        if (!/^\d+$/.test(String(property.id))) {
+            try {
+                const normalize = (value) => String(value || "")
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, " ")
+                    .trim();
+                const remoteListings = await apiRequest("/listings");
+                const match = remoteListings.find((item) =>
+                    normalize(item.title) === normalize(property.name) &&
+                    normalize(item.location) === normalize(property.location)
+                );
+                if (!match) {
+                    showToast("This stay is not published for online booking yet.", true);
+                    return;
+                }
+                property = {
+                    ...property,
+                    id: match.id,
+                    name: match.title,
+                    type: match.property_type || property.type,
+                    location: match.location,
+                    price: Number(match.price_per_night),
+                    guests: Number(match.max_guests) || property.guests,
+                    amenities: match.amenities || property.amenities,
+                    images: match.images?.length ? match.images : property.images
+                };
+                propertyName.textContent = property.name;
+                propertyLocation.textContent = property.location;
+                propertyType.textContent = property.type;
+                nightlyPrice.textContent = peso(property.price);
+                updateBreakdown();
+            } catch (error) {
+                showToast(error.message || "Unable to verify that this stay is available.", true);
+                return;
+            }
         }
 
         localStorage.setItem("selectedStay", JSON.stringify({

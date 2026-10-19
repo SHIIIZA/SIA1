@@ -42,6 +42,21 @@ a {
     overflow: hidden;
 }
 
+.site-announcement {
+    position: relative;
+    z-index: 2;
+    padding: 10px 20px;
+    background: #f8c47d;
+    color: #173b37;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.site-announcement[hidden] {
+    display: none;
+}
+
 .hero::after {
     content: "";
     position: absolute;
