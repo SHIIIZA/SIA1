@@ -335,7 +335,7 @@ class MainActivity : Activity() {
         val total = subtotal + cleaning + service + taxes
         text(content, "Estimated total: ${money(total)} ($days nights, fees and taxes included)", 16, ink, true, top = 12, bottom = 12)
         val acceptedTerms = CheckBox(this).apply {
-            text = "I agree to the booking terms"
+            setText(R.string.booking_terms)
             setTextColor(ink)
         }
         content.addView(acceptedTerms)
