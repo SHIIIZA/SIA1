@@ -51,6 +51,22 @@ for (const relativePath of htmlFiles) {
         html.replace("</head>", `    ${mobileAssets}\n</head>`),
         "utf8"
     );
+<<<<<<< Updated upstream
+=======
+
+        const mobileStylesheet = '<link rel="stylesheet" href="/css/mobile-native.css">';
+    const mobileBootstrap = '<script src="/js/mobile-bootstrap.js"></script>';
+    const additions = [
+        html.includes('href="/css/mobile-native.css"') ? "" : mobileStylesheet,
+        html.includes('src="/js/mobile-bootstrap.js"') ? "" : mobileBootstrap
+    ].filter(Boolean).join("\n    ");
+
+    if (additions) {
+        if (!/<\/head>/i.test(html)) throw new Error(`Cannot add mobile runtime to ${pagePath}: missing </head>.`);
+        html = html.replace(/<\/head>/i, `    ${additions}\n</head>`);
+    }
+    await writeFile(pagePath, html, "utf8");
+>>>>>>> Stashed changes
 }
 
 const scssPath = join(mobileRoot, "src", "mobile-native.scss");

@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "C:\\Users\\setsa\\.gradle\\daemon\\8.11.1\\com.tripmate.mobile.app-debug-26:\\xml_config.xml.flat",
+        "source": "C:\\Users\\setsa\\.gradle\\daemon\\8.11.1\\com.tripmate.mobile.app-main-28:\\xml\\config.xml"
+    },
+    {
+        "merged": "com.tripmate.mobile.app-debug-26:/drawable_tripmate_icon.xml.flat",
+        "source": "com.tripmate.mobile.app-main-28:/drawable/tripmate_icon.xml"
+    }
+]

@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
+<<<<<<< Updated upstream
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -9,6 +10,12 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
+=======
+        android:label="TripMate"
+        android:icon="@drawable/tripmate_icon"
+        android:roundIcon="@drawable/tripmate_icon"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+>>>>>>> Stashed changes
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation"
             android:name=".MainActivity"
