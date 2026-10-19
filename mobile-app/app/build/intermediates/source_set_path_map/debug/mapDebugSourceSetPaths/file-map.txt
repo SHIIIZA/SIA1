@@ -1,0 +1,7 @@
+com.tripmate.mobile.app-pngs-0 D:\systems integration and architecture\SIA1\mobile-app\app\build\generated\res\pngs\debug
+com.tripmate.mobile.app-resValues-1 D:\systems integration and architecture\SIA1\mobile-app\app\build\generated\res\resValues\debug
+com.tripmate.mobile.app-packageDebugResources-2 D:\systems integration and architecture\SIA1\mobile-app\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.tripmate.mobile.app-packageDebugResources-3 D:\systems integration and architecture\SIA1\mobile-app\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.tripmate.mobile.app-debug-4 D:\systems integration and architecture\SIA1\mobile-app\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.tripmate.mobile.app-debug-5 D:\systems integration and architecture\SIA1\mobile-app\app\src\debug\res
+com.tripmate.mobile.app-main-6 D:\systems integration and architecture\SIA1\mobile-app\app\src\main\res

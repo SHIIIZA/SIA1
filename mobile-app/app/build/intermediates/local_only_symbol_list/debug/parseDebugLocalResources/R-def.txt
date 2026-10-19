@@ -1,0 +1,9 @@
+R_DEF: Internal format may change without notice
+local
+drawable ic_tripmate
+string app_name
+string booking_terms
+style AppTheme
+xml backup_rules
+xml data_extraction_rules
+xml network_security_config

@@ -1,0 +1,254 @@
+/* ==========================================================================
+   TRIPMATE DESIGN SYSTEM TOKENS & ANTI-SLOP FOUNDATION
+   Boutique Philippine Archipelago Travel Aesthetics
+   ========================================================================== */
+
+:root {
+  /* Brand Identity: Earthy, Jungle Teal & Sunbaked Terracotta */
+  --tm-teal-950: #05221F;      /* Deep rainforest nocturnal ground */
+  --tm-teal-900: #0B3D3A;      /* Primary luxury brand dark */
+  --tm-teal-800: #124F49;      /* Primary interactive hover */
+  --tm-teal-700: #18635B;      /* Medium teal accent */
+  --tm-teal-100: #E4EFEA;      /* Soft teal tinted surface */
+  --tm-teal-50:  #F2F7F5;      /* Ultra subtle teal tint */
+
+  --tm-coral-500: #FF6B4A;     /* Primary vibrant action / coral */
+  --tm-coral-600: #E85535;     /* Coral hover state */
+  --tm-coral-100: #FFEAE4;     /* Coral badge background */
+  
+  --tm-gold-500: #E8B04B;      /* Star ratings & Superhost badge */
+  --tm-gold-100: #FBF4E4;      /* Gold tint surface */
+
+  /* Neutral Surfaces (Warm linen / sand instead of sterile cool gray) */
+  --tm-bg-page: #FAF7EF;       /* Base warm linen canvas */
+  --tm-bg-surface: #FFFFFF;    /* Pure crisp card surface */
+  --tm-bg-subtle: #F3EFE6;     /* Input fields & inactive chips */
+  --tm-bg-muted: #EBE5D8;      /* Secondary pill / divider tint */
+
+  /* Hairlines & Structural Borders */
+  --tm-border-light: rgba(6, 43, 39, 0.08);
+  --tm-border-base: rgba(6, 43, 39, 0.14);
+  --tm-border-hover: rgba(6, 43, 39, 0.28);
+  --tm-border-focus: #0B3D3A;
+
+  /* Typography Colors */
+  --tm-ink-900: #171E1C;       /* High-contrast body & titles */
+  --tm-ink-700: #3D4845;       /* Subtext & descriptions */
+  --tm-ink-500: #687571;       /* Secondary metadata & labels */
+  --tm-ink-300: #9AA6A2;       /* Disabled or placeholder */
+  --tm-white: #FFFFFF;
+
+  /* Fonts */
+  --tm-font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --tm-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Refined Multi-layer Ambient Shadows (No muddy AI blur) */
+  --tm-shadow-xs: 0 1px 2px rgba(6, 43, 39, 0.04);
+  --tm-shadow-sm: 0 2px 4px rgba(6, 43, 39, 0.05), 0 1px 2px rgba(6, 43, 39, 0.03);
+  --tm-shadow-md: 0 8px 20px -4px rgba(6, 43, 39, 0.08), 0 2px 6px -1px rgba(6, 43, 39, 0.04);
+  --tm-shadow-lg: 0 16px 36px -6px rgba(6, 43, 39, 0.12), 0 4px 12px -2px rgba(6, 43, 39, 0.06);
+  --tm-shadow-float: 0 24px 54px -12px rgba(6, 43, 39, 0.18), 0 8px 16px -4px rgba(6, 43, 39, 0.08);
+
+  /* Corner Radii */
+  --tm-radius-sm: 8px;
+  --tm-radius-md: 14px;
+  --tm-radius-lg: 20px;
+  --tm-radius-xl: 28px;
+  --tm-radius-pill: 9999px;
+
+  /* Animation Timings */
+  --tm-transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  --tm-transition-base: 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  --tm-transition-smooth: 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base Body resets if imported independently */
+body {
+  color: var(--tm-ink-900);
+  background-color: var(--tm-bg-page);
+  font-family: var(--tm-font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   BUTTON PRIMITIVES (High tactile feel, intentional micro-feedback)
+   ========================================================================== */
+.tm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--tm-radius-pill);
+  font-family: var(--tm-font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color var(--tm-transition-fast),
+              color var(--tm-transition-fast),
+              transform var(--tm-transition-fast),
+              box-shadow var(--tm-transition-fast),
+              border-color var(--tm-transition-fast);
+}
+
+.tm-btn:active {
+  transform: scale(0.975);
+}
+
+.tm-btn-primary {
+  background-color: var(--tm-coral-500);
+  color: var(--tm-white);
+  box-shadow: 0 2px 8px rgba(255, 107, 74, 0.28);
+}
+
+.tm-btn-primary:hover {
+  background-color: var(--tm-coral-600);
+  box-shadow: 0 4px 14px rgba(255, 107, 74, 0.38);
+}
+
+.tm-btn-dark {
+  background-color: var(--tm-teal-900);
+  color: var(--tm-white);
+  box-shadow: 0 2px 8px rgba(11, 61, 58, 0.22);
+}
+
+.tm-btn-dark:hover {
+  background-color: var(--tm-teal-800);
+  box-shadow: 0 4px 14px rgba(11, 61, 58, 0.32);
+}
+
+.tm-btn-outline {
+  background-color: var(--tm-bg-surface);
+  color: var(--tm-ink-900);
+  border-color: var(--tm-border-base);
+  box-shadow: var(--tm-shadow-xs);
+}
+
+.tm-btn-outline:hover {
+  border-color: var(--tm-ink-900);
+  background-color: var(--tm-bg-page);
+}
+
+.tm-btn-ghost {
+  background-color: transparent;
+  color: var(--tm-ink-700);
+}
+
+.tm-btn-ghost:hover {
+  background-color: var(--tm-border-light);
+  color: var(--tm-ink-900);
+}
+
+/* ==========================================================================
+   BADGES & PILLS
+   ========================================================================== */
+.tm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--tm-radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tm-badge-superhost {
+  background-color: var(--tm-gold-100);
+  color: #8C5D08;
+  border: 1px solid rgba(232, 176, 75, 0.3);
+}
+
+.tm-badge-category {
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  color: var(--tm-teal-950);
+  border: 1px solid var(--tm-border-light);
+  box-shadow: var(--tm-shadow-xs);
+}
+
+.tm-badge-coral {
+  background-color: var(--tm-coral-100);
+  color: var(--tm-coral-600);
+}
+
+/* ==========================================================================
+   CARD & CONTAINERS
+   ========================================================================== */
+.tm-card {
+  background: var(--tm-bg-surface);
+  border: 1px solid var(--tm-border-light);
+  border-radius: var(--tm-radius-md);
+  box-shadow: var(--tm-shadow-sm);
+  transition: transform var(--tm-transition-base),
+              box-shadow var(--tm-transition-base),
+              border-color var(--tm-transition-base);
+}
+
+.tm-card-hoverable:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--tm-shadow-md);
+  border-color: var(--tm-border-hover);
+}
+
+/* ==========================================================================
+   TYPOGRAPHY UTILITIES
+   ========================================================================== */
+.tm-serif {
+  font-family: var(--tm-font-serif);
+}
+
+.tm-sans {
+  font-family: var(--tm-font-sans);
+}
+
+/* Headings */
+h1.tm-heading, .tm-heading-1 {
+  font-family: var(--tm-font-serif);
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--tm-ink-900);
+}
+
+h2.tm-heading, .tm-heading-2 {
+  font-family: var(--tm-font-serif);
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--tm-ink-900);
+}
+
+h3.tm-heading, .tm-heading-3 {
+  font-family: var(--tm-font-sans);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--tm-ink-900);
+}
+
+/* ==========================================================================
+   SVG VECTOR ICONS UTILITY
+   ========================================================================== */
+.tm-icon {
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+  stroke: currentColor;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tm-icon-16 { width: 16px; height: 16px; stroke-width: 2; }
+.tm-icon-18 { width: 18px; height: 18px; stroke-width: 2; }
+.tm-icon-20 { width: 20px; height: 20px; stroke-width: 1.8; }
+.tm-icon-24 { width: 24px; height: 24px; stroke-width: 1.7; }
+

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.11.1" type="incidents">
+
+    <incident
+        id="OldTargetApi"
+        severity="warning"
+        message="Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the `android.os.Build.VERSION_CODES` javadoc for details.">
+        <fix-replace
+            description="Update targetSdkVersion to 36"
+            oldString="35"
+            replacement="36"
+            priority="0"/>
+        <location
+            file="${:app*projectDir}/build.gradle.kts"
+            line="13"
+            column="9"
+            startOffset="249"
+            endLine="13"
+            endColumn="23"
+            endOffset="263"/>
+    </incident>
+
+    <incident
+        id="AndroidGradlePluginVersion"
+        severity="warning"
+        message="A newer version of Gradle than 8.14.3 is available: 8.14.6">
+        <fix-replace
+            description="Update to 8.14.6"
+            oldString="8.14.3"
+            replacement="8.14.6"
+            priority="0"/>
+        <location
+            file="../gradle/wrapper/gradle-wrapper.properties"
+            line="3"
+            column="17"
+            startOffset="81"
+            endLine="3"
+            endColumn="81"
+            endOffset="145"/>
+    </incident>
+
+    <incident
+        id="GradleDependency"
+        severity="warning"
+        message="A newer version of `compileSdkVersion` than 35 is available: 36">
+        <fix-replace
+            description="Set compileSdkVersion to 36"
+            oldString="35"
+            replacement="36"
+            priority="0"/>
+        <location
+            file="${:app*projectDir}/build.gradle.kts"
+            line="8"
+            column="5"
+            startOffset="138"
+            endLine="8"
+            endColumn="20"
+            endOffset="153"/>
+    </incident>
+
+    <incident
+        id="NewerVersionAvailable"
+        severity="warning"
+        message="A newer version of com.squareup.okhttp3:okhttp than 4.12.0 is available: 5.5.0">
+        <fix-replace
+            description="Change to 5.5.0"
+            family="Update versions"
+            oldString="4.12.0"
+            replacement="5.5.0"
+            priority="0"/>
+        <location
+            file="${:app*projectDir}/build.gradle.kts"
+            line="34"
+            column="20"
+            startOffset="692"
+            endLine="34"
+            endColumn="56"
+            endOffset="728"/>
+    </incident>
+
+</incidents>

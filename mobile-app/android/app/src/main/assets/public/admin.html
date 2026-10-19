@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TripMate Admin</title>
+<link rel="stylesheet" href="css/admin.css">
+    <meta name="theme-color" content="#FAF7EF">
+    <link rel="stylesheet" href="/css/mobile-native.css">
+    <script src="/js/mobile-bootstrap.js"></script>
+</head>
+<body>
+
+<div class="admin-layout">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-brand">
+      <span class="logo-badge">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18v-7"/><path d="M11.119 2.205a2 2 0 0 1 1.762 0l7.84 3.846A.5.5 0 0 1 20.5 7h-17a.5.5 0 0 1-.22-.949z"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M3 22h18"/><path d="M6 18v-7"/></svg>
+      </span>
+      <span class="sidebar-brand-text">
+        TripMate Admin
+        <span class="sidebar-brand-sub">Management Platform</span>
+      </span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item is-active" data-view="dashboard">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="inventory">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+        <span>Inventory</span>
+        <span class="nav-count" id="navInventoryCount">0</span>
+      </button>
+      <button class="nav-item" data-view="verification">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Verification</span>
+        <span class="nav-count nav-count-alert" id="navVerificationCount" hidden>0</span>
+      </button>
+      <button class="nav-item" data-view="users">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Users</span>
+      </button>
+      <button class="nav-item" data-view="transactions">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        <span>Bookings</span>
+      </button>
+      <button class="nav-item" data-view="admins">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+        <span>Admins</span>
+      </button>
+      <button class="nav-item" data-view="cms">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <span>CMS &amp; Promotions</span>
+      </button>
+      <button class="nav-item" data-view="audit">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <span>Audit Trail</span>
+      </button>
+    </nav>
+
+  </aside>
+
+  <div class="sidebar-scrim" id="sidebarScrim"></div>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+
+    <header class="topbar">
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+      </button>
+
+      <button class="topbar-brand" id="topbarBrandBtn" type="button">TripMate</button>
+
+      <div class="topbar-actions">
+        <div class="topbar-notif">
+          <button class="icon-btn" id="bellBtn" aria-label="Notifications" title="Notifications" aria-haspopup="true" aria-expanded="false">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a6 6 0 0 0-6 6c0 4.499-1.411 5.956-2.738 7.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8a6 6 0 0 0-6-6z"/><path d="M10.268 21a2 2 0 0 0 3.464 0"/></svg>
+            <span class="notif-dot" id="notifDot" hidden></span>
+          </button>
+          <div class="dropdown-menu notif-menu" id="notifMenu" hidden>
+            <div class="notif-menu-head">
+              <span>Notifications</span>
+              <button type="button" class="link-btn" id="notifMarkAllBtn">Mark all as read</button>
+            </div>
+            <div class="notif-list" id="notifList"></div>
+          </div>
+        </div>
+        <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <div class="topbar-account">
+          <button class="topbar-avatar" id="topbarAvatarBtn" aria-label="Account" aria-haspopup="true" aria-expanded="false">
+            <span id="topbarAvatarInitials">A</span>
+          </button>
+          <div class="dropdown-menu account-menu" id="accountMenu" hidden>
+            <div class="account-menu-head">
+              <span class="account-menu-name" id="accountMenuName">Admin</span>
+              <span class="account-menu-email" id="accountMenuEmail">No email set</span>
+            </div>
+            <button type="button" data-action="home-page">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9 21v-7h6v7"/></svg>
+              Home
+            </button>
+            <button type="button" class="danger" data-action="account-logout">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              Log Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="view is-active" id="view-dashboard">
+        <div class="page-head">
+          <div>
+            <h1>Dashboard</h1>
+            <p>Platform overview and key metrics at a glance.</p>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-label">Total Listings</span>
+              <span class="stat-icon stat-icon-blue">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+              </span>
+            </div>
+            <span class="stat-value" id="dashListings">0</span>
+            <span class="stat-delta" id="dashListingsDelta">0 pending review</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-label">Active Bookings</span>
+              <span class="stat-icon stat-icon-green">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
+              </span>
+            </div>
+            <span class="stat-value" id="dashBookings">0</span>
+            <span class="stat-delta" id="dashBookingsDelta">0 total on record</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-label">Verification Queue</span>
+              <span class="stat-icon stat-icon-red">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+              </span>
+            </div>
+            <span class="stat-value" id="dashVerification">0</span>
+            <a class="stat-link" data-goto="verification">Review now →</a>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-label">Total Platform Volume</span>
+              <span class="stat-icon stat-icon-blue">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </span>
+            </div>
+            <span class="stat-value" id="dashVolume">₱0</span>
+            <span class="stat-delta" id="dashVolumeDelta">Across 0 bookings</span>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Recent Bookings</h2>
+              <button class="link-btn" data-goto="transactions">View all</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Booking</th><th>Partner / Host</th><th>Total</th><th>Status</th></tr></thead>
+                <tbody id="dashTransactionsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Pending Applications</h2>
+              <button class="link-btn" data-goto="verification">View all</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Applicant</th><th>Identity</th><th>Inspection</th></tr></thead>
+                <tbody id="dashVerificationBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ INVENTORY ============ -->
+      <section class="view" id="view-inventory">
+        <div class="page-head">
+          <div>
+            <h1>Inventory Monitor</h1>
+            <p>Manage platform-wide stay listings, review verifications, and monitor activity.</p>
+          </div>
+          <div class="page-head-actions">
+            <button class="btn-outline" id="exportInventoryBtn" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              Export Report
+            </button>
+            <button class="btn-primary" id="addListingBtn" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Add Listing
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid stats-grid-3">
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-label">Total Listings</span>
+              <span class="stat-icon stat-icon-blue">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+              </span>
+            </div>
+            <span class="stat-value" id="invTotalListings">0</span>
+            <span class="stat-delta" id="invTotalListingsDelta">No new listings yet</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-label">Active Bookings</span>
+              <span class="stat-icon stat-icon-green">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
+              </span>
+            </div>
+            <span class="stat-value" id="invActiveBookings">0</span>
+            <span class="stat-delta" id="invActiveBookingsDelta">No new bookings yet</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-top">
+              <span class="stat-label">Verification Queue</span>
+              <span class="stat-icon stat-icon-red">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+              </span>
+            </div>
+            <span class="stat-value" id="invVerificationQueue">0</span>
+            <a class="stat-link" data-goto="verification" id="invVerificationLink">Review now →</a>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Property Directory</h2>
+            <div class="toolbar-left">
+              <div class="topbar-search table-search">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+                <input type="text" id="inventorySearch" placeholder="Search ID, Host, Location…">
+              </div>
+              <div class="filter-wrap">
+                <button type="button" class="btn-outline filter-btn" id="inventoryFilterBtn">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.46V19l4 2v-8.54z"/></svg>
+                  Filter
+                  <span class="filter-count" id="inventoryFilterCount" hidden>0</span>
+                </button>
+                <div class="filter-panel" id="inventoryFilterPanel" hidden>
+                  <label class="filter-option"><input type="checkbox" value="Verified"> Verified</label>
+                  <label class="filter-option"><input type="checkbox" value="Pending Review"> Pending Review</label>
+                  <label class="filter-option"><input type="checkbox" value="Action Required"> Action Required</label>
+                  <div class="filter-panel-footer">
+                    <button type="button" class="filter-clear" id="inventoryFilterClear">Clear</button>
+                    <button type="button" class="btn-primary filter-apply" id="inventoryFilterApply">Apply</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bulk-bar" id="inventoryBulkBar" hidden>
+            <span id="inventoryBulkCount">0 selected</span>
+            <button type="button" class="btn-danger" id="inventoryBulkDeleteBtn">Delete selected</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="th-checkbox"><input type="checkbox" id="inventorySelectAll"></th>
+                  <th>Property ID</th>
+                  <th>Details</th>
+                  <th>Host</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="inventoryBody"></tbody>
+            </table>
+            <div class="empty-state" id="inventoryEmpty" hidden>
+              <svg class="icon empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg>
+              <p>No listings yet — add your first property to get started.</p>
+              <button class="btn-primary" id="inventoryEmptyAddBtn" type="button">Add your first listing</button>
+            </div>
+          </div>
+          <div class="pagination-row" id="inventoryPagination"></div>
+        </div>
+      </section>
+
+      <!-- ============ VERIFICATION ============ -->
+      <section class="view" id="view-verification">
+        <div class="page-head">
+          <div>
+            <h1>Verification Queue</h1>
+            <p>Review and manage pending host applications.</p>
+          </div>
+          <span class="pending-pill" id="verificationPendingPill">0 Pending</span>
+        </div>
+
+        <div class="verification-layout">
+          <div class="panel verification-list-panel">
+            <div class="panel-head">
+              <h2>Pending Applications</h2>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Applicant</th>
+                    <th>Property Type</th>
+                    <th>Identity</th>
+                    <th>Inspection</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="verificationBody"></tbody>
+              </table>
+              <div class="empty-state" id="verificationEmpty" hidden>
+                <svg class="icon empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+                <p>No pending applications. New host sign-ups from the TripMate site will appear here automatically.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel badge-preview-panel">
+            <div class="panel-head">
+              <h2>Badge Preview</h2>
+              <span class="panel-sub" id="badgePreviewCount">0 badges</span>
+            </div>
+            <div class="badge-preview-body" id="badgePreviewBody">
+              <div class="empty-state">
+                <svg class="icon empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <p>No pending applications right now.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ USERS ============ -->
+      <section class="view" id="view-users">
+        <div class="page-head">
+          <div>
+            <h1>User Management</h1>
+            <p>Review platform accounts, roles, and access status.</p>
+          </div>
+          <button class="btn-primary" id="addUserBtn" type="button">Add User</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Platform Users</h2>
+            <div class="toolbar-left">
+              <div class="topbar-search table-search">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+                <input type="text" id="usersSearch" placeholder="Search name or email…">
+              </div>
+              <select id="usersRoleFilter" class="table-filter" aria-label="Filter users by role">
+                <option value="all">All roles</option>
+                <option value="guest">Guests</option>
+                <option value="host">Hosts</option>
+                <option value="admin">Admins</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Joined</th><th></th></tr></thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+            <div class="empty-state" id="usersEmpty" hidden>
+              <p>No users match the current filters.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ BOOKINGS ============ -->
+      <section class="view" id="view-transactions">
+        <div class="page-head">
+          <div>
+            <h1>Booking Management</h1>
+            <p>Review reservations, guest details, payment totals, and booking status.</p>
+          </div>
+          <div class="page-head-actions">
+            <button class="btn-outline" id="exportTransactionsBtn" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              Export Report
+            </button>
+            <button class="btn-primary" id="generateStatementBtn" type="button">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 11h6"/></svg>
+              Generate Statement
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid stats-grid-3">
+          <div class="stat-card">
+            <span class="stat-label stat-label-caps">Total Platform Volume</span>
+            <span class="stat-value stat-value-lg" id="txVolume">₱0</span>
+            <span class="stat-delta" id="txVolumeDelta">Across 0 bookings</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label stat-label-caps">Net Commissions</span>
+            <span class="stat-value stat-value-lg stat-value-blue" id="txCommissions">₱0</span>
+            <span class="stat-delta">12% platform commission rate</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label stat-label-caps">Pending Payouts</span>
+            <span class="stat-value stat-value-lg" id="txPending">₱0</span>
+            <div class="stat-delta-row">
+              <span class="stat-delta" id="txPendingPartners">0 partners awaiting</span>
+              <a class="stat-link" id="txPendingReviewLink">Review all</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Recent Bookings</h2>
+            <div class="toolbar-left">
+              <div class="topbar-search table-search">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+                <input type="text" id="transactionSearch" placeholder="Search bookings, guests, IDs…">
+              </div>
+              <div class="select-wrap">
+                <select id="transactionStatusFilter">
+                  <option value="all">All Statuses</option>
+                  <option value="Confirmed">Completed</option>
+                  <option value="Pending">Pending Review</option>
+                  <option value="Cancelled">Action Required</option>
+                </select>
+              </div>
+              <button type="button" class="icon-square-btn" id="addTransactionBtn" title="New booking" aria-label="New booking">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Booking ID</th>
+                  <th>Partner / Host</th>
+                  <th>Base Rate</th>
+                  <th>Taxes / Fees</th>
+                  <th>Comm. (12%)</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="transactionsBody"></tbody>
+            </table>
+            <div class="empty-state" id="transactionsEmpty" hidden>
+              <svg class="icon empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+              <p>No bookings yet — reservations you add will appear here.</p>
+              <button class="btn-primary" id="transactionsEmptyAddBtn" type="button">Add your first booking</button>
+            </div>
+          </div>
+          <div class="pagination-row" id="transactionsPagination"></div>
+        </div>
+      </section>
+
+      <!-- ============ ADMINS ============ -->
+      <section class="view" id="view-admins">
+        <div class="page-head">
+          <div>
+            <h1>Admin Accounts</h1>
+            <p>Manage who can operate the TripMate control room.</p>
+          </div>
+          <button class="btn-primary" id="addAdminBtn" type="button">Add Admin</button>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Authorized Administrators</h2>
+            <div class="topbar-search table-search">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+              <input type="text" id="adminsSearch" placeholder="Search admins…">
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Admin</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+              <tbody id="adminsBody"></tbody>
+            </table>
+            <div class="empty-state" id="adminsEmpty" hidden><p>No admin accounts found.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CMS & PROMOTIONS ============ -->
+      <section class="view" id="view-cms">
+        <div class="page-head">
+          <div>
+            <h1>CMS &amp; Promotions</h1>
+            <p>Update homepage copy and manage booking promo codes.</p>
+          </div>
+        </div>
+
+        <div class="cms-notice" role="note">
+          These changes are stored in this browser only. They are not published to other visitors or devices until shared backend persistence is added.
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Homepage Content</h2>
+          </div>
+          <form id="cmsForm" novalidate>
+            <div class="field">
+              <label for="cmsHeadline">Hero headline</label>
+              <input type="text" id="cmsHeadline" maxlength="120" required>
+            </div>
+            <div class="field">
+              <label for="cmsDescription">Hero description</label>
+              <textarea id="cmsDescription" rows="3" maxlength="400" required></textarea>
+            </div>
+            <div class="field">
+              <label for="cmsFeaturedImage">Featured carousel image URL <span class="field-optional">(optional; use HTTPS)</span></label>
+              <input type="url" id="cmsFeaturedImage" placeholder="https://example.com/photo.jpg">
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="cmsAnnouncement">Announcement banner text</label>
+                <input type="text" id="cmsAnnouncement" maxlength="180" placeholder="Share a promotion or important update">
+              </div>
+              <label class="checkbox-row cms-toggle">
+                <input type="checkbox" id="cmsAnnouncementEnabled">
+                Show announcement
+              </label>
+            </div>
+            <button type="submit" class="btn-primary">Save Homepage Content</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Booking Promo Codes</h2>
+          </div>
+          <p class="support-form-sub">Active codes can be applied in checkout on this browser. Discounts are percentages off the booking total.</p>
+          <form id="promotionForm" class="promotion-form" novalidate>
+            <div class="field">
+              <label for="promotionCode">Promo code</label>
+              <input type="text" id="promotionCode" maxlength="24" placeholder="e.g. ISLAND10" required>
+            </div>
+            <div class="field">
+              <label for="promotionDiscount">Discount (%)</label>
+              <input type="number" id="promotionDiscount" min="1" max="50" step="1" placeholder="10" required>
+            </div>
+            <div class="field">
+              <label for="promotionExpires">Expires on <span class="field-optional">(optional)</span></label>
+              <input type="date" id="promotionExpires">
+            </div>
+            <button type="submit" class="btn-primary">Add Promo</button>
+          </form>
+          <div class="table-wrap cms-table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Code</th><th>Discount</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="promotionsBody"></tbody>
+            </table>
+            <div class="empty-state" id="promotionsEmpty" hidden><p>No promo codes created yet.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ AUDIT TRAIL ============ -->
+      <section class="view" id="view-audit">
+        <div class="page-head">
+          <div>
+            <h1>Audit Trail</h1>
+            <p>Review administrative changes recorded in this browser.</p>
+          </div>
+          <div class="page-head-actions">
+            <button type="button" class="btn-outline" id="auditExportBtn">Export Log</button>
+          </div>
+        </div>
+        <div class="cms-notice" role="note">
+          Audit records are browser-local and can be edited or cleared by someone with access to this device; this is not a tamper-proof compliance log.
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Recent Admin Activity</h2>
+            <span class="audit-count" id="auditCount">0 events</span>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Date &amp; time</th><th>Administrator</th><th>Action</th><th>Details</th></tr></thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+            <div class="empty-state" id="auditEmpty" hidden><p>No admin changes have been recorded yet.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ PROFILE ============ -->
+      <section class="view" id="view-profile">
+        <div class="page-head">
+          <div>
+            <h1>Account Management</h1>
+            <p>Update your details and review platform booking activity.</p>
+          </div>
+        </div>
+
+        <div class="profile-layout">
+          <div class="panel profile-card-panel">
+            <div class="profile-card-head">
+              <span class="profile-big-avatar" id="profileBigAvatar">A</span>
+              <div>
+                <span class="profile-big-name" id="profileBigName">Admin</span>
+                <span class="profile-since" id="profileSince">Member since —</span>
+              </div>
+            </div>
+
+            <h3 class="profile-section-title">Manage Profile Details</h3>
+
+            <form id="profileForm" novalidate>
+              <div class="field">
+                <label for="profileName">Full Name</label>
+                <input type="text" id="profileName" placeholder="Admin">
+              </div>
+              <div class="field">
+                <label for="profileEmail">Email Address</label>
+                <input type="email" id="profileEmail" placeholder="admin@tripmate.com">
+              </div>
+              <div class="field">
+                <label for="profilePhone">Phone Number</label>
+                <input type="text" id="profilePhone" placeholder="+63 900 000 0000">
+              </div>
+
+              <div class="pref-block">
+                <span class="field-label-plain">Communication Preferences</span>
+                <label class="checkbox-row">
+                  <input type="checkbox" id="prefEmail" checked>
+                  Email Notifications
+                </label>
+                <label class="checkbox-row">
+                  <input type="checkbox" id="prefSms">
+                  SMS Alerts
+                </label>
+              </div>
+
+              <button type="submit" class="btn-primary btn-block">Save Changes</button>
+            </form>
+          </div>
+
+          <div class="panel booking-history-panel">
+            <div class="panel-head">
+              <h2>Booking History</h2>
+              <div class="pill-tabs" id="bookingHistoryTabs">
+                <button type="button" class="pill-tab is-active" data-filter="all">All</button>
+                <button type="button" class="pill-tab" data-filter="upcoming">Upcoming</button>
+              </div>
+            </div>
+
+            <div class="booking-history-list" id="bookingHistoryList"></div>
+            <div class="empty-state" id="bookingHistoryEmpty" hidden>
+              <svg class="icon empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
+              <p>No bookings recorded on the platform yet.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ SETTINGS ============ -->
+      <section class="view" id="view-settings">
+        <div class="page-head">
+          <div>
+            <h1>Settings</h1>
+            <p>Configure how this admin panel looks and behaves on this device.</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 class="settings-panel-title">Appearance &amp; Tables</h2>
+          <form id="settingsForm" novalidate>
+            <div class="field">
+              <label>Table density</label>
+              <div class="settings-radio-row">
+                <label class="checkbox-row"><input type="radio" name="tableDensity" value="comfortable"> Comfortable</label>
+                <label class="checkbox-row"><input type="radio" name="tableDensity" value="compact"> Compact</label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="settingsRowsPerPage">Rows per page <span class="field-optional">(Inventory &amp; Bookings)</span></label>
+              <select id="settingsRowsPerPage">
+                <option value="5">5</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </select>
+            </div>
+
+            <div class="pref-block">
+              <span class="field-label-plain">Notifications</span>
+              <label class="checkbox-row">
+                <input type="checkbox" id="settingsShowAlerts">
+                Show pending alerts in the sidebar and bell icon
+              </label>
+            </div>
+
+            <button type="submit" class="btn-primary">Save Settings</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2 class="settings-panel-title">Data Management</h2>
+          <p class="support-form-sub">These actions only affect data stored by this admin panel in your browser — listings, bookings, your admin profile, and these settings. Registered user accounts are never touched.</p>
+          <div class="settings-data-actions">
+            <button type="button" class="btn-outline" id="settingsBackupBtn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+              Download Backup (JSON)
+            </button>
+            <button type="button" class="btn-danger" id="settingsResetBtn">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              Reset All Data
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <footer class="app-footer">
+      <span>© <span id="footerYear"></span> TripMate Internal. All rights reserved.</span>
+      <nav class="footer-links">
+        <a href="#" data-action="footer-link">Privacy Policy</a>
+      </nav>
+    </footer>
+
+  </div>
+</div>
+
+<!-- ============ ADD / EDIT USER MODAL ============ -->
+<div class="modal-overlay" id="userModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+    <div class="modal-head">
+      <h2 id="userModalTitle">Add User</h2>
+      <button class="modal-close" id="userModalClose" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <form id="userForm" novalidate>
+      <input type="hidden" id="userId">
+      <div class="field">
+        <label for="userName">Full Name</label>
+        <input type="text" id="userName" required>
+      </div>
+      <div class="field">
+        <label for="userEmail">Email Address</label>
+        <input type="email" id="userEmail" required>
+      </div>
+      <div class="field">
+        <label for="userPassword">Password <span class="field-optional">(required for new users)</span></label>
+        <input type="password" id="userPassword" minlength="8">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="userRole">Role</label>
+          <select id="userRole"><option value="guest">Guest</option><option value="host">Host</option><option value="admin">Admin</option></select>
+        </div>
+        <div class="field user-checks">
+          <label><input type="checkbox" id="userVerified"> Verified</label>
+          <label><input type="checkbox" id="userActive" checked> Active</label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="userCancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary">Save User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ ADD / EDIT LISTING MODAL ============ -->
+<div class="modal-overlay" id="listingModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="listingModalTitle">
+    <div class="modal-head">
+      <h2 id="listingModalTitle">Add Listing</h2>
+      <button class="modal-close" id="listingModalClose" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form id="listingForm" novalidate>
+      <input type="hidden" id="listingId">
+
+      <div class="field">
+        <label for="listingName">Property Name</label>
+        <input type="text" id="listingName" placeholder="e.g. Pine Crest Villa Retreat" required>
+        <p class="field-error" id="listingNameError"></p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="listingLocation">Location</label>
+          <input type="text" id="listingLocation" placeholder="e.g. Baguio City" required>
+          <p class="field-error" id="listingLocationError"></p>
+        </div>
+        <div class="field">
+          <label for="listingType">Stay Type</label>
+          <select id="listingType">
+            <option value="Hotel">Hotel</option>
+            <option value="House Rental">House Rental</option>
+            <option value="Resort">Resort</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="listingHost">Host Name</label>
+          <input type="text" id="listingHost" placeholder="e.g. Sarah Jenkins">
+        </div>
+        <div class="field">
+          <label for="listingPrice">Price / night (₱)</label>
+          <input type="number" id="listingPrice" min="0" step="1" placeholder="4500" required>
+          <p class="field-error" id="listingPriceError"></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="listingStatus">Verification Status</label>
+        <select id="listingStatus">
+          <option value="Verified">Verified</option>
+          <option value="Pending Review">Pending Review</option>
+          <option value="Action Required">Action Required</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="listingImages">Photo URLs <span class="field-optional">(comma-separated, first = main photo)</span></label>
+        <input type="text" id="listingImages" placeholder="https://…, https://…">
+        <p class="field-hint" id="listingImageHint">Leave this blank and we'll match a destination photo to the location above.</p>
+        <div class="image-preview">
+          <img id="listingImagePreview" src="" alt="Preview" hidden>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="listingAmenities">Facilities <span class="field-optional">(comma-separated)</span></label>
+        <input type="text" id="listingAmenities" placeholder="Free WiFi, Air Conditioning, Hot Shower, Parking">
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="listingCancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary" id="listingSaveBtn">Save Listing</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ ADD / EDIT BOOKING MODAL ============ -->
+<div class="modal-overlay" id="bookingModalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle">
+    <div class="modal-head">
+      <h2 id="bookingModalTitle">New Booking</h2>
+      <button class="modal-close" id="bookingModalClose" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <form id="bookingForm" novalidate>
+      <input type="hidden" id="bookingId">
+
+      <div class="field-row">
+        <div class="field">
+          <label for="bGuestName">Guest Name</label>
+          <input type="text" id="bGuestName" placeholder="e.g. Alex Cruz" required>
+          <p class="field-error" id="bGuestNameError"></p>
+        </div>
+        <div class="field">
+          <label for="bGuestEmail">Guest Email</label>
+          <input type="email" id="bGuestEmail" placeholder="guest@example.com" required>
+          <p class="field-error" id="bGuestEmailError"></p>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="bGuestPhone">Guest Phone <span class="field-optional">(optional)</span></label>
+        <input type="text" id="bGuestPhone" placeholder="+63 912 345 6789">
+      </div>
+
+      <div class="field">
+        <label for="bListing">Property</label>
+        <select id="bListing" required></select>
+        <p class="field-error" id="bListingError"></p>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="bCheckIn">Check-in</label>
+          <input type="date" id="bCheckIn" required>
+          <p class="field-error" id="bCheckInError"></p>
+        </div>
+        <div class="field">
+          <label for="bCheckOut">Check-out</label>
+          <input type="date" id="bCheckOut" required>
+          <p class="field-error" id="bCheckOutError"></p>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="bGuestsCount">Guests</label>
+          <input type="number" id="bGuestsCount" min="1" max="20" value="2" required>
+        </div>
+        <div class="field">
+          <label for="bStatus">Status</label>
+          <select id="bStatus">
+            <option value="Pending">Pending Review</option>
+            <option value="Confirmed">Completed</option>
+            <option value="Cancelled">Action Required</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Estimated Base Rate</label>
+        <div class="computed-amount" id="bComputedAmount">₱0</div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="bookingCancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary" id="bookingSaveBtn">Save Booking</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ BOOKING DETAIL MODAL (read-only) ============ -->
+<div class="modal-overlay" id="transactionDetailOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="transactionDetailTitle">
+    <div class="modal-head">
+      <h2 id="transactionDetailTitle">Booking Details</h2>
+      <button class="modal-close" id="transactionDetailClose" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="tx-detail-body" id="transactionDetailBody"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="transactionDetailCloseBtn">Close</button>
+      <button type="button" class="btn-primary" id="transactionDetailEditBtn">Edit Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRM MODAL ============ -->
+<div class="modal-overlay" id="confirmModalOverlay" hidden>
+  <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="modal-head">
+      <h2 id="confirmModalTitle">Delete item?</h2>
+    </div>
+    <p class="confirm-text" id="confirmModalText">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="confirmCancelBtn">Cancel</button>
+      <button type="button" class="btn-danger" id="confirmOkBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ROW ACTIONS DROPDOWN (shared) ============ -->
+<div class="dropdown-menu" id="rowMenu" hidden>
+  <button type="button" data-action="edit"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>Edit</button>
+  <button type="button" class="danger" data-action="delete"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/api.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-2:/values/values.xml",
+            "map": [
+                {
+                    "source": "D:\\systems integration and architecture\\SIA1\\mobile-app\\app\\src\\main\\res\\values\\strings.xml",
+                    "from": {
+                        "startLines": "1,2",
+                        "startColumns": "4,4",
+                        "startOffsets": "17,64",
+                        "endColumns": "45,70",
+                        "endOffsets": "58,130"
+                    },
+                    "to": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,101",
+                        "endColumns": "45,70",
+                        "endOffsets": "96,167"
+                    }
+                },
+                {
+                    "source": "D:\\systems integration and architecture\\SIA1\\mobile-app\\app\\src\\main\\res\\values\\styles.xml",
+                    "from": {
+                        "startLines": "1",
+                        "startColumns": "4",
+                        "startOffsets": "17",
+                        "endLines": "8",
+                        "endColumns": "12",
+                        "endOffsets": "474"
+                    },
+                    "to": {
+                        "startLines": "4",
+                        "startColumns": "4",
+                        "startOffsets": "172",
+                        "endLines": "11",
+                        "endColumns": "12",
+                        "endOffsets": "622"
+                    }
+                }
+            ]
+        }
+    ]
+}
