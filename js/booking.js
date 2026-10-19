@@ -28,7 +28,7 @@
         reviews: parsedStay?.reviews || 128,
         img: parsedStay?.img || "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?q=80&w=800&auto=format&fit=crop",
         ratePerNight: parsedStay?.price || 4500,
-        cleaningFee: 800,
+        cleaningFee: Number(parsedStay?.cleaningFee ?? 800),
         serviceFeeRate: 0.10,
         taxRate: 0.1125,
         maxGuests: parsedStay?.guests || 6
@@ -227,9 +227,6 @@
     }
 
     async function resolvePublishedListingId() {
-        const numericId = Number(listing.id);
-        if (Number.isInteger(numericId) && numericId > 0) return numericId;
-
         const normalize = (value) => String(value || "")
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, " ")
@@ -249,6 +246,7 @@
             name: match.title,
             location: match.location,
             ratePerNight: Number(match.price_per_night),
+            cleaningFee: Number(match.cleaning_fee) || 0,
             maxGuests: Number(match.max_guests) || listing.maxGuests,
             img: match.images?.[0] || listing.img
         });
@@ -259,6 +257,7 @@
             name: listing.name,
             location: listing.location,
             price: listing.ratePerNight,
+            cleaningFee: listing.cleaningFee,
             guests: listing.maxGuests,
             img: listing.img
         }));

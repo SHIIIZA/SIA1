@@ -110,6 +110,8 @@
                 guests: Number(item.max_guests),
                 amenities: item.amenities || [],
                 img: item.images?.[0] || "",
+                cleaningFee: Number(item.cleaning_fee) || 0,
+                testOnly: String(item.description || "").includes("test-only"),
                 source: "database"
             }));
 
@@ -143,7 +145,7 @@
 
     const peso = (n) => "\u20B1" + Math.round(n).toLocaleString("en-PH");
 
-    const priceBounds = { min: 800, max: 6000 };
+    const priceBounds = { min: 50, max: 6000 };
     const state = {
         search: "",
         types: new Set(),
@@ -195,7 +197,7 @@
           <a href="${detailUrl}" class="listing-media-link" aria-label="View ${l.name}">
             <img src="${l.img}" alt="${l.name}" loading="lazy">
           </a>
-          <span class="listing-badge">${l.type}</span>
+          <span class="listing-badge">${l.type}${l.testOnly ? " · TEST ONLY" : ""}</span>
           <button class="fav-btn ${isFav ? "is-active" : ""}" data-action="fav" aria-label="Save ${l.name}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 21s-7-4.35-9.5-8.36C.65 9.28 2.1 5.5 5.6 5.02 7.9 4.7 9.9 5.9 12 8.3c2.1-2.4 4.1-3.6 6.4-3.28 3.5.48 4.95 4.26 3.1 7.62C19 16.65 12 21 12 21z"/>

@@ -383,6 +383,7 @@
                     type: remote.property_type,
                     location: remote.location,
                     price: Number(remote.price_per_night),
+                    cleaningFee: Number(remote.cleaning_fee) || 0,
                     rating: Number(remote.rating) || 5,
                     reviews: [],
                     guests: Number(remote.max_guests),
@@ -411,6 +412,7 @@
             ? property.reviews.length
             : Number(property.reviews) || 0;
         property.reviews = Array.isArray(property.reviews) ? property.reviews : [];
+        property.cleaningFee = Number(property.cleaningFee ?? 500);
         property.reviewCount = reviewCount;
         document.title = `${property.name} — TripMate`;
 
@@ -596,9 +598,10 @@
         const nights = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24)));
 
         const subtotal = property.price * nights;
-        const cleaningFee = 500;
-        const serviceFee = Math.round(subtotal * 0.08);
-        const total = subtotal + cleaningFee + serviceFee;
+        const cleaningFee = property.cleaningFee;
+        const serviceFee = Math.round((subtotal + cleaningFee) * 0.10);
+        const taxes = Math.round(subtotal * 0.1125);
+        const total = subtotal + cleaningFee + serviceFee + taxes;
 
         bookingBreakdown.innerHTML = `
             <div class="breakdown-row">
@@ -610,8 +613,12 @@
                 <span class="amount">${peso(cleaningFee)}</span>
             </div>
             <div class="breakdown-row">
-                <span>Service fee (8%)</span>
+                <span>TripMate service fee</span>
                 <span class="amount">${peso(serviceFee)}</span>
+            </div>
+            <div class="breakdown-row">
+                <span>Taxes</span>
+                <span class="amount">${peso(taxes)}</span>
             </div>
             <div class="breakdown-row total">
                 <span>Total</span>
@@ -624,6 +631,7 @@
         bookingForm.dataset.subtotal = subtotal;
         bookingForm.dataset.cleaningFee = cleaningFee;
         bookingForm.dataset.serviceFee = serviceFee;
+        bookingForm.dataset.taxes = taxes;
     }
 
     async function handleBooking(e) {
@@ -676,6 +684,7 @@
                     type: match.property_type || property.type,
                     location: match.location,
                     price: Number(match.price_per_night),
+                    cleaningFee: Number(match.cleaning_fee) || 0,
                     guests: Number(match.max_guests) || property.guests,
                     amenities: match.amenities || property.amenities,
                     images: match.images?.length ? match.images : property.images
@@ -699,6 +708,7 @@
             rating: property.rating,
             reviews: property.reviewCount,
             guests: property.guests,
+            cleaningFee: property.cleaningFee,
             img: property.images[0]
         }));
         localStorage.setItem("trip_checkin", checkin);
