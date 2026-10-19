@@ -717,11 +717,18 @@ export async function routeApi(req, res, url) {
         if (!bookingId || !sessionId) return json(res, 400, { error: "A booking and payment session are required." });
         const bookings = await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}&select=*`);
         if (!bookings[0]) return json(res, 404, { error: "Booking not found." });
+        const paymentRows = await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}&select=id,status`);
+        if (!paymentRows[0]) return json(res, 404, { error: "Payment session not found for this booking." });
         const session = await paymongo(`/checkout_sessions/${encodeURIComponent(sessionId)}`);
         const payments = Array.isArray(session?.data?.attributes?.payments) ? session.data.attributes.payments : [];
-        const paid = session?.data?.attributes?.payment_intent?.status === "succeeded" ||
-            session?.data?.attributes?.status === "paid" ||
-            payments.some(payment => payment?.attributes?.status === "paid");
+        const paymentStatuses = payments.map(payment =>
+            String(payment?.attributes?.status || payment?.status || "").toLowerCase()
+        );
+        const paymentIntentStatus = String(session?.data?.attributes?.payment_intent?.status || "").toLowerCase();
+        const checkoutStatus = String(session?.data?.attributes?.status || "").toLowerCase();
+        const paid = ["succeeded", "paid"].includes(paymentIntentStatus) ||
+            ["succeeded", "paid"].includes(checkoutStatus) ||
+            paymentStatuses.some(status => ["succeeded", "paid"].includes(status));
         if (!paid) return json(res, 409, { error: "Payment has not been completed yet." });
         await neon(`/bookings?id=eq.${bookingId}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() }) });
         await neon(`/payments?booking_id=eq.${bookingId}&transaction_reference=eq.${encodeURIComponent(sessionId)}`, { method: "PATCH", body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() }) });

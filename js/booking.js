@@ -680,11 +680,13 @@
     }
 
     async function resumePaymentReturn() {
-        const paymentState = new URLSearchParams(window.location.search).get("payment");
+        const params = new URLSearchParams(window.location.search);
+        const paymentState = params.get("payment");
         if (!paymentState) return false;
 
-        if (paymentState === "cancelled") {
-            showToast("Payment was cancelled. Your booking was not confirmed.", true);
+        if (paymentState !== "success") {
+            localStorage.removeItem("tripmate_pending_payment");
+            showToast("Payment was not completed. You can review your trip and try again.", true);
             window.history.replaceState({}, document.title, "booking.html");
             return false;
         }
@@ -695,14 +697,28 @@
         } catch {
             localStorage.removeItem("tripmate_pending_payment");
         }
-        const bookingId = new URLSearchParams(window.location.search).get("booking_id") || pending?.bookingId;
-        if (!bookingId || !pending?.sessionId) {
+        const bookingId = params.get("booking_id") || pending?.bookingId;
+        const callbackSessionId = params.get("checkout_session_id") || params.get("session_id");
+        const sessionId = callbackSessionId || pending?.sessionId;
+        const pendingBookingMismatch = !callbackSessionId && pending?.bookingId &&
+            String(pending.bookingId) !== String(bookingId);
+        if (!bookingId || !sessionId || pendingBookingMismatch) {
             showToast("We could not verify this payment session.", true);
+            window.history.replaceState({}, document.title, "booking.html");
             return false;
         }
 
         try {
-            await apiRequest(`/payments/confirm?booking_id=${encodeURIComponent(bookingId)}&session_id=${encodeURIComponent(pending.sessionId)}`);
+            const confirmationUrl = `/payments/confirm?booking_id=${encodeURIComponent(bookingId)}&session_id=${encodeURIComponent(sessionId)}`;
+            for (let attempt = 0; ; attempt += 1) {
+                try {
+                    await apiRequest(confirmationUrl);
+                    break;
+                } catch (error) {
+                    if (error.message !== "Payment has not been completed yet." || attempt >= 2) throw error;
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                }
+            }
             localStorage.removeItem("tripmate_pending_payment");
             const emailInput = document.getElementById("email");
             const confirmEmail = document.getElementById("confirmEmail");
@@ -715,7 +731,15 @@
             window.history.replaceState({}, document.title, "booking.html");
             return true;
         } catch (error) {
-            showToast(error.message || "Unable to verify payment.", true);
+            const paymentNotCompleted = error.message === "Payment has not been completed yet.";
+            if (paymentNotCompleted) {
+                localStorage.removeItem("tripmate_pending_payment");
+                window.history.replaceState({}, document.title, "booking.html");
+            }
+            const message = paymentNotCompleted
+                ? "Payment was not completed. You can review your trip and try again."
+                : error.message || "Unable to verify payment.";
+            showToast(message, true);
             return false;
         }
     }
