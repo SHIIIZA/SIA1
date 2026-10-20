@@ -49,4 +49,12 @@ For local Netlify-style testing, install the Netlify CLI and run `npm run netlif
 
 Checkout uses PayMongo Checkout Sessions for cards, GCash, and Maya. Keep `PAYMONGO_SECRET_KEY` and the Neon credentials in server or Netlify environment variables only. Use a `sk_test_` key while testing and switch to a live key for production. Never commit `.env` or add payment/database secrets to frontend JavaScript.
 
+Signed-in users can save, reload, and delete stay-search filters through the `/api/saved-searches` endpoints. These searches are account-backed and require the existing Neon `saved_searches` table from `schema.sql`.
+
 Run the focused payment-webhook checks with `node --test server.test.js tests/netlify-api.test.js`. Keep test files outside `netlify/functions/`, where Netlify discovers deployable functions.
+
+## Offline website and Android branding
+
+The website can be installed as a PWA from its public, account, host, and admin pages. Its service worker caches the static shell and assets only; requests to `/api/*` are always sent to the network and are never stored for offline use. The offline page explains that booking/account data is unavailable without a connection.
+
+The Android Capacitor bundle is synchronized from the repository's current website by `node mobile-app/scripts/build-web.mjs`. The launcher icon and Android 12+ splash use the TripMate palm-tree artwork supplied with the app assets. Run the Android Gradle build only when the Android build workspace is available for modification.

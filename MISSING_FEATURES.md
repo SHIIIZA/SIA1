@@ -2,6 +2,8 @@
 
 > **Scope:** Client-side only (no API/backend). Based on `architecture.mmd`, `user-flow.mmd`, and existing HTML/JS/CSS.
 
+> **Status note:** This is a historical backlog, not a list of untouched pages. The current checkout already includes the host dashboard/listing wizard, multi-step booking and payment integration, shared mobile navigation, profile/auth flows, and most discovery controls. Recent completion and remaining limitations are recorded at the end.
+
 ---
 
 ## 🏠 1. Host Dashboard (`host/dashboard.html`)
@@ -199,3 +201,16 @@ css/
 ---
 
 *Generated from architecture/user-flow analysis. Backend/API integration intentionally excluded per instructions.*
+
+---
+
+## Current implementation status
+
+- **Host flow:** The dashboard and seven-step listing wizard are implemented. The bookings table now paginates and occupancy is calculated from confirmed/completed nights in the current month.
+- **Booking:** The site already uses the server-backed PayMongo checkout flow; the mobile app uses the same web booking pages.
+- **Property:** Gallery navigation supports touch and keyboard; users can submit browser-local reviews and open the location in OpenStreetMap. A public availability calendar is still not reliable without authoritative availability data.
+- **Stays:** Filters, sorting, URL-synced filter state, a show-more pager, and a map view are implemented. Authenticated users can save, reapply, and delete account-backed searches. The map centers on the first filtered location and provides exact-location links; marker clustering still needs listing coordinates.
+- **Wishlist:** Grid/list and sorting are wired. Batch removal and a per-account, browser-local saved-trip list are available from the guest dashboard; price-drop labels compare the saved price snapshot with the current listing price.
+- **Profile and auth:** Profile photos are cropped to a square and kept on the current device; account deletion requires the password and typing `DELETE`. Password strength guidance, a 30-day opt-in login token, and same-origin redirect validation are enabled. Social sign-in remains a disabled-by-configuration UI notice.
+- **Offline/mobile:** Install metadata and service-worker registration are available across public, account, host, and admin pages; the service worker uses a static-asset cache and offline fallback, and `/api/*` responses are never cached. Android launcher and splash branding use the supplied TripMate assets.
+- **Still backend-dependent:** Password-reset email delivery, remote review persistence, authoritative availability, and real social OAuth are not simulated as successful operations.

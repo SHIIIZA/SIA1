@@ -13,7 +13,7 @@
             location: "San Felipe, Zambales",
             price: 2000,
             rating: 4.92,
-            reviews: 86,
+            reviewCount: 86,
             guests: 4,
             amenities: ["Wifi", "Kitchen", "Beachfront", "Pet friendly"],
             images: [
@@ -73,7 +73,7 @@
             location: "Moalboal, Cebu",
             price: 2200,
             rating: 4.85,
-            reviews: 214,
+            reviewCount: 214,
             guests: 2,
             amenities: ["Wifi", "Pool", "Air conditioning"],
             images: [
@@ -125,7 +125,7 @@
             location: "Sagada, Mountain Province",
             price: 1800,
             rating: 4.28,
-            reviews: 63,
+            reviewCount: 63,
             guests: 4,
             amenities: ["Wifi", "Kitchen", "Air conditioning"],
             images: [
@@ -234,6 +234,7 @@
                 responseTime: "within an hour"
             },
             houseRules: ["Check-in details provided after booking", "No smoking indoors", "Respect quiet hours"],
+            reviewCount: Number(stay.reviews) || 0,
             reviews: []
         };
     });
@@ -334,6 +335,7 @@
                 location: hostListing.location || "Philippines",
                 price: Number(hostListing.pricePerNight) || 0,
                 rating: Number(hostListing.rating) || 5,
+                reviewCount: Number(remote.review_count) || 0,
                 reviews: [],
                 guests: Number(hostListing.maxGuests) || 1,
                 amenities: hostListing.amenities || [],
@@ -371,6 +373,66 @@
     const imageLightbox = document.getElementById("imageLightbox");
     const lightboxImage = document.getElementById("lightboxImage");
     const closeLightbox = document.getElementById("closeLightbox");
+    const propertyMapLink = document.getElementById("propertyMapLink");
+    const reviewCountElement = document.getElementById("reviewCount");
+    const reviewSummary = document.getElementById("reviewSummary");
+    const propertyReviews = document.getElementById("propertyReviews");
+    const writeReviewBtn = document.getElementById("writeReviewBtn");
+    const reviewDialog = document.getElementById("reviewDialog");
+    const reviewForm = document.getElementById("reviewForm");
+    const cancelReviewBtn = document.getElementById("cancelReviewBtn");
+    const reviewRatingInput = document.getElementById("reviewRating");
+    const reviewTextInput = document.getElementById("reviewText");
+    let activeImageIndex = 0;
+
+    function loadSavedReviews() {
+        try {
+            const stored = JSON.parse(localStorage.getItem("tripmate_reviews") || "[]");
+            return Array.isArray(stored)
+                ? stored.filter(review => String(review.listingId) === String(property?.id))
+                : [];
+        } catch (error) {
+            console.warn("Unable to load locally saved reviews:", error.message);
+            return [];
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[character]));
+    }
+
+    function renderReviews() {
+        if (!propertyReviews) return;
+        const reviews = property.reviews;
+        if (reviewCountElement) reviewCountElement.textContent = `(${property.reviewCount || 0})`;
+        if (reviewSummary) reviewSummary.textContent = property.reviewCount
+            ? `${Number(property.rating || 0).toFixed(2)} out of 5 · ${property.reviewCount} review${property.reviewCount === 1 ? "" : "s"}`
+            : "No written reviews yet";
+        propertyReviews.innerHTML = reviews.map(review => `
+            <article class="review-card">
+                <div class="review-card-heading">
+                    <strong>${escapeHtml(review.author || "TripMate guest")}</strong>
+                    <span>${Number(review.rating) || 0}/5 · ${escapeHtml(formatDate(review.date))}</span>
+                </div>
+                <p class="review-text">${escapeHtml(review.text || review.comment || "")}</p>
+            </article>
+        `).join("");
+    }
+
+    function setActiveImage(index) {
+        const image = property.images[index];
+        if (!image || !mainImage) return;
+        activeImageIndex = index;
+        mainImage.src = image;
+        mainImage.alt = `${property.name} - Photo ${index + 1}`;
+        galleryThumbs.querySelectorAll(".thumb").forEach((thumb, thumbIndex) => {
+            const isActive = thumbIndex === index;
+            thumb.classList.toggle("active", isActive);
+            thumb.setAttribute("aria-pressed", String(isActive));
+        });
+    }
 
     // Initialize page
     async function init() {
@@ -408,17 +470,25 @@
             window.location.href = "stays.html";
             return;
         }
-        const reviewCount = Array.isArray(property.reviews)
-            ? property.reviews.length
-            : Number(property.reviews) || 0;
         property.reviews = Array.isArray(property.reviews) ? property.reviews : [];
+        const savedReviews = loadSavedReviews();
+        const existingReviewCount = Number(property.reviewCount) || property.reviews.length;
+        property.rating = savedReviews.length
+            ? (Number(property.rating || 0) * existingReviewCount +
+                savedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0)) /
+                (existingReviewCount + savedReviews.length)
+            : Number(property.rating || 0);
+        property.reviewCount = existingReviewCount + savedReviews.length;
+        property.reviews = [...property.reviews, ...savedReviews];
         property.cleaningFee = Number(property.cleaningFee ?? 500);
-        property.reviewCount = reviewCount;
         document.title = `${property.name} — TripMate`;
 
         // Gallery
         mainImage.src = property.images[0];
         mainImage.alt = property.name;
+        if (propertyMapLink) {
+            propertyMapLink.href = `https://www.openstreetmap.org/search?query=${encodeURIComponent(property.location)}`;
+        }
 
         galleryThumbs.addEventListener("click", (event) => {
             const thumb = event.target.closest("button.thumb");
@@ -428,12 +498,7 @@
             const image = property.images[imageIndex];
             if (!Number.isInteger(imageIndex) || typeof image !== "string" || !image) return;
 
-            mainImage.src = image;
-            galleryThumbs.querySelectorAll(".thumb").forEach((item, index) => {
-                const isActive = index === imageIndex;
-                item.classList.toggle("active", isActive);
-                item.setAttribute("aria-pressed", String(isActive));
-            });
+            setActiveImage(imageIndex);
         });
 
         property.images.forEach((img, i) => {
@@ -457,6 +522,26 @@
                 lightboxImage.src = mainImage.src;
                 imageLightbox.showModal();
             }
+        });
+        let touchStartX = null;
+        mainImage.addEventListener("touchstart", event => {
+            touchStartX = event.changedTouches[0]?.clientX ?? null;
+        }, { passive: true });
+        mainImage.addEventListener("touchend", event => {
+            const endX = event.changedTouches[0]?.clientX;
+            if (touchStartX === null || typeof endX !== "number") return;
+            const delta = endX - touchStartX;
+            touchStartX = null;
+            if (Math.abs(delta) < 45 || property.images.length < 2) return;
+            const nextIndex = (activeImageIndex + (delta < 0 ? 1 : -1) + property.images.length) % property.images.length;
+            setActiveImage(nextIndex);
+        }, { passive: true });
+        document.addEventListener?.("keydown", event => {
+            if (!imageLightbox?.open || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+            const direction = event.key === "ArrowRight" ? 1 : -1;
+            const nextIndex = (activeImageIndex + direction + property.images.length) % property.images.length;
+            setActiveImage(nextIndex);
+            if (lightboxImage) lightboxImage.src = property.images[nextIndex];
         });
 
         // Property header
@@ -513,6 +598,8 @@
 
         // House rules
         houseRules.innerHTML = property.houseRules.map(rule => `<li>${rule}</li>`).join("");
+
+        renderReviews();
 
         // Nightly price
         nightlyPrice.textContent = peso(property.price);
@@ -582,6 +669,52 @@
     closeLightbox?.addEventListener("click", () => imageLightbox?.close());
     imageLightbox?.addEventListener("click", event => {
         if (event.target === imageLightbox) imageLightbox.close();
+    });
+    writeReviewBtn?.addEventListener("click", () => {
+        const user = typeof getCurrentUser === "function" ? getCurrentUser() : null;
+        if (!user) {
+            window.location.href = `login.html?redirect=${encodeURIComponent(`property.html?id=${propertyId}`)}`;
+            return;
+        }
+        reviewDialog?.showModal();
+    });
+    cancelReviewBtn?.addEventListener("click", () => reviewDialog?.close());
+    reviewForm?.addEventListener("submit", event => {
+        event.preventDefault();
+        const user = typeof getCurrentUser === "function" ? getCurrentUser() : null;
+        const rating = Number(reviewRatingInput?.value);
+        const text = reviewTextInput?.value.trim() || "";
+        if (!user || !Number.isInteger(rating) || rating < 1 || rating > 5 || text.length < 20) {
+            showToast("Log in, choose a rating, and write at least 20 characters.", true);
+            return;
+        }
+        try {
+            const saved = JSON.parse(localStorage.getItem("tripmate_reviews") || "[]");
+            if (!Array.isArray(saved)) throw new Error("Saved review data is invalid.");
+            const review = {
+                id: `review-${Date.now()}`,
+                listingId: property.id,
+                userId: user.id,
+                author: user.name || "TripMate guest",
+                rating,
+                text,
+                date: new Date().toISOString()
+            };
+            saved.push(review);
+            localStorage.setItem("tripmate_reviews", JSON.stringify(saved));
+            property.reviews.push(review);
+            property.rating = (property.rating * property.reviewCount + rating) / (property.reviewCount + 1);
+            property.reviewCount += 1;
+            renderReviews();
+            if (propertyRatingValue) propertyRatingValue.textContent = property.rating.toFixed(2);
+            if (propertyStars) propertyStars.innerHTML = renderStars(property.rating);
+            reviewForm.reset();
+            reviewDialog?.close();
+            showToast("Your review was saved on this device.");
+        } catch (error) {
+            console.error("Unable to save the review:", error);
+            showToast("Your review could not be saved. Check available browser storage and try again.", true);
+        }
     });
 
     function updateBreakdown() {

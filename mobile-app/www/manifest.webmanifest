@@ -1,0 +1,19 @@
+{
+  "id": "/homepage.html",
+  "name": "TripMate",
+  "short_name": "TripMate",
+  "description": "Find and book stays across the Philippines.",
+  "start_url": "/homepage.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf7ef",
+  "theme_color": "#faf7ef",
+  "icons": [
+    {
+      "src": "/images/app-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -422,8 +422,9 @@ export async function initializeCatalogListings() {
     }
 }
 
-function signToken(user) {
-    const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + 7 * 86400000 })).toString("base64url");
+function signToken(user, rememberMe = false) {
+    const sessionDays = rememberMe ? 30 : 7;
+    const payload = Buffer.from(JSON.stringify({ id: user.id, role: user.role, exp: Date.now() + sessionDays * 86400000 })).toString("base64url");
     const signature = createHmac("sha256", config.jwtSecret).update(payload).digest("base64url");
     return `${payload}.${signature}`;
 }
@@ -671,7 +672,7 @@ export async function routeApi(req, res, url) {
         const rows = await neon(`/users?${field}=eq.${encodeURIComponent(identifier)}&select=*`);
         const found = rows[0];
         if (!found || !(await verifyPassword(body.password, found.password_hash)) || (body.role && found.role !== body.role && found.role !== "admin")) return json(res, 401, { error: "Invalid username/email, password, or account type." });
-        return json(res, 200, { token: signToken(found), user: safeUser(found) });
+        return json(res, 200, { token: signToken(found, body.rememberMe === true), user: safeUser(found) });
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/forgot") {
@@ -769,9 +770,36 @@ export async function routeApi(req, res, url) {
         return json(res, 200, rows[0]);
     }
 
+    if (req.method === "GET" && url.pathname === "/api/saved-searches") {
+        const current = requireAuth();
+        const rows = await neon(`/saved_searches?user_id=eq.${current.id}&select=id,search_name,filters,created_at&order=created_at.desc`);
+        return json(res, 200, rows);
+    }
+
     if (req.method === "POST" && url.pathname === "/api/saved-searches") {
         const current = requireAuth();
-        return json(res, 201, (await neon("/saved_searches", { method: "POST", body: JSON.stringify({ user_id: current.id, search_name: body.search_name || "Saved search", filters: body.filters || {} }) }))[0]);
+        const searchName = typeof body.search_name === "string" ? body.search_name.trim() : "Saved search";
+        if (!searchName || searchName.length > 100) {
+            return json(res, 400, { error: "Search name must be between 1 and 100 characters." });
+        }
+        if (!body.filters || typeof body.filters !== "object" || Array.isArray(body.filters)) {
+            return json(res, 400, { error: "Saved search filters must be an object." });
+        }
+        const rows = await neon("/saved_searches", {
+            method: "POST",
+            body: JSON.stringify({ user_id: current.id, search_name: searchName, filters: body.filters })
+        });
+        return json(res, 201, rows[0]);
+    }
+
+    const savedSearchMatch = url.pathname.match(/^\/api\/saved-searches\/(\d+)$/);
+    if (req.method === "DELETE" && savedSearchMatch) {
+        const current = requireAuth();
+        const rows = await neon(`/saved_searches?id=eq.${savedSearchMatch[1]}&user_id=eq.${current.id}`, {
+            method: "DELETE"
+        });
+        if (!rows.length) return json(res, 404, { error: "Saved search not found." });
+        return json(res, 200, { ok: true });
     }
 
     if (req.method === "POST" && url.pathname === "/api/reviews") {

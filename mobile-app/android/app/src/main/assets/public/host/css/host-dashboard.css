@@ -372,3 +372,17 @@
         font-size: 13px;
     }
 }
+.booking-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 0 0;
+    color: var(--ink-light);
+    font-size: 0.9rem;
+}
+
+.booking-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}

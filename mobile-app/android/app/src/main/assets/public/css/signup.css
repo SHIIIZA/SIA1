@@ -242,6 +242,10 @@ main {
 .checkbox-row input { margin-top: 2px; accent-color: var(--coral); }
 .checkbox-row.remember { align-items: center; margin: 6px 0 18px; }
 .checkbox-row.remember a { color: var(--gold); font-size: 0.83rem; font-weight: 600; }
+.password-strength { margin-top: 8px; color: var(--ink-light); font-size: 0.78rem; }
+.password-strength[data-strength="weak"] { color: #b54732; }
+.password-strength[data-strength="good"],
+.password-strength[data-strength="strong"] { color: #176b48; }
 
 .btn-primary {
   width: 100%;

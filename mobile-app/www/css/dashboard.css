@@ -1779,3 +1779,37 @@ footer {
     border: 1px solid #ddd;
   }
 }
+.saved-trip-section {
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-md);
+  border: 1px solid var(--cream-dark);
+  border-radius: var(--radius-md);
+  background: var(--white);
+}
+
+.saved-trip-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.saved-trip-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.saved-trip-card:last-child { border-bottom: 0; }
+.saved-trip-card img { width: 72px; height: 64px; border-radius: 10px; object-fit: cover; background: var(--cream); }
+.saved-trip-card h3, .saved-trip-card p { margin: 0; }
+.saved-trip-card h3 { font-size: 0.95rem; }
+.saved-trip-card p { color: #6B6659; font-size: 0.82rem; }
+.saved-trip-card strong { font-size: 0.85rem; }
+
+@media (max-width: 560px) {
+  .saved-trip-card { grid-template-columns: 56px minmax(0, 1fr); }
+  .saved-trip-card img { width: 56px; height: 56px; }
+  .saved-trip-card button { grid-column: 2; justify-self: start; }
+}

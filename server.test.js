@@ -94,3 +94,30 @@ test("rejects malformed DELETE request bodies before account authentication", as
     assert.equal(statusCode, undefined);
     assert.equal(responseBody, undefined);
 });
+
+test("saved-search list, create, and delete routes require authentication", async () => {
+    const routes = [
+        { method: "GET", path: "/api/saved-searches" },
+        { method: "POST", path: "/api/saved-searches" },
+        { method: "DELETE", path: "/api/saved-searches/1" }
+    ];
+    for (const route of routes) {
+        const request = {
+            method: route.method,
+            headers: {},
+            on(event, callback) {
+                if (event === "data") callback("{}");
+                if (event === "end") callback();
+            }
+        };
+        const response = {
+            writeHead() {},
+            end() {}
+        };
+        await assert.rejects(
+            routeApi(request, response, new URL(`https://test.local${route.path}`)),
+            { status: 401 },
+            `${route.method} ${route.path} should reject anonymous requests`
+        );
+    }
+});

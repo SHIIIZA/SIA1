@@ -158,7 +158,12 @@
         favorites: new Set()
     };
 
-    const currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+    let currentUser = null;
+    try {
+        currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+    } catch (error) {
+        console.warn("Unable to read the current TripMate user:", error.message);
+    }
     try {
         const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
         saved.filter(item => currentUser && String(item.userId) === String(currentUser.id))
@@ -177,6 +182,125 @@
     const priceMinLabel = document.getElementById("priceMinLabel");
     const priceMaxLabel = document.getElementById("priceMaxLabel");
     const filterGuestCount = document.getElementById("filterGuestCount");
+    const loadMoreStays = document.getElementById("loadMoreStays");
+    const staysMapView = document.getElementById("staysMapView");
+    const staysMapFrame = document.getElementById("staysMapFrame");
+    const mapViewSummary = document.getElementById("mapViewSummary");
+    const mapLocationList = document.getElementById("mapLocationList");
+    const showListView = document.getElementById("showListView");
+    const showMapView = document.getElementById("showMapView");
+    const savedSearchesList = document.getElementById("savedSearchesList");
+    const savedSearchesStatus = document.getElementById("savedSearchesStatus");
+    const saveSearchButton = document.getElementById("saveSearchBtn");
+    const pageSize = 6;
+    let visibleCount = pageSize;
+    let displayMode = "list";
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[character]));
+    }
+
+    function readSavedSearchFilters(search) {
+        if (search?.filters && typeof search.filters === "object") return search.filters;
+        if (typeof search?.filters === "string") {
+            try {
+                const filters = JSON.parse(search.filters);
+                return filters && typeof filters === "object" && !Array.isArray(filters) ? filters : {};
+            } catch (error) {
+                console.warn("Skipping a saved search with invalid filters:", error.message);
+            }
+        }
+        return {};
+    }
+
+    function isValidSearchDate(value) {
+        if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+        const date = new Date(`${value}T00:00:00Z`);
+        return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+    }
+
+    function renderSavedSearches(searches) {
+        if (!savedSearchesList) return;
+        savedSearchesList.innerHTML = searches.map(search => `
+            <article class="saved-search-card" data-saved-search-id="${escapeHtml(search.id)}">
+                <button type="button" class="saved-search-apply" data-action="apply-saved-search">
+                    <strong>${escapeHtml(search.search_name || "Saved search")}</strong>
+                    <span>${escapeHtml(Number.isNaN(Date.parse(search.created_at)) ? "" : new Date(search.created_at).toLocaleDateString("en-PH"))}</span>
+                </button>
+                <button type="button" class="saved-search-remove" data-action="remove-saved-search" aria-label="Delete ${escapeHtml(search.search_name || "saved search")}">&times;</button>
+            </article>
+        `).join("");
+        if (searches.length === 0 && savedSearchesStatus) {
+            savedSearchesStatus.textContent = "No saved searches yet.";
+        }
+    }
+
+    async function loadSavedSearches() {
+        if (!savedSearchesList) return;
+        if (savedSearchesStatus) savedSearchesStatus.textContent = "";
+        if (!currentUser) {
+            if (savedSearchesStatus) savedSearchesStatus.textContent = "Log in to save and access your searches.";
+            return;
+        }
+        try {
+            const searches = await apiRequest("/saved-searches");
+            if (!Array.isArray(searches)) throw new Error("The saved-search response was invalid.");
+            renderSavedSearches(searches);
+        } catch (error) {
+            console.error("Unable to load saved searches:", error);
+            if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Saved searches could not be loaded.";
+        }
+    }
+
+    function applySavedSearch(search) {
+        const filters = readSavedSearchFilters(search);
+        state.search = typeof filters.search === "string" ? filters.search : "";
+        state.minPrice = Number.isFinite(Number(filters.minPrice))
+            ? Math.min(priceBounds.max, Math.max(priceBounds.min, Number(filters.minPrice)))
+            : priceBounds.min;
+        state.maxPrice = Number.isFinite(Number(filters.maxPrice))
+            ? Math.min(priceBounds.max, Math.max(state.minPrice, Number(filters.maxPrice)))
+            : priceBounds.max;
+        state.sort = ["recommended", "price-asc", "price-desc", "rating-desc"].includes(filters.sort)
+            ? filters.sort
+            : "recommended";
+        state.guests = Number.isInteger(Number(filters.guests))
+            ? Math.min(10, Math.max(1, Number(filters.guests)))
+            : 1;
+        const rating = Number(filters.minRating);
+        state.minRating = [0, 4, 4.5, 5].includes(rating) ? rating : 0;
+        const validTypes = new Set([...document.querySelectorAll("#typeList input")].map(input => input.value));
+        const validAmenities = new Set([...document.querySelectorAll("#amenityList input")].map(input => input.value));
+        state.types = new Set(Array.isArray(filters.types)
+            ? filters.types.filter(value => typeof value === "string" && validTypes.has(value))
+            : []);
+        state.amenities = new Set(Array.isArray(filters.amenities)
+            ? filters.amenities.filter(value => typeof value === "string" && validAmenities.has(value))
+            : []);
+        const checkin = isValidSearchDate(filters.checkin) ? filters.checkin : "";
+        const checkout = isValidSearchDate(filters.checkout) ? filters.checkout : "";
+        if (checkin && checkout && checkin < checkout) {
+            localStorage.setItem("trip_checkin", checkin);
+            localStorage.setItem("trip_checkout", checkout);
+        } else {
+            localStorage.removeItem("trip_checkin");
+            localStorage.removeItem("trip_checkout");
+        }
+
+        if (searchInput) searchInput.value = state.search;
+        if (sortSelect) sortSelect.value = state.sort;
+        if (priceMin) priceMin.value = String(state.minPrice);
+        if (priceMax) priceMax.value = String(state.maxPrice);
+        if (filterGuestCount) filterGuestCount.textContent = String(state.guests);
+        const ratingInput = document.querySelector(`input[name="rating"][value="${state.minRating}"]`);
+        if (ratingInput) ratingInput.checked = true;
+        syncCheckboxes("#typeList", state.types);
+        syncCheckboxes("#amenityList", state.amenities);
+        updatePriceUI();
+        render();
+    }
 
     document.querySelectorAll("#typeList .checkbox-row").forEach((row) => {
         const input = row.querySelector("input");
@@ -255,12 +379,29 @@
         return out;
     }
 
-    function render() {
+    function render(resetVisibleCount = true) {
         const results = applyFilters();
+        if (resetVisibleCount) visibleCount = pageSize;
         if (resultsCount) resultsCount.textContent = `${results.length} stay${results.length === 1 ? "" : "s"}`;
         if (grid) {
-            grid.innerHTML = results.map(cardHTML).join("");
+            grid.innerHTML = results.slice(0, visibleCount).map(cardHTML).join("");
             grid.style.display = results.length === 0 ? "none" : "grid";
+        }
+        if (loadMoreStays) {
+            loadMoreStays.hidden = displayMode !== "list" || results.length <= visibleCount;
+            loadMoreStays.textContent = `Show more stays (${Math.min(pageSize, results.length - visibleCount)} more)`;
+        }
+        if (staysMapView) staysMapView.hidden = displayMode !== "map" || results.length === 0;
+        if (grid && displayMode === "map") grid.style.display = "none";
+        if (staysMapFrame && displayMode === "map" && results.length) {
+            const location = results[0].location || "Philippines";
+            staysMapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed`;
+            if (mapViewSummary) mapViewSummary.textContent = `Showing ${results.length} filtered stay locations. The map is centered on ${location}; select a stay below to open its exact location.`;
+        }
+        if (mapLocationList) {
+            mapLocationList.innerHTML = results.map(listing =>
+                `<a href="https://www.openstreetmap.org/search?query=${encodeURIComponent(listing.location)}" target="_blank" rel="noopener noreferrer">${escapeHtml(listing.name)} · ${escapeHtml(listing.location)}</a>`
+            ).join("");
         }
         if (emptyState) emptyState.hidden = results.length !== 0;
         renderChips();
@@ -269,8 +410,39 @@
         if (state.sort !== "recommended") params.set("sort", state.sort);
         if (state.minPrice !== priceBounds.min) params.set("minPrice", state.minPrice);
         if (state.maxPrice !== priceBounds.max) params.set("maxPrice", state.maxPrice);
+        if (state.minRating > 0) params.set("rating", state.minRating);
+        if (state.guests > 1) params.set("guests", state.guests);
+        if (state.types.size) params.set("type", [...state.types].join(","));
+        if (state.amenities.size) params.set("amenity", [...state.amenities].join(","));
+        const checkin = localStorage.getItem("trip_checkin");
+        const checkout = localStorage.getItem("trip_checkout");
+        if (checkin) params.set("checkin", checkin);
+        if (checkout) params.set("checkout", checkout);
         window.history.replaceState({}, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
     }
+
+    loadMoreStays?.addEventListener("click", () => {
+        visibleCount += pageSize;
+        render(false);
+    });
+
+    showListView?.addEventListener("click", () => {
+        displayMode = "list";
+        showListView.setAttribute("aria-pressed", "true");
+        showMapView?.setAttribute("aria-pressed", "false");
+        showListView.classList.add("active");
+        showMapView?.classList.remove("active");
+        render(false);
+    });
+
+    showMapView?.addEventListener("click", () => {
+        displayMode = "map";
+        showMapView.setAttribute("aria-pressed", "true");
+        showListView?.setAttribute("aria-pressed", "false");
+        showMapView.classList.add("active");
+        showListView?.classList.remove("active");
+        render(false);
+    });
 
     function renderChips() {
         if (!activeChips) return;
@@ -317,16 +489,76 @@
         document.querySelector(".stays-main")?.scrollIntoView({ behavior: "smooth" });
     });
 
-    document.getElementById("saveSearchBtn")?.addEventListener("click", async () => {
+    saveSearchButton?.addEventListener("click", async () => {
         if (!currentUser) {
-            window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
+            const returnPath = `${window.location.pathname}${window.location.search}`;
+            window.location.href = `login.html?redirect=${encodeURIComponent(returnPath)}`;
             return;
         }
+        saveSearchButton.disabled = true;
         try {
-            await apiRequest("/saved-searches", { method: "POST", body: JSON.stringify({ search_name: state.search || "Trip search", filters: { search: state.search, minPrice: state.minPrice, maxPrice: state.maxPrice, sort: state.sort, guests: state.guests } }) });
-            showToast("Search saved.");
+            const filters = {
+                search: state.search,
+                minPrice: state.minPrice,
+                maxPrice: state.maxPrice,
+                sort: state.sort,
+                guests: state.guests,
+                minRating: state.minRating,
+                types: [...state.types],
+                amenities: [...state.amenities],
+                checkin: localStorage.getItem("trip_checkin") || "",
+                checkout: localStorage.getItem("trip_checkout") || ""
+            };
+            await apiRequest("/saved-searches", {
+                method: "POST",
+                body: JSON.stringify({
+                    search_name: state.search || "Trip search",
+                    filters
+                })
+            });
+            await loadSavedSearches();
+            if (savedSearchesStatus) savedSearchesStatus.textContent = "Search saved to your TripMate account.";
         } catch (error) {
-            showToast(error.message || "Unable to save search.", true);
+            console.error("Unable to save search:", error);
+            if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to save search.";
+        } finally {
+            saveSearchButton.disabled = false;
+        }
+    });
+
+    savedSearchesList?.addEventListener("click", async event => {
+        const button = event.target.closest("[data-action]");
+        const card = button?.closest("[data-saved-search-id]");
+        if (!button || !card) return;
+        if (button.dataset.action === "apply-saved-search") {
+            button.disabled = true;
+            try {
+                const savedSearch = (await apiRequest("/saved-searches"))
+                    .find(search => String(search.id) === String(card.dataset.savedSearchId));
+                if (!savedSearch) {
+                    if (savedSearchesStatus) savedSearchesStatus.textContent = "That saved search is no longer available.";
+                    await loadSavedSearches();
+                    return;
+                }
+                applySavedSearch(savedSearch);
+            } catch (error) {
+                console.error("Unable to apply saved search:", error);
+                if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to apply saved search.";
+            } finally {
+                button.disabled = false;
+            }
+            return;
+        }
+        if (button.dataset.action !== "remove-saved-search") return;
+        button.disabled = true;
+        try {
+            await apiRequest(`/saved-searches/${encodeURIComponent(card.dataset.savedSearchId)}`, { method: "DELETE" });
+            await loadSavedSearches();
+            if (savedSearchesStatus) savedSearchesStatus.textContent = "Saved search deleted.";
+        } catch (error) {
+            console.error("Unable to delete saved search:", error);
+            if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to delete saved search.";
+            button.disabled = false;
         }
     });
 
@@ -444,7 +676,8 @@
                     userSaved.push({
                         userId: currentUser.id,
                         propertyId: key,
-                        savedAt: new Date().toISOString()
+                        savedAt: new Date().toISOString(),
+                        savedPrice: Number(selected.price)
                     });
                 }
                 const otherUsers = saved.filter(item => String(item.userId) !== String(currentUser.id));
@@ -562,6 +795,10 @@
     const incomingSort = urlParams.get('sort');
     const incomingMinPrice = Number(urlParams.get('minPrice'));
     const incomingMaxPrice = Number(urlParams.get('maxPrice'));
+    const incomingTypes = (urlParams.get("type") || "").split(",").filter(Boolean);
+    const incomingAmenities = (urlParams.get("amenity") || "").split(",").filter(Boolean);
+    const incomingRating = Number(urlParams.get("rating"));
+    const incomingGuests = Number(urlParams.get("guests"));
 
     if (incomingSearch && searchInput) {
         state.search = incomingSearch;
@@ -575,8 +812,18 @@
     }
     if (incomingMinPrice >= priceBounds.min && incomingMinPrice <= priceBounds.max && priceMin) priceMin.value = incomingMinPrice;
     if (incomingMaxPrice >= priceBounds.min && incomingMaxPrice <= priceBounds.max && priceMax) priceMax.value = incomingMaxPrice;
+    incomingTypes.forEach(type => state.types.add(type));
+    incomingAmenities.forEach(amenity => state.amenities.add(amenity));
+    if (incomingRating > 0 && incomingRating <= 5) state.minRating = incomingRating;
+    if (Number.isInteger(incomingGuests) && incomingGuests > 1 && incomingGuests <= 10) state.guests = incomingGuests;
+    syncCheckboxes("#typeList", state.types);
+    syncCheckboxes("#amenityList", state.amenities);
+    const selectedRating = document.querySelector(`input[name="rating"][value="${state.minRating}"]`);
+    if (selectedRating) selectedRating.checked = true;
+    if (filterGuestCount) filterGuestCount.textContent = String(state.guests);
 
     updatePriceUI();
     render();
     loadDatabaseListings();
+    loadSavedSearches();
 })();

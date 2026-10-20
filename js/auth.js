@@ -25,6 +25,18 @@ function isLoggedIn() {
   return !!getCurrentUser() && !!localStorage.getItem(SESSION_KEY);
 }
 
+function getSafeRedirectPath(candidate, fallback) {
+  if (!candidate) return fallback;
+  try {
+    const target = new URL(candidate, window.location.origin);
+    if (target.origin !== window.location.origin || target.username || target.password ||
+      target.pathname.startsWith("//")) return fallback;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }

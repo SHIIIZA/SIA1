@@ -28,6 +28,9 @@ for (const entry of rootFiles) {
         await cp(join(repositoryDirectory, entry.name), join(webDirectory, entry.name));
     }
 }
+for (const file of ["manifest.webmanifest", "sw.js"]) {
+    await cp(join(repositoryDirectory, file), join(webDirectory, file));
+}
 
 async function prepareMobilePage(pagePath) {
     let html = await readFile(pagePath, "utf8");

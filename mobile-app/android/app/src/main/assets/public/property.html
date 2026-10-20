@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <script src="/js/mobile-navigation.js" defer></script>
+    <meta name="theme-color" content="#faf7ef">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <script src="/js/pwa.js" defer></script>
     <title>TripMate — Property Detail</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,6 +53,7 @@
                         <span class="stars" id="propertyStars"></span>
                         <span class="rating-value" id="propertyRatingValue"></span>
                     </div>
+                    <a class="property-map-link" id="propertyMapLink" target="_blank" rel="noopener noreferrer">View on map</a>
                 </div>
 
                 <aside class="booking-panel" id="bookingPanel">
@@ -137,6 +141,15 @@
                     </ul>
                 </section>
 
+                <section class="property-section" id="reviewsSection">
+                    <div class="reviews-heading">
+                        <h2>Guest reviews <span id="reviewCount"></span></h2>
+                        <button type="button" class="btn-secondary btn-sm" id="writeReviewBtn">Write a review</button>
+                    </div>
+                    <div class="reviews-summary" id="reviewSummary"></div>
+                    <div class="reviews-list" id="propertyReviews"></div>
+                </section>
+
             </section>
         </div>
     </main>
@@ -144,6 +157,26 @@
     <dialog id="imageLightbox" class="image-lightbox">
         <button type="button" id="closeLightbox" aria-label="Close image viewer">&times;</button>
         <img id="lightboxImage" alt="Property photo">
+    </dialog>
+    <dialog id="reviewDialog" class="review-dialog" aria-labelledby="reviewDialogTitle">
+        <form id="reviewForm">
+            <h2 id="reviewDialogTitle">Share your stay</h2>
+            <label for="reviewRating">Your rating</label>
+            <select id="reviewRating" required>
+                <option value="">Choose a rating</option>
+                <option value="5">5 — Excellent</option>
+                <option value="4">4 — Very good</option>
+                <option value="3">3 — Good</option>
+                <option value="2">2 — Fair</option>
+                <option value="1">1 — Poor</option>
+            </select>
+            <label for="reviewText">Your review</label>
+            <textarea id="reviewText" rows="5" minlength="20" maxlength="1000" required></textarea>
+            <div class="review-dialog-actions">
+                <button type="button" class="btn-secondary" id="cancelReviewBtn">Cancel</button>
+                <button type="submit" class="btn-primary">Submit review</button>
+            </div>
+        </form>
     </dialog>
 
     <footer>

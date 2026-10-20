@@ -26,6 +26,55 @@
     flex-wrap: wrap;
 }
 
+.wishlist-batch-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.wishlist-batch-controls button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.wishlist-select-all,
+.wishlist-card-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--ink-light);
+    font-size: 0.85rem;
+}
+
+.wishlist-card {
+    position: relative;
+}
+
+.wishlist-card-select {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    left: 12px;
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--ink);
+}
+
+.wishlist-card-select input,
+.wishlist-select-all input {
+    accent-color: var(--teal-600);
+}
+
+.wishlist-price-drop {
+    display: inline-block;
+    margin: 8px 16px 0;
+    color: #176b48;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
 .wishlist-sort .sort-select {
     padding: 10px 16px;
     border: 1px solid var(--cream-dark);

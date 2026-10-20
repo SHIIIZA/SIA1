@@ -158,6 +158,9 @@
     const wishlistEmpty = document.getElementById("wishlistEmpty");
     const wishlistStatus = document.getElementById("wishlistStatus");
     const wishlistSort = document.getElementById("wishlistSort");
+    const selectAllWishlist = document.getElementById("selectAllWishlist");
+    const moveSelectedToTrip = document.getElementById("moveSelectedToTrip");
+    const removeSelectedWishlist = document.getElementById("removeSelectedWishlist");
     const viewBtns = document.querySelectorAll(".view-btn");
     const userAvatarBtn = document.getElementById("userAvatarBtn");
     const userDropdown = document.getElementById("userDropdown");
@@ -168,6 +171,8 @@
 
     let currentView = "grid";
     let currentSort = "recent";
+    const selectedPropertyIds = new Set();
+    let visibleWishlist = [];
 
     // Auth check
     const user = JSON.parse(localStorage.getItem("tripmate_user") || "null");
@@ -233,6 +238,7 @@
     async function loadWishlist() {
         try {
             const rows = await apiRequest("/wishlist");
+            const localById = new Map(readLocalWishlist().map(item => [String(item.propertyId), item]));
             const remoteWishlist = rows.map(item => {
                 const listing = item.listings;
                 if (listing) {
@@ -264,7 +270,12 @@
                         img: ""
                     };
                 }
-                return { propertyId, savedAt: item.created_at || new Date().toISOString() };
+                const localItem = localById.get(propertyId);
+                return {
+                    propertyId,
+                    savedAt: item.created_at || localItem?.savedAt || new Date().toISOString(),
+                    savedPrice: Number(localItem?.savedPrice) || null
+                };
             });
             const merged = new Map(remoteWishlist.map(item => [String(item.propertyId), item]));
             readLocalWishlist().forEach(item => {
@@ -284,9 +295,12 @@
         if (!wishlistGrid || !wishlistEmpty) return;
 
         if (wishlist.length === 0) {
+            visibleWishlist = [];
+            selectedPropertyIds.clear();
             wishlistGrid.hidden = true;
             wishlistEmpty.hidden = false;
             wishlistGrid.innerHTML = "";
+            renderBatchControls();
             return;
         }
 
@@ -294,6 +308,11 @@
         wishlistEmpty.hidden = true;
 
         const sorted = sortWishlist([...wishlist], currentSort);
+        visibleWishlist = sorted;
+        const visibleIds = new Set(sorted.map(item => String(item.propertyId)));
+        selectedPropertyIds.forEach(id => {
+            if (!visibleIds.has(id)) selectedPropertyIds.delete(id);
+        });
         wishlistGrid.innerHTML = sorted
             .map((item) => createWishlistCard(item, propertyData[String(item.propertyId)] || {
                 id: item.propertyId,
@@ -306,6 +325,17 @@
                 img: ""
             }))
             .join("");
+        renderBatchControls();
+    }
+
+    function renderBatchControls() {
+        const selectedCount = selectedPropertyIds.size;
+        if (moveSelectedToTrip) moveSelectedToTrip.disabled = selectedCount === 0;
+        if (removeSelectedWishlist) removeSelectedWishlist.disabled = selectedCount === 0;
+        if (selectAllWishlist) {
+            selectAllWishlist.checked = visibleWishlist.length > 0 && selectedCount === visibleWishlist.length;
+            selectAllWishlist.indeterminate = selectedCount > 0 && selectedCount < visibleWishlist.length;
+        }
     }
 
     function sortWishlist(wishlist, sortBy) {
@@ -330,33 +360,48 @@
     function createWishlistCard(item, property) {
         if (!property) return "";
 
+        const propertyId = String(property.id);
+        const escapedId = propertyId.replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[character]));
+        const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[character]));
         const savedDate = new Date(item.savedAt || Date.now()).toLocaleDateString("en-PH", {
             month: "short",
             day: "numeric",
             year: "numeric"
         });
+        const savedPrice = Number(item.savedPrice);
+        const priceDrop = Number.isFinite(savedPrice) && savedPrice > property.price
+            ? `<span class="wishlist-price-drop">${peso(savedPrice - property.price)} off since saved</span>`
+            : "";
 
         return `
-            <article class="wishlist-card" data-property-id="${property.id}">
+            <article class="wishlist-card" data-property-id="${escapedId}">
+                <label class="wishlist-card-select" aria-label="Select ${escapeHtml(property.name)}">
+                    <input type="checkbox" class="wishlist-select" data-property-id="${escapedId}" ${selectedPropertyIds.has(propertyId) ? "checked" : ""}>
+                    <span>Select</span>
+                </label>
                 <a href="property.html?id=${encodeURIComponent(property.id)}" class="wishlist-image-link">
                     <div class="wishlist-image">
-                        <img src="${property.img}" alt="${property.name}" loading="lazy">
-                        <span class="wishlist-badge">${property.type}</span>
+                        <img src="${escapeHtml(property.img)}" alt="${escapeHtml(property.name)}" loading="lazy">
+                        <span class="wishlist-badge">${escapeHtml(property.type)}</span>
                     </div>
                 </a>
                 <div class="wishlist-content">
                     <div class="wishlist-header">
                         <h3 class="wishlist-title">
-                            <a href="property.html?id=${encodeURIComponent(property.id)}">${property.name}</a>
+                            <a href="property.html?id=${encodeURIComponent(property.id)}">${escapeHtml(property.name)}</a>
                         </h3>
-                        <button class="wishlist-remove" data-property-id="${property.id}" aria-label="Remove from wishlist">
+                        <button class="wishlist-remove" data-property-id="${escapedId}" aria-label="Remove ${escapeHtml(property.name)} from wishlist">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"/>
                                 <line x1="6" y1="6" x2="18" y2="18"/>
                             </svg>
                         </button>
                     </div>
-                    <p class="wishlist-location">${property.location}</p>
+                    <p class="wishlist-location">${escapeHtml(property.location)}</p>
                     <div class="wishlist-meta">
                         <span class="wishlist-rating">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -370,6 +415,7 @@
                         <span class="wishlist-price"><b>${peso(property.price)}</b> <span>/ night</span></span>
                         <a href="property.html?id=${encodeURIComponent(property.id)}" class="btn-primary btn-sm">View Details</a>
                     </div>
+                    ${priceDrop}
                     <p class="wishlist-saved">Saved on ${savedDate}</p>
                 </div>
             </article>
@@ -391,6 +437,69 @@
         });
     });
 
+    selectAllWishlist?.addEventListener("change", () => {
+        if (selectAllWishlist.checked) visibleWishlist.forEach(item => selectedPropertyIds.add(String(item.propertyId)));
+        else visibleWishlist.forEach(item => selectedPropertyIds.delete(String(item.propertyId)));
+        renderWishlist(visibleWishlist);
+    });
+
+    wishlistGrid?.addEventListener("change", event => {
+        const checkbox = event.target.closest(".wishlist-select");
+        if (!checkbox) return;
+        const propertyId = String(checkbox.dataset.propertyId);
+        if (checkbox.checked) selectedPropertyIds.add(propertyId);
+        else selectedPropertyIds.delete(propertyId);
+        renderBatchControls();
+    });
+
+    moveSelectedToTrip?.addEventListener("click", () => {
+        try {
+            const tripKey = `tripmate_saved_trip:${user.id}`;
+            const stored = JSON.parse(localStorage.getItem(tripKey) || "[]");
+            if (!Array.isArray(stored)) throw new Error("Saved trip data is invalid.");
+            const planned = new Map(stored.map(item => [String(item.propertyId), item]));
+            visibleWishlist
+                .filter(item => selectedPropertyIds.has(String(item.propertyId)))
+                .forEach(item => {
+                    const property = propertyData[String(item.propertyId)];
+                    if (property) planned.set(String(item.propertyId), {
+                        propertyId: String(item.propertyId),
+                        name: property.name,
+                        location: property.location,
+                        price: property.price,
+                        image: property.img,
+                        addedAt: new Date().toISOString()
+                    });
+                });
+            localStorage.setItem(tripKey, JSON.stringify([...planned.values()]));
+            const count = selectedPropertyIds.size;
+            selectedPropertyIds.clear();
+            renderWishlist(visibleWishlist);
+            if (wishlistStatus) wishlistStatus.textContent = `${count} stay${count === 1 ? "" : "s"} added to your saved trip on this device.`;
+        } catch (error) {
+            console.error("Unable to add selected stays to the saved trip:", error);
+            if (wishlistStatus) wishlistStatus.textContent = "The selected stays could not be added. Check available browser storage and try again.";
+        }
+    });
+
+    removeSelectedWishlist?.addEventListener("click", async () => {
+        const ids = [...selectedPropertyIds];
+        removeSelectedWishlist.disabled = true;
+        let removed = 0;
+        for (const propertyId of ids) {
+            const didRemove = await removeFromWishlist(propertyId, false);
+            if (didRemove) {
+                removed += 1;
+                selectedPropertyIds.delete(String(propertyId));
+            }
+        }
+        await loadWishlist();
+        const failed = ids.length - removed;
+        if (wishlistStatus) wishlistStatus.textContent = failed
+            ? `${removed} stay${removed === 1 ? "" : "s"} removed. ${failed} could not be removed and remain selected.`
+            : `${removed} selected stay${removed === 1 ? "" : "s"} removed.`;
+    });
+
     // Remove from wishlist (event delegation)
     wishlistGrid?.addEventListener("click", async (e) => {
         const removeBtn = e.target.closest(".wishlist-remove");
@@ -403,7 +512,7 @@
         await removeFromWishlist(propertyId);
     });
 
-    async function removeFromWishlist(propertyId) {
+    async function removeFromWishlist(propertyId, shouldReload = true) {
         const localWishlist = readLocalWishlist();
         const matchingLocal = localWishlist.some(item => String(item.propertyId) === String(propertyId));
         try {
@@ -416,12 +525,13 @@
                 if (wishlistStatus) wishlistStatus.textContent = "This stay could not be removed from your account. Please try again.";
                 const button = wishlistGrid.querySelector(`.wishlist-remove[data-property-id="${CSS.escape(String(propertyId))}"]`);
                 if (button) button.disabled = false;
-                return;
+                return false;
             }
             if (wishlistStatus) wishlistStatus.textContent = "Removed from this browser, but the account wishlist could not be synced.";
         }
         saveLocalWishlist(localWishlist.filter(item => String(item.propertyId) !== String(propertyId)));
-        await loadWishlist();
+        if (shouldReload) await loadWishlist();
+        return true;
     }
 
     // User dropdown toggle

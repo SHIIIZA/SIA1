@@ -5,6 +5,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <script src="/js/mobile-navigation.js" defer></script>
+  <meta name="theme-color" content="#faf7ef">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <script src="/js/pwa.js" defer></script>
   <title>TripMate — Create an Account</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,6 +92,7 @@
           </span>
           <input type="password" id="password" placeholder="At least 8 characters" autocomplete="new-password" required />
           <button type="button" class="toggle-pw" aria-label="Show password"></button>
+          <div class="password-strength" id="passwordStrength" aria-live="polite">Password strength: not entered</div>
           <div class="error-msg">Password must be at least 8 characters.</div>
         </div>
 
@@ -159,6 +163,21 @@
     const confirmField = document.getElementById("f-confirm");
     const termsField = document.getElementById("f-terms");
     const submitBtn = document.getElementById("submit-btn");
+    const signupPassword = document.getElementById("password");
+    const passwordStrength = document.getElementById("passwordStrength");
+    signupPassword.addEventListener("input", () => {
+      const value = signupPassword.value;
+      const score = [
+        value.length >= 8,
+        /[a-z]/.test(value) && /[A-Z]/.test(value),
+        /\d/.test(value),
+        /[^A-Za-z0-9]/.test(value)
+      ].filter(Boolean).length;
+      const labels = ["not entered", "weak", "fair", "good", "strong"];
+      const level = value ? Math.max(1, score) : 0;
+      passwordStrength.textContent = `Password strength: ${labels[level]}`;
+      passwordStrength.dataset.strength = value ? labels[level] : "empty";
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
