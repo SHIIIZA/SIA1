@@ -19,7 +19,7 @@
     <!-- Navbar -->
     <nav class="wizard-nav">
         <a href="dashboard.html" class="logo">
-            <span class="logo-wordmark">TripMate</span>
+            <img src="../images/tripmate.svg" alt="TripMate" class="logo-img">
             <span class="host-badge">Host</span>
         </a>
         <button class="btn btn-secondary btn-sm" id="saveExitBtn">Save & Exit</button>
@@ -75,6 +75,12 @@
                     <div class="form-group">
                         <label for="propertyName">Property Name</label>
                         <input type="text" id="propertyName" class="form-input" placeholder="e.g. Sunny Beachfront Villa" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propertyDescription">Property Description <span class="label-hint">Optional</span></label>
+                        <textarea id="propertyDescription" class="form-input" rows="5" maxlength="1000" aria-describedby="propertyDescriptionHint" placeholder="Describe what makes this property special, its amenities, and what guests can expect."></textarea>
+                        <p class="form-hint" id="propertyDescriptionHint">This description appears on this property's detail page. Up to 1,000 characters.</p>
                     </div>
 
                     <div class="form-group">

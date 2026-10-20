@@ -835,7 +835,18 @@ export async function routeApi(req, res, url) {
 
     if (req.method === "POST" && url.pathname === "/api/host/listings") {
         const current = requireHost();
-        const listing = { ...body, host_id: current.id, images: body.images || [], amenities: body.amenities || [], rules: body.rules || {} };
+        const description = body.description ?? "";
+        if (typeof description !== "string" || description.length > 1000) {
+            return json(res, 400, { error: "Listing description must be 1,000 characters or fewer." });
+        }
+        const listing = {
+            ...body,
+            description: description.trim(),
+            host_id: current.id,
+            images: body.images || [],
+            amenities: body.amenities || [],
+            rules: body.rules || {}
+        };
         return json(res, 201, (await neon("/listings", { method: "POST", body: JSON.stringify(listing) }))[0]);
     }
 

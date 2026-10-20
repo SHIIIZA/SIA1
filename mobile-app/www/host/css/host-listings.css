@@ -255,6 +255,20 @@
     font-weight: 600;
 }
 
+.review-summary-list .review-summary-description {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.review-summary-description dd {
+    font-weight: 400;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    text-align: left;
+    white-space: pre-wrap;
+}
+
 .publish-ready-badge {
     align-self: flex-start;
     padding: 7px 10px;
@@ -303,6 +317,11 @@
     box-shadow: 0 0 0 3px rgba(26, 98, 89, 0.1);
 }
 
+textarea.form-input {
+    min-height: 140px;
+    line-height: 1.5;
+    resize: vertical;
+}
 
 /* Number Steppers */
 .counters-list {

@@ -206,7 +206,7 @@ css/
 
 ## Current implementation status
 
-- **Host flow:** The dashboard and seven-step listing wizard are implemented. The bookings table now paginates and occupancy is calculated from confirmed/completed nights in the current month.
+- **Host flow:** The dashboard and seven-step listing wizard are implemented. Hosts can add an optional 1,000-character property description; it is saved with drafts and listings, shown on the property detail page, and validated by the API. The bookings table now paginates and occupancy is calculated from confirmed/completed nights in the current month.
 - **Booking:** The site already uses the server-backed PayMongo checkout flow; the mobile app uses the same web booking pages.
 - **Property:** Gallery navigation supports touch and keyboard; users can submit browser-local reviews and open the location in OpenStreetMap. A public availability calendar is still not reliable without authoritative availability data.
 - **Stays:** Filters, sorting, URL-synced filter state, a show-more pager, and a map view are implemented. Authenticated users can save, reapply, and delete account-backed searches. The map centers on the first filtered location and provides exact-location links; marker clustering still needs listing coordinates.

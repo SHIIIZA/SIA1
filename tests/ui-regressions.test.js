@@ -16,6 +16,10 @@ const wishlistScript = await readFile(new URL("../js/wishlist.js", import.meta.u
 const dashboardPage = await readFile(new URL("../dashboard.html", import.meta.url), "utf8");
 const dashboardScript = await readFile(new URL("../js/dashboard.js", import.meta.url), "utf8");
 const staysScript = await readFile(new URL("../js/stays.js", import.meta.url), "utf8");
+const hostListingsPage = await readFile(new URL("../host/listings.html", import.meta.url), "utf8");
+const hostListingsScript = await readFile(new URL("../host/js/host-listings.js", import.meta.url), "utf8");
+const contactStyles = await readFile(new URL("../css/contactus.css", import.meta.url), "utf8");
+const staysStyles = await readFile(new URL("../css/stays.css", import.meta.url), "utf8");
 const pwaPages = await Promise.all([
     "about.html", "admin.html", "booking.html", "cancellation.html", "contactus.html",
     "dashboard.html", "forgot-password.html", "homepage.html", "index.html", "login.html",
@@ -86,6 +90,21 @@ test("saved searches can be saved, restored, listed, and deleted", () => {
     assert.match(staysScript, /data-action="remove-saved-search"/);
     assert.match(serverScript, /req\.method === "GET" && url\.pathname === "\/api\/saved-searches"/);
     assert.match(serverScript, /req\.method === "DELETE" && savedSearchMatch/);
+});
+
+test("host listing descriptions persist through drafts and publication", () => {
+    assert.match(hostListingsPage, /id="propertyDescription"[^>]*maxlength="1000"/);
+    assert.match(hostListingsScript, /description: document\.getElementById\('propertyDescription'\)\.value\.trim\(\)\.slice\(0, 1000\)/);
+    assert.match(hostListingsScript, /setValue\('propertyDescription', basics\.description\)/);
+    assert.match(hostListingsScript, /description: localListing\.description/);
+    assert.match(hostListingsScript, /<div class="review-summary-description"><dt>Description<\/dt><dd>\$\{description \? escapeHtml\(description\) : 'Not provided'\}<\/dd><\/div>/);
+    assert.match(serverScript, /description\.length > 1000/);
+});
+
+test("responsive contact navigation and stays card alignment are styled", () => {
+    assert.match(contactStyles, /\.hero\.page-hero nav \.nav-links\s*\{[^}]*flex: 0 0 100%/s);
+    assert.match(staysStyles, /\.stays-grid \.listing-card\s*\{[^}]*display: flex/);
+    assert.match(staysStyles, /\.stays-grid \.listing-footer\s*\{\s*margin-top: auto/s);
 });
 
 test("selecting a property thumbnail updates the main image and active state", () => {

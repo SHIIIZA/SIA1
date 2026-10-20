@@ -96,6 +96,29 @@
 .faq-q { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 500; }
 
 @media (max-width: 900px) {
+	.hero.page-hero nav {
+		flex-wrap: wrap;
+		row-gap: 10px;
+	}
+	html:not(.tripmate-native) .hero.page-hero nav {
+		padding-top: calc(28px + env(safe-area-inset-top, 0px));
+	}
+	html.tripmate-native .hero.page-hero nav {
+		padding-top: 28px;
+	}
+	.hero.page-hero nav .nav-auth {
+		order: 1;
+		margin-left: auto;
+	}
+	.hero.page-hero nav .nav-links {
+		display: flex;
+		order: 2;
+		flex: 0 0 100%;
+		justify-content: space-between;
+		gap: 8px;
+		margin-top: 4px;
+		font-size: 12px;
+	}
 	.page-hero-body { padding: 56px clamp(20px, 5vw, 64px) 130px; }
 	.contact-main { padding-bottom: 72px; }
 	.contact-faq { padding-bottom: 72px; }

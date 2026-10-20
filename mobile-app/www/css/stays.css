@@ -597,10 +597,18 @@ body.stays-page {
 
 /* extends .listing-card from homepage.css */
 .stays-grid .listing-card {
+    display: flex;
+    flex-direction: column;
     background: var(--white);
     border: 1px solid var(--cream-dim);
     border-radius: 16px;
     padding: 10px 10px 18px;
+}
+
+.stays-grid .listing-content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
 }
 
 .stays-grid .listing-media {
@@ -612,6 +620,10 @@ body.stays-page {
 .stays-grid .listing-loc,
 .stays-grid .listing-price {
     padding: 0 6px;
+}
+
+.stays-grid .listing-footer {
+    margin-top: auto;
 }
 
 .fav-btn {
