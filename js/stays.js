@@ -195,6 +195,7 @@
     const pageSize = 6;
     let visibleCount = pageSize;
     let displayMode = "list";
+    let savedSearchRecords = [];
 
     function escapeHtml(value) {
         return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -221,36 +222,88 @@
         return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
     }
 
+    function getSavedSearchSummary(search) {
+        const filters = readSavedSearchFilters(search);
+        const details = [];
+        if (typeof filters.search === "string" && filters.search.trim()) {
+            details.push(`"${filters.search.trim()}"`);
+        }
+        if (filters.minPrice != null && filters.maxPrice != null &&
+            Number.isFinite(Number(filters.minPrice)) && Number.isFinite(Number(filters.maxPrice)) &&
+            (Number(filters.minPrice) > priceBounds.min || Number(filters.maxPrice) < priceBounds.max)) {
+            details.push(`${peso(filters.minPrice)}\u2013${peso(filters.maxPrice)} / night`);
+        }
+        if (Array.isArray(filters.types) && filters.types.length) details.push(filters.types.join(", "));
+        if (Array.isArray(filters.amenities) && filters.amenities.length) details.push(filters.amenities.join(", "));
+        if (Number(filters.guests) > 1) details.push(`${Number(filters.guests)}+ guests`);
+        if (Number(filters.minRating) > 0) details.push(`${Number(filters.minRating)}+ rating`);
+        return details.length ? details.join(" \u00b7 ") : "All stays";
+    }
+
     function renderSavedSearches(searches) {
         if (!savedSearchesList) return;
+        if (savedSearchesStatus) savedSearchesStatus.textContent = "";
+        if (!searches.length) {
+            savedSearchesList.innerHTML = `
+                <p class="saved-searches-empty">
+                    <strong>No saved searches yet</strong>
+                    <span>Set your filters, then choose "Save search" to keep them handy.</span>
+                </p>`;
+            return;
+        }
         savedSearchesList.innerHTML = searches.map(search => `
             <article class="saved-search-card" data-saved-search-id="${escapeHtml(search.id)}">
                 <button type="button" class="saved-search-apply" data-action="apply-saved-search">
-                    <strong>${escapeHtml(search.search_name || "Saved search")}</strong>
-                    <span>${escapeHtml(Number.isNaN(Date.parse(search.created_at)) ? "" : new Date(search.created_at).toLocaleDateString("en-PH"))}</span>
+                    <span class="saved-search-copy">
+                        <strong>${escapeHtml(search.search_name || "Saved search")}</strong>
+                        <span class="saved-search-summary">${escapeHtml(getSavedSearchSummary(search))}</span>
+                        <span class="saved-search-date">${escapeHtml(
+                            search.created_at && !Number.isNaN(Date.parse(search.created_at))
+                                ? `Saved ${new Date(search.created_at).toLocaleDateString("en-PH")}`
+                                : "Saved search"
+                        )}</span>
+                    </span>
+                    <span class="saved-search-apply-label">Apply</span>
                 </button>
-                <button type="button" class="saved-search-remove" data-action="remove-saved-search" aria-label="Delete ${escapeHtml(search.search_name || "saved search")}">&times;</button>
+                <button type="button" class="saved-search-remove" data-action="remove-saved-search" aria-label="Delete ${escapeHtml(search.search_name || "saved search")}" title="Delete saved search">&times;</button>
             </article>
         `).join("");
-        if (searches.length === 0 && savedSearchesStatus) {
-            savedSearchesStatus.textContent = "No saved searches yet.";
-        }
     }
 
     async function loadSavedSearches() {
         if (!savedSearchesList) return;
-        if (savedSearchesStatus) savedSearchesStatus.textContent = "";
+        if (savedSearchesStatus) savedSearchesStatus.textContent = "Loading saved searches...";
         if (!currentUser) {
-            if (savedSearchesStatus) savedSearchesStatus.textContent = "Log in to save and access your searches.";
-            return;
+            savedSearchRecords = [];
+            savedSearchesList.innerHTML = `
+                <p class="saved-searches-empty">
+                    <strong>Sign in to see your saved searches</strong>
+                    <span>Your searches will be available whenever you log in.</span>
+                </p>`;
+            if (savedSearchesStatus) savedSearchesStatus.textContent = "";
+            return false;
         }
         try {
             const searches = await apiRequest("/saved-searches");
             if (!Array.isArray(searches)) throw new Error("The saved-search response was invalid.");
+            savedSearchRecords = searches;
             renderSavedSearches(searches);
+            return true;
         } catch (error) {
             console.error("Unable to load saved searches:", error);
             if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Saved searches could not be loaded.";
+            savedSearchesList.innerHTML = `
+                <p class="saved-searches-empty saved-searches-error">
+                    <strong>Saved searches couldn't be loaded</strong>
+                    <span>There was a problem reaching your account.</span>
+                </p>`;
+            const retryButton = document.createElement("button");
+            retryButton.type = "button";
+            retryButton.className = "saved-search-retry";
+            retryButton.dataset.action = "retry-saved-searches";
+            retryButton.textContent = "Try again";
+            savedSearchesList.append(retryButton);
+            return false;
         }
     }
 
@@ -509,15 +562,20 @@
                 checkin: localStorage.getItem("trip_checkin") || "",
                 checkout: localStorage.getItem("trip_checkout") || ""
             };
+            const searchName = state.search.slice(0, 100) || "Trip search";
             await apiRequest("/saved-searches", {
                 method: "POST",
                 body: JSON.stringify({
-                    search_name: state.search || "Trip search",
+                    search_name: searchName,
                     filters
                 })
             });
-            await loadSavedSearches();
-            if (savedSearchesStatus) savedSearchesStatus.textContent = "Search saved to your TripMate account.";
+            const refreshed = await loadSavedSearches();
+            if (savedSearchesStatus) {
+                savedSearchesStatus.textContent = refreshed
+                    ? "Search saved to your TripMate account."
+                    : "Search saved, but the list could not be refreshed.";
+            }
         } catch (error) {
             console.error("Unable to save search:", error);
             if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to save search.";
@@ -528,12 +586,17 @@
 
     savedSearchesList?.addEventListener("click", async event => {
         const button = event.target.closest("[data-action]");
+        if (button?.dataset.action === "retry-saved-searches") {
+            button.disabled = true;
+            await loadSavedSearches();
+            return;
+        }
         const card = button?.closest("[data-saved-search-id]");
         if (!button || !card) return;
         if (button.dataset.action === "apply-saved-search") {
             button.disabled = true;
             try {
-                const savedSearch = (await apiRequest("/saved-searches"))
+                const savedSearch = savedSearchRecords
                     .find(search => String(search.id) === String(card.dataset.savedSearchId));
                 if (!savedSearch) {
                     if (savedSearchesStatus) savedSearchesStatus.textContent = "That saved search is no longer available.";
@@ -553,8 +616,12 @@
         button.disabled = true;
         try {
             await apiRequest(`/saved-searches/${encodeURIComponent(card.dataset.savedSearchId)}`, { method: "DELETE" });
-            await loadSavedSearches();
-            if (savedSearchesStatus) savedSearchesStatus.textContent = "Saved search deleted.";
+            const refreshed = await loadSavedSearches();
+            if (savedSearchesStatus) {
+                savedSearchesStatus.textContent = refreshed
+                    ? "Saved search deleted."
+                    : "Saved search deleted, but the list could not be refreshed.";
+            }
         } catch (error) {
             console.error("Unable to delete saved search:", error);
             if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to delete saved search.";
