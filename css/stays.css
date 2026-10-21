@@ -7,47 +7,6 @@ body.stays-page {
     background: var(--cream);
 }
 
-/* Show the SVG icon view beside the text wordmark. */
-.stays-page .logo-mark {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    border-radius: 12px;
-    background: transparent;
-}
-
-.stays-page .logo-mark .logo-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.stays-page .logo-wordmark {
-    display: inline-block;
-    color: var(--cream);
-    font-family: 'Fraunces', serif;
-    font-size: 24px;
-    font-weight: 600;
-    letter-spacing: -0.04em;
-    line-height: 1;
-    white-space: nowrap;
-}
-
-.stays-page footer .logo-mark {
-    width: 38px;
-    height: 38px;
-    flex-basis: 38px;
-    border-radius: 10px;
-}
-
-.stays-page footer .logo-wordmark {
-    color: var(--cream);
-    font-size: 22px;
-}
-
 /* ---------- Compact hero ---------- */
 .stays-hero {
     min-height: 46vh;
@@ -373,84 +332,6 @@ body.stays-page {
     margin-bottom: 6px;
 }
 
-.save-search-button {
-    flex: 0 0 auto;
-}
-
-.saved-searches {
-    margin: 16px 0;
-    padding: 14px 16px;
-    border: 1px solid var(--cream-dark);
-    border-radius: 12px;
-    background: var(--white);
-}
-
-.saved-searches-heading {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
-}
-
-.saved-searches-heading h2 {
-    margin: 0;
-    color: var(--teal-950);
-    font-size: 15px;
-}
-
-.saved-searches-heading span {
-    color: #6B6659;
-    font-size: 12px;
-}
-
-.saved-searches-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.saved-search-card {
-    display: flex;
-    align-items: stretch;
-    overflow: hidden;
-    border: 1px solid var(--cream-dim);
-    border-radius: 9px;
-    background: var(--cream);
-}
-
-.saved-search-apply,
-.saved-search-remove {
-    border: 0;
-    background: transparent;
-    color: var(--teal-950);
-    cursor: pointer;
-    font: inherit;
-}
-
-.saved-search-apply {
-    display: grid;
-    gap: 2px;
-    padding: 7px 10px;
-    text-align: left;
-}
-
-.saved-search-apply span {
-    color: #6B6659;
-    font-size: 11px;
-}
-
-.saved-search-remove {
-    padding: 0 10px;
-    border-left: 1px solid var(--cream-dim);
-    font-size: 20px;
-}
-
-.saved-search-apply:hover,
-.saved-search-remove:hover {
-    background: var(--cream-dim);
-}
-
 .results-count {
     font-size: 14.5px;
     font-weight: 600;
@@ -482,76 +363,6 @@ body.stays-page {
 
 .sort-field select:focus {
     border-color: var(--teal-700);
-}
-
-.results-view-toggle {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--cream-dark);
-    border-radius: 10px;
-    background: var(--white);
-}
-
-.results-view-toggle button {
-    border: 0;
-    border-radius: 7px;
-    padding: 8px 12px;
-    background: transparent;
-    color: var(--ink-light);
-    font: inherit;
-    cursor: pointer;
-}
-
-.results-view-toggle button.active {
-    background: var(--teal-50);
-    color: var(--teal-700);
-    font-weight: 700;
-}
-
-.load-more-stays {
-    display: block;
-    margin: 24px auto 0;
-}
-
-.load-more-stays[hidden],
-.stays-map-view[hidden] {
-    display: none;
-}
-
-.stays-map-view {
-    overflow: hidden;
-    border: 1px solid var(--cream-dark);
-    border-radius: 16px;
-    background: var(--white);
-}
-
-.stays-map-view > p {
-    margin: 0;
-    padding: 16px;
-    color: var(--ink-light);
-}
-
-.stays-map-view iframe {
-    display: block;
-    width: 100%;
-    min-height: 360px;
-    border: 0;
-}
-
-.map-location-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 8px;
-    padding: 16px;
-}
-
-.map-location-list a {
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: var(--cream);
-    color: var(--teal-700);
-    font-size: 0.88rem;
 }
 
 .active-chips {
@@ -622,10 +433,6 @@ body.stays-page {
     padding: 0 6px;
 }
 
-.stays-grid .listing-footer {
-    margin-top: auto;
-}
-
 .fav-btn {
     position: absolute;
     top: 12px;
@@ -692,6 +499,10 @@ body.stays-page {
     font-size: 13.5px;
     font-weight: 600;
     transition: background .15s ease;
+}
+
+.stays-grid .listing-footer {
+    margin-top: auto;
 }
 
 .listing-book:hover {
