@@ -87,11 +87,6 @@
           </svg>
         </button>
       </form>
-      <div class="social-login" aria-label="Other sign-in options">
-        <button type="button" class="social-login-btn" data-provider="Google">Continue with Google</button>
-        <button type="button" class="social-login-btn" data-provider="Apple">Continue with Apple</button>
-      </div>
-
       <p class="foot-link">Don't have an account? <a href="signup.html">Sign Up</a></p>
     </div>
   </main>
@@ -132,9 +127,6 @@
     const emailField = document.getElementById("f-email");
     const passwordField = document.getElementById("f-password");
     const submitBtn = document.getElementById("submit-btn");
-    document.querySelectorAll(".social-login-btn").forEach(button => {
-      button.addEventListener("click", () => showToast(`${button.dataset.provider} sign-in is not configured yet.`, true));
-    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();

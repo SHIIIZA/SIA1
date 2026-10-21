@@ -244,10 +244,6 @@ main {
 .checkbox-row.remember a { color: var(--gold); font-size: 0.83rem; font-weight: 600; }
 .checkbox-row.remember label { display: inline-flex; align-items: center; gap: 7px; }
 .checkbox-row.remember label input { margin: 0; }
-.social-login { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-.social-login-btn { padding: 11px 10px; border: 1px solid rgba(250,247,239,.28); border-radius: 10px; background: transparent; color: var(--cream); font: inherit; cursor: pointer; }
-.social-login-btn:hover { background: rgba(250,247,239,.08); }
-
 .btn-primary {
   width: 100%;
   background: var(--coral);
