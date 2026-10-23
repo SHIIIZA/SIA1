@@ -68,7 +68,8 @@ test("property reviews and profile deletion require explicit UI actions", () => 
     assert.match(propertyPage, /id="reviewForm"/);
     assert.match(propertyScript, /localStorage\.setItem\("tripmate_reviews"/);
     assert.match(profilePage, /id="deleteAccountPhrase"/);
-    assert.match(profilePage, /id="avatarInput"/);
+    assert.doesNotMatch(profilePage, /id="avatarInput"/);
+    assert.doesNotMatch(profilePage, /id="profileAvatarPreview"/);
 });
 
 test("stays pagination and wishlist batch actions are exposed", () => {

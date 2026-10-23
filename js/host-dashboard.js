@@ -18,25 +18,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     }[character]));
+    const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80";
+    const getListingImage = listing => {
+        const gallery = Array.isArray(listing?.images) ? listing.images : [];
+        const image = gallery.find(item => typeof item === "string" && item.trim());
+        return image || DEFAULT_LISTING_IMAGE;
+    };
+    const normalizeListing = item => ({
+        ...item,
+        source: item.source || "database",
+        images: Array.isArray(item.images) && item.images.length ? item.images.filter(Boolean) : [DEFAULT_LISTING_IMAGE],
+        pricePerNight: Number(item.price_per_night ?? item.pricePerNight ?? 0)
+    });
     const getData = async () => {
         try {
             const [listings, bookings] = await Promise.all([apiRequest("/host/listings"), apiRequest("/host/bookings")]);
             return {
-                listings: listings.map(item => ({ ...item, source: "database", pricePerNight: Number(item.price_per_night) })),
+                listings: listings.map(normalizeListing),
                 bookings: bookings.map(item => ({
                     ...item,
                     checkin: item.check_in,
                     checkout: item.check_out,
                     total: Number(item.total_amount),
                     propertyName: item.listings?.title,
+                    propertyImage: item.listings?.image || item.listings?.images?.[0] || DEFAULT_LISTING_IMAGE,
                     createdAt: item.created_at
                 }))
             };
         } catch (error) {
             console.warn("Host dashboard API unavailable; showing saved browser data:", error.message);
-            const listings = read("tripmate_listings").filter(item => String(item.hostId) === String(user.id));
+            const listings = read("tripmate_listings").filter(item => String(item.hostId) === String(user.id)).map(normalizeListing);
             const listingIds = new Set(listings.map(item => item.id));
-            return { listings, bookings: read("tripmate_bookings").filter(item => listingIds.has(item.propertyId)) };
+            return {
+                listings,
+                bookings: read("tripmate_bookings")
+                    .filter(item => listingIds.has(item.propertyId))
+                    .map(item => ({
+                        ...item,
+                        propertyImage: item.propertyImage || item.image || item.images?.[0] || listings.find(listing => String(listing.id) === String(item.propertyId))?.images?.[0] || DEFAULT_LISTING_IMAGE
+                    }))
+            };
         }
     };
 
@@ -71,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function listingCard(listing) {
-        const image = listing.images?.[0] || "";
+        const image = getListingImage(listing);
         const status = listing.status || "draft";
         const actions = listing.source === "database"
             ? ""
@@ -80,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button type="button" class="btn btn-sm delete-listing-btn" data-listing-id="${escapeHtml(listing.id)}">Delete</button>
             </div>`;
         return `<article class="host-listing-card">
-            <div class="listing-img-container">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(listing.title || "Property")}">` : ""}<span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></div>
+            <div class="listing-img-container"><img src="${escapeHtml(image)}" alt="${escapeHtml(listing.title || "Property")}"><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></div>
             <div class="listing-content">
                 <h3>${escapeHtml(listing.title || "Untitled property")}</h3>
                 <p class="price">${formatMoney(listing.pricePerNight)} <span>/ night</span></p>
