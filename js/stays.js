@@ -183,176 +183,13 @@
     const priceMaxLabel = document.getElementById("priceMaxLabel");
     const filterGuestCount = document.getElementById("filterGuestCount");
     const loadMoreStays = document.getElementById("loadMoreStays");
-    const staysMapView = document.getElementById("staysMapView");
-    const staysMapFrame = document.getElementById("staysMapFrame");
-    const mapViewSummary = document.getElementById("mapViewSummary");
-    const mapLocationList = document.getElementById("mapLocationList");
-    const showListView = document.getElementById("showListView");
-    const showMapView = document.getElementById("showMapView");
-    const savedSearchesList = document.getElementById("savedSearchesList");
-    const savedSearchesStatus = document.getElementById("savedSearchesStatus");
-    const saveSearchButton = document.getElementById("saveSearchBtn");
     const pageSize = 6;
     let visibleCount = pageSize;
-    let displayMode = "list";
-    let savedSearchRecords = [];
 
     function escapeHtml(value) {
         return String(value ?? "").replace(/[&<>"']/g, character => ({
             "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
         }[character]));
-    }
-
-    function readSavedSearchFilters(search) {
-        if (search?.filters && typeof search.filters === "object") return search.filters;
-        if (typeof search?.filters === "string") {
-            try {
-                const filters = JSON.parse(search.filters);
-                return filters && typeof filters === "object" && !Array.isArray(filters) ? filters : {};
-            } catch (error) {
-                console.warn("Skipping a saved search with invalid filters:", error.message);
-            }
-        }
-        return {};
-    }
-
-    function isValidSearchDate(value) {
-        if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-        const date = new Date(`${value}T00:00:00Z`);
-        return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
-    }
-
-    function getSavedSearchSummary(search) {
-        const filters = readSavedSearchFilters(search);
-        const details = [];
-        if (typeof filters.search === "string" && filters.search.trim()) {
-            details.push(`"${filters.search.trim()}"`);
-        }
-        if (filters.minPrice != null && filters.maxPrice != null &&
-            Number.isFinite(Number(filters.minPrice)) && Number.isFinite(Number(filters.maxPrice)) &&
-            (Number(filters.minPrice) > priceBounds.min || Number(filters.maxPrice) < priceBounds.max)) {
-            details.push(`${peso(filters.minPrice)}\u2013${peso(filters.maxPrice)} / night`);
-        }
-        if (Array.isArray(filters.types) && filters.types.length) details.push(filters.types.join(", "));
-        if (Array.isArray(filters.amenities) && filters.amenities.length) details.push(filters.amenities.join(", "));
-        if (Number(filters.guests) > 1) details.push(`${Number(filters.guests)}+ guests`);
-        if (Number(filters.minRating) > 0) details.push(`${Number(filters.minRating)}+ rating`);
-        return details.length ? details.join(" \u00b7 ") : "All stays";
-    }
-
-    function renderSavedSearches(searches) {
-        if (!savedSearchesList) return;
-        if (savedSearchesStatus) savedSearchesStatus.textContent = "";
-        if (!searches.length) {
-            savedSearchesList.innerHTML = `
-                <p class="saved-searches-empty">
-                    <strong>No saved searches yet</strong>
-                    <span>Set your filters, then choose "Save search" to keep them handy.</span>
-                </p>`;
-            return;
-        }
-        savedSearchesList.innerHTML = searches.map(search => `
-            <article class="saved-search-card" data-saved-search-id="${escapeHtml(search.id)}">
-                <button type="button" class="saved-search-apply" data-action="apply-saved-search">
-                    <span class="saved-search-copy">
-                        <strong>${escapeHtml(search.search_name || "Saved search")}</strong>
-                        <span class="saved-search-summary">${escapeHtml(getSavedSearchSummary(search))}</span>
-                        <span class="saved-search-date">${escapeHtml(
-                            search.created_at && !Number.isNaN(Date.parse(search.created_at))
-                                ? `Saved ${new Date(search.created_at).toLocaleDateString("en-PH")}`
-                                : "Saved search"
-                        )}</span>
-                    </span>
-                    <span class="saved-search-apply-label">Apply</span>
-                </button>
-                <button type="button" class="saved-search-remove" data-action="remove-saved-search" aria-label="Delete ${escapeHtml(search.search_name || "saved search")}" title="Delete saved search">&times;</button>
-            </article>
-        `).join("");
-    }
-
-    async function loadSavedSearches() {
-        if (!savedSearchesList) return;
-        if (savedSearchesStatus) savedSearchesStatus.textContent = "Loading saved searches...";
-        if (!currentUser) {
-            savedSearchRecords = [];
-            savedSearchesList.innerHTML = `
-                <p class="saved-searches-empty">
-                    <strong>Sign in to see your saved searches</strong>
-                    <span>Your searches will be available whenever you log in.</span>
-                </p>`;
-            if (savedSearchesStatus) savedSearchesStatus.textContent = "";
-            return false;
-        }
-        try {
-            const searches = await apiRequest("/saved-searches");
-            if (!Array.isArray(searches)) throw new Error("The saved-search response was invalid.");
-            savedSearchRecords = searches;
-            renderSavedSearches(searches);
-            return true;
-        } catch (error) {
-            console.error("Unable to load saved searches:", error);
-            if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Saved searches could not be loaded.";
-            savedSearchesList.innerHTML = `
-                <p class="saved-searches-empty saved-searches-error">
-                    <strong>Saved searches couldn't be loaded</strong>
-                    <span>There was a problem reaching your account.</span>
-                </p>`;
-            const retryButton = document.createElement("button");
-            retryButton.type = "button";
-            retryButton.className = "saved-search-retry";
-            retryButton.dataset.action = "retry-saved-searches";
-            retryButton.textContent = "Try again";
-            savedSearchesList.append(retryButton);
-            return false;
-        }
-    }
-
-    function applySavedSearch(search) {
-        const filters = readSavedSearchFilters(search);
-        state.search = typeof filters.search === "string" ? filters.search : "";
-        state.minPrice = Number.isFinite(Number(filters.minPrice))
-            ? Math.min(priceBounds.max, Math.max(priceBounds.min, Number(filters.minPrice)))
-            : priceBounds.min;
-        state.maxPrice = Number.isFinite(Number(filters.maxPrice))
-            ? Math.min(priceBounds.max, Math.max(state.minPrice, Number(filters.maxPrice)))
-            : priceBounds.max;
-        state.sort = ["recommended", "price-asc", "price-desc", "rating-desc"].includes(filters.sort)
-            ? filters.sort
-            : "recommended";
-        state.guests = Number.isInteger(Number(filters.guests))
-            ? Math.min(10, Math.max(1, Number(filters.guests)))
-            : 1;
-        const rating = Number(filters.minRating);
-        state.minRating = [0, 4, 4.5, 5].includes(rating) ? rating : 0;
-        const validTypes = new Set([...document.querySelectorAll("#typeList input")].map(input => input.value));
-        const validAmenities = new Set([...document.querySelectorAll("#amenityList input")].map(input => input.value));
-        state.types = new Set(Array.isArray(filters.types)
-            ? filters.types.filter(value => typeof value === "string" && validTypes.has(value))
-            : []);
-        state.amenities = new Set(Array.isArray(filters.amenities)
-            ? filters.amenities.filter(value => typeof value === "string" && validAmenities.has(value))
-            : []);
-        const checkin = isValidSearchDate(filters.checkin) ? filters.checkin : "";
-        const checkout = isValidSearchDate(filters.checkout) ? filters.checkout : "";
-        if (checkin && checkout && checkin < checkout) {
-            localStorage.setItem("trip_checkin", checkin);
-            localStorage.setItem("trip_checkout", checkout);
-        } else {
-            localStorage.removeItem("trip_checkin");
-            localStorage.removeItem("trip_checkout");
-        }
-
-        if (searchInput) searchInput.value = state.search;
-        if (sortSelect) sortSelect.value = state.sort;
-        if (priceMin) priceMin.value = String(state.minPrice);
-        if (priceMax) priceMax.value = String(state.maxPrice);
-        if (filterGuestCount) filterGuestCount.textContent = String(state.guests);
-        const ratingInput = document.querySelector(`input[name="rating"][value="${state.minRating}"]`);
-        if (ratingInput) ratingInput.checked = true;
-        syncCheckboxes("#typeList", state.types);
-        syncCheckboxes("#amenityList", state.amenities);
-        updatePriceUI();
-        render();
     }
 
     document.querySelectorAll("#typeList .checkbox-row").forEach((row) => {
@@ -441,20 +278,8 @@
             grid.style.display = results.length === 0 ? "none" : "grid";
         }
         if (loadMoreStays) {
-            loadMoreStays.hidden = displayMode !== "list" || results.length <= visibleCount;
+            loadMoreStays.hidden = results.length <= visibleCount;
             loadMoreStays.textContent = `Show more stays (${Math.min(pageSize, results.length - visibleCount)} more)`;
-        }
-        if (staysMapView) staysMapView.hidden = displayMode !== "map" || results.length === 0;
-        if (grid && displayMode === "map") grid.style.display = "none";
-        if (staysMapFrame && displayMode === "map" && results.length) {
-            const location = results[0].location || "Philippines";
-            staysMapFrame.src = `https://maps.google.com/maps?q=${encodeURIComponent(location)}&output=embed`;
-            if (mapViewSummary) mapViewSummary.textContent = `Showing ${results.length} filtered stay locations. The map is centered on ${location}; select a stay below to open its exact location.`;
-        }
-        if (mapLocationList) {
-            mapLocationList.innerHTML = results.map(listing =>
-                `<a href="https://www.openstreetmap.org/search?query=${encodeURIComponent(listing.location)}" target="_blank" rel="noopener noreferrer">${escapeHtml(listing.name)} · ${escapeHtml(listing.location)}</a>`
-            ).join("");
         }
         if (emptyState) emptyState.hidden = results.length !== 0;
         renderChips();
@@ -476,24 +301,6 @@
 
     loadMoreStays?.addEventListener("click", () => {
         visibleCount += pageSize;
-        render(false);
-    });
-
-    showListView?.addEventListener("click", () => {
-        displayMode = "list";
-        showListView.setAttribute("aria-pressed", "true");
-        showMapView?.setAttribute("aria-pressed", "false");
-        showListView.classList.add("active");
-        showMapView?.classList.remove("active");
-        render(false);
-    });
-
-    showMapView?.addEventListener("click", () => {
-        displayMode = "map";
-        showMapView.setAttribute("aria-pressed", "true");
-        showListView?.setAttribute("aria-pressed", "false");
-        showMapView.classList.add("active");
-        showListView?.classList.remove("active");
         render(false);
     });
 
@@ -542,93 +349,6 @@
         document.querySelector(".stays-main")?.scrollIntoView({ behavior: "smooth" });
     });
 
-    saveSearchButton?.addEventListener("click", async () => {
-        if (!currentUser) {
-            const returnPath = `${window.location.pathname}${window.location.search}`;
-            window.location.href = `login.html?redirect=${encodeURIComponent(returnPath)}`;
-            return;
-        }
-        saveSearchButton.disabled = true;
-        try {
-            const filters = {
-                search: state.search,
-                minPrice: state.minPrice,
-                maxPrice: state.maxPrice,
-                sort: state.sort,
-                guests: state.guests,
-                minRating: state.minRating,
-                types: [...state.types],
-                amenities: [...state.amenities],
-                checkin: localStorage.getItem("trip_checkin") || "",
-                checkout: localStorage.getItem("trip_checkout") || ""
-            };
-            const searchName = state.search.slice(0, 100) || "Trip search";
-            await apiRequest("/saved-searches", {
-                method: "POST",
-                body: JSON.stringify({
-                    search_name: searchName,
-                    filters
-                })
-            });
-            const refreshed = await loadSavedSearches();
-            if (savedSearchesStatus) {
-                savedSearchesStatus.textContent = refreshed
-                    ? "Search saved to your TripMate account."
-                    : "Search saved, but the list could not be refreshed.";
-            }
-        } catch (error) {
-            console.error("Unable to save search:", error);
-            if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to save search.";
-        } finally {
-            saveSearchButton.disabled = false;
-        }
-    });
-
-    savedSearchesList?.addEventListener("click", async event => {
-        const button = event.target.closest("[data-action]");
-        if (button?.dataset.action === "retry-saved-searches") {
-            button.disabled = true;
-            await loadSavedSearches();
-            return;
-        }
-        const card = button?.closest("[data-saved-search-id]");
-        if (!button || !card) return;
-        if (button.dataset.action === "apply-saved-search") {
-            button.disabled = true;
-            try {
-                const savedSearch = savedSearchRecords
-                    .find(search => String(search.id) === String(card.dataset.savedSearchId));
-                if (!savedSearch) {
-                    if (savedSearchesStatus) savedSearchesStatus.textContent = "That saved search is no longer available.";
-                    await loadSavedSearches();
-                    return;
-                }
-                applySavedSearch(savedSearch);
-            } catch (error) {
-                console.error("Unable to apply saved search:", error);
-                if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to apply saved search.";
-            } finally {
-                button.disabled = false;
-            }
-            return;
-        }
-        if (button.dataset.action !== "remove-saved-search") return;
-        button.disabled = true;
-        try {
-            await apiRequest(`/saved-searches/${encodeURIComponent(card.dataset.savedSearchId)}`, { method: "DELETE" });
-            const refreshed = await loadSavedSearches();
-            if (savedSearchesStatus) {
-                savedSearchesStatus.textContent = refreshed
-                    ? "Saved search deleted."
-                    : "Saved search deleted, but the list could not be refreshed.";
-            }
-        } catch (error) {
-            console.error("Unable to delete saved search:", error);
-            if (savedSearchesStatus) savedSearchesStatus.textContent = error.message || "Unable to delete saved search.";
-            button.disabled = false;
-        }
-    });
-
     sortSelect?.addEventListener("change", () => {
         state.sort = sortSelect.value;
         render();
@@ -671,12 +391,32 @@
 
     function updatePriceUI() {
         if (!priceMin || !priceMax || !priceFill) return;
+
         let lo = Number(priceMin.value);
         let hi = Number(priceMax.value);
-        if (lo > hi - 200) {
-            lo = hi - 200;
-            priceMin.value = lo;
+
+        lo = Math.min(Math.max(lo, priceBounds.min), priceBounds.max);
+        hi = Math.min(Math.max(hi, priceBounds.min), priceBounds.max);
+
+        if (lo > hi) {
+            [lo, hi] = [hi, lo];
         }
+
+        if (hi - lo < 200) {
+            if (lo <= priceBounds.min) {
+                hi = Math.min(priceBounds.max, lo + 200);
+            } else if (hi >= priceBounds.max) {
+                lo = Math.max(priceBounds.min, hi - 200);
+            } else {
+                const adjust = 200 - (hi - lo);
+                lo = Math.max(priceBounds.min, lo - adjust / 2);
+                hi = Math.min(priceBounds.max, hi + adjust / 2);
+            }
+        }
+
+        priceMin.value = String(lo);
+        priceMax.value = String(hi);
+
         state.minPrice = lo;
         state.maxPrice = hi;
         if (priceMinLabel) priceMinLabel.textContent = lo.toLocaleString("en-PH");
@@ -892,5 +632,4 @@
     updatePriceUI();
     render();
     loadDatabaseListings();
-    loadSavedSearches();
 })();

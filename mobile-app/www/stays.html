@@ -186,10 +186,6 @@
             <section class="results">
                 <div class="results-bar">
                     <p class="results-count" id="resultsCount">12 stays</p>
-                    <div class="results-view-toggle" role="group" aria-label="Results view">
-                        <button type="button" class="active" id="showListView" aria-pressed="true">List</button>
-                        <button type="button" id="showMapView" aria-pressed="false">Map</button>
-                    </div>
                     <div class="sort-field">
                         <label for="sortSelect">Sort by</label>
                         <select id="sortSelect">
@@ -199,25 +195,12 @@
                             <option value="rating-desc">Highest rated</option>
                         </select>
                     </div>
-                    <button type="button" class="btn-ghost save-search-button" id="saveSearchBtn">Save search</button>
                 </div>
 
-                <section class="saved-searches" aria-labelledby="savedSearchesTitle">
-                    <div class="saved-searches-heading">
-                        <h2 id="savedSearchesTitle">Saved searches</h2>
-                        <span id="savedSearchesStatus" role="status" aria-live="polite"></span>
-                    </div>
-                    <div id="savedSearchesList" class="saved-searches-list"></div>
-                </section>
                 <div class="active-chips" id="activeChips"></div>
 
                 <div class="stays-grid" id="staysGrid"></div>
                 <button type="button" class="btn-ghost load-more-stays" id="loadMoreStays" hidden>Show more stays</button>
-                <section class="stays-map-view" id="staysMapView" hidden aria-label="Map view">
-                    <p id="mapViewSummary"></p>
-                    <iframe id="staysMapFrame" title="Map of filtered stay locations" loading="lazy" referrerpolicy="no-referrer"></iframe>
-                    <div class="map-location-list" id="mapLocationList"></div>
-                </section>
 
                 <div class="empty-state" id="emptyState" hidden>
                     <p class="empty-title">No stays match those filters.</p>

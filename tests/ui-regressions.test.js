@@ -73,23 +73,12 @@ test("property reviews and profile deletion require explicit UI actions", () => 
 
 test("stays pagination and wishlist batch actions are exposed", () => {
     assert.match(staysPage, /id="loadMoreStays"/);
-    assert.match(staysPage, /id="showMapView"/);
     assert.match(wishlistPage, /id="moveSelectedToTrip"/);
     assert.match(wishlistPage, /id="removeSelectedWishlist"/);
     assert.match(wishlistScript, /tripmate_saved_trip/);
     assert.match(dashboardPage, /id="savedTripGrid"/);
     assert.match(dashboardScript, /tripmate_saved_trip:\$\{user\.id\}/);
     assert.match(dashboardScript, /data-remove-trip-id/);
-});
-
-test("saved searches can be saved, restored, listed, and deleted", () => {
-    assert.match(staysPage, /id="saveSearchBtn"/);
-    assert.match(staysPage, /id="savedSearchesList"/);
-    assert.match(staysScript, /apiRequest\("\/saved-searches"/);
-    assert.match(staysScript, /data-action="apply-saved-search"/);
-    assert.match(staysScript, /data-action="remove-saved-search"/);
-    assert.match(serverScript, /req\.method === "GET" && url\.pathname === "\/api\/saved-searches"/);
-    assert.match(serverScript, /req\.method === "DELETE" && savedSearchMatch/);
 });
 
 test("host listing descriptions persist through drafts and publication", () => {
