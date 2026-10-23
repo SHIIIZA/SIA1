@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#faf7ef">
+    <link rel="manifest" href="/manifest.webmanifest">
     <title>TripMate — Find your next escape across the Philippines</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +14,6 @@
         rel="stylesheet">
     <link rel="stylesheet" href="css/design-system.css">
     <link rel="stylesheet" href="css/homepage.css">
-    <script src="/js/mobile-navigation.js" defer></script>
     <link rel="stylesheet" href="/css/mobile-native.css">
     <script src="/js/mobile-bootstrap.js"></script>
 </head>
@@ -118,10 +119,10 @@
     </div>
 
     <div class="search-wrap">
-        <div class="search-bar">
+        <form class="search-bar" action="stays.html" method="get">
             <div class="search-field">
                 <label>Destination</label>
-                <select id="destinationSelect">
+                <select id="destinationSelect" name="search">
                     <option value="">Where to?</option>
                     <option value="Baguio">Baguio</option>
                     <option value="Batanes">Batanes</option>
@@ -138,20 +139,20 @@
             </div>
             <div class="search-field">
                 <label>Check in</label>
-                <input type="date" id="checkinInput">
+                <input type="date" id="checkinInput" name="checkin">
             </div>
             <div class="search-field">
                 <label>Check out</label>
-                <input type="date" id="checkoutInput">
+                <input type="date" id="checkoutInput" name="checkout">
             </div>
-            <button class="search-btn" id="homeSearchBtn" type="button">
+            <button class="search-btn" id="homeSearchBtn" type="submit">
                 Search
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="7" />
                     <path d="M21 21l-4.3-4.3" />
                 </svg>
             </button>
-        </div>
+        </form>
     </div>
 
     <section id="destinations">
@@ -173,11 +174,11 @@
                 <div class="dest-tag"><span class="name">Baguio</span></div>
             </div>
             <div class="dest-card">
-                <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80" alt="Batanes" loading="lazy">
+                <img src="https://www.thepoortraveler.net/wp-content/uploads/2014/06/Mahayaw-Arch-Sabtang-Island.jpg" alt="Batanes" loading="lazy">
                 <div class="dest-tag"><span class="name">Batanes</span></div>
             </div>
             <div class="dest-card">
-                <img src="https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop" alt="Boracay">
+                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVYCEfJq7D8HVS5uD71ZGVh-MnyaZNiy_3qWVNfjpZuw&s=10" alt="Boracay">
                 <div class="dest-tag"><span class="name">Boracay</span></div>
             </div>
         </div>
@@ -253,9 +254,9 @@
         </div>
     </footer>
 
-    <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/homepage.js"></script>
+    <script src="js/pwa.js" defer></script>
     <script>
         // Initialize user menu on homepage
         (function() {
@@ -274,15 +275,7 @@
             const userAvatarBtn = document.getElementById("userAvatarBtn");
             const userDropdown = document.getElementById("userDropdown");
 
-            function updateUserMenu(user) {
-                const loggedIn = !!user && !!localStorage.getItem("tripmate_session");
-                if (!loggedIn) {
-                    if (navGetStarted) navGetStarted.style.display = "";
-                    if (navLogin) navLogin.style.display = "";
-                    if (userMenu) userMenu.style.display = "none";
-                    return;
-                }
-
+            if (isLoggedIn) {
                 // Show logged-in state
                 if (navGetStarted) navGetStarted.style.display = "none";
                 if (navLogin) navLogin.style.display = "none";
@@ -296,11 +289,12 @@
                     avatarPlaceholder.textContent = initials;
                 }
 
-                if (adminSettingsBtn) adminSettingsBtn.style.display = user.role === "admin" ? "flex" : "none";
+                if (user.role === "admin" && adminSettingsBtn) {
+                    adminSettingsBtn.style.display = "flex";
+                } else if (adminSettingsBtn) {
+                    adminSettingsBtn.remove();
+                }
             }
-
-            updateUserMenu(isLoggedIn ? user : null);
-            window.addEventListener("tripmate-user-updated", event => updateUserMenu(event.detail));
 
             // Dropdown toggle
             if (userAvatarBtn && userDropdown) {

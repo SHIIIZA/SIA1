@@ -1,6 +1,26 @@
 [
     {
-        "merged": "com.tripmate.mobile.app-debug-26:/xml_config.xml.flat",
-        "source": "com.tripmate.mobile.app-main-28:/xml/config.xml"
+        "merged": "com.tripmate.mobile.app-debug-28:/xml_config.xml.flat",
+        "source": "com.tripmate.mobile.app-main-30:/xml/config.xml"
+    },
+    {
+        "merged": "com.tripmate.mobile.app-debug-28:/drawable-nodpi_tripmate_launcher_foreground.png.flat",
+        "source": "com.tripmate.mobile.app-main-30:/drawable-nodpi/tripmate_launcher_foreground.png"
+    },
+    {
+        "merged": "com.tripmate.mobile.app-debug-28:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.tripmate.mobile.app-main-30:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.tripmate.mobile.app-debug-28:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.tripmate.mobile.app-main-30:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.tripmate.mobile.app-debug-28:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.tripmate.mobile.app-main-30:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.tripmate.mobile.app-debug-28:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.tripmate.mobile.app-main-30:/mipmap-mdpi/ic_launcher_round.png"
     }
 ]

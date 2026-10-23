@@ -1,0 +1,87 @@
+{
+    "logs": [
+        {
+            "outputFile": "C:\\Users\\zen\\.gradle\\daemon\\8.13\\com.tripmate.mobile.app-mergeDebugResources-26:\\values-v31\\values-v31.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\zen\\.gradle\\caches\\8.13\\transforms\\ea421350dcb667c2b1a84589a66aa409\\transformed\\core-splashscreen-1.0.1\\res\\values-v31\\values-v31.xml",
+                    "from": {
+                        "startLines": "2,9",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,473",
+                        "endLines": "8,13",
+                        "endColumns": "12,12",
+                        "endOffsets": "468,697"
+                    },
+                    "to": {
+                        "startLines": "12,19",
+                        "startColumns": "4,4",
+                        "startOffsets": "806,1224",
+                        "endLines": "18,23",
+                        "endColumns": "12,12",
+                        "endOffsets": "1219,1448"
+                    }
+                },
+                {
+                    "source": "D:\\SIA\\SIA1\\mobile-app\\android\\app\\src\\main\\res\\values-v31\\styles.xml",
+                    "from": {
+                        "startLines": "1",
+                        "startColumns": "4",
+                        "startOffsets": "17",
+                        "endLines": "10",
+                        "endColumns": "12",
+                        "endOffsets": "772"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "11",
+                        "endColumns": "12",
+                        "endOffsets": "801"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-26:/values-v31/values-v31.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\zen\\.gradle\\caches\\8.13\\transforms\\ea421350dcb667c2b1a84589a66aa409\\transformed\\core-splashscreen-1.0.1\\res\\values-v31\\values-v31.xml",
+                    "from": {
+                        "startLines": "-1,-1",
+                        "startColumns": "-1,-1",
+                        "startOffsets": "-1,-1"
+                    },
+                    "to": {
+                        "startLines": "11,18",
+                        "startColumns": "4,4",
+                        "startOffsets": "732,1150",
+                        "endLines": "17,22",
+                        "endColumns": "12,12",
+                        "endOffsets": "1145,1374"
+                    }
+                },
+                {
+                    "source": "D:\\SIA\\SIA1\\mobile-app\\android\\app\\src\\main\\res\\values-v31\\styles.xml",
+                    "from": {
+                        "startLines": "1",
+                        "startColumns": "4",
+                        "startOffsets": "17",
+                        "endLines": "9",
+                        "endColumns": "12",
+                        "endOffsets": "697"
+                    },
+                    "to": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "10",
+                        "endColumns": "12",
+                        "endOffsets": "727"
+                    }
+                }
+            ]
+        }
+    ]
+}

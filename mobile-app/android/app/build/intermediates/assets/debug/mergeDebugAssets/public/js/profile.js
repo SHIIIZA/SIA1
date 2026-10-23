@@ -13,7 +13,14 @@
     const currentPasswordInput = document.getElementById("currentPassword");
     const newPasswordInput = document.getElementById("newPassword");
     const confirmPasswordInput = document.getElementById("confirmPassword");
+    const profilePasswordStrength = document.getElementById("profilePasswordStrength");
     const deleteAccountBtn = document.getElementById("deleteAccountBtn");
+    const deleteAccountDialog = document.getElementById("deleteAccountDialog");
+    const deleteAccountForm = document.getElementById("deleteAccountForm");
+    const deleteAccountPassword = document.getElementById("deleteAccountPassword");
+    const deleteAccountPhrase = document.getElementById("deleteAccountPhrase");
+    const confirmDeleteAccount = document.getElementById("confirmDeleteAccount");
+    const cancelDeleteAccount = document.getElementById("cancelDeleteAccount");
 
     const userAvatarBtn = document.getElementById("userAvatarBtn");
     const userDropdown = document.getElementById("userDropdown");
@@ -63,16 +70,16 @@
             adminSettingsBtn.style.display = (user.role || user.type || "guest") === "admin" ? "flex" : "none";
         }
 
-        window.addEventListener("tripmate-user-updated", event => {
-            if (!event.detail) {
-                window.location.href = "login.html?redirect=profile.html";
-                return;
-            }
-            user = event.detail;
-            populateUserInfo();
-        });
-
     }
+
+    window.addEventListener("tripmate-user-updated", event => {
+        if (!event.detail) {
+            window.location.href = "login.html?redirect=profile.html";
+            return;
+        }
+        user = event.detail;
+        populateUserInfo();
+    });
 
     accountForm.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -146,6 +153,20 @@
         }
     });
 
+    newPasswordInput?.addEventListener("input", () => {
+        const value = newPasswordInput.value;
+        const score = [
+            value.length >= 8,
+            /[a-z]/.test(value) && /[A-Z]/.test(value),
+            /\d/.test(value),
+            /[^A-Za-z0-9]/.test(value)
+        ].filter(Boolean).length;
+        const labels = ["not entered", "weak", "fair", "good", "strong"];
+        const level = value ? Math.max(1, score) : 0;
+        profilePasswordStrength.textContent = `Password strength: ${labels[level]}`;
+        profilePasswordStrength.dataset.strength = value ? labels[level] : "empty";
+    });
+
     async function saveNotifications() {
         const preferences = Object.fromEntries(
             Object.entries(notificationInputs).map(([key, input]) => [key, input?.checked !== false])
@@ -169,21 +190,35 @@
         });
     });
 
-    deleteAccountBtn?.addEventListener("click", async () => {
-        if (!confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) return;
-        const password = prompt("Enter your current password to confirm account deletion.");
-        if (!password) return;
+    deleteAccountBtn?.addEventListener("click", () => {
+        deleteAccountForm?.reset();
+        if (confirmDeleteAccount) confirmDeleteAccount.disabled = true;
+        deleteAccountDialog?.showModal();
+        deleteAccountPassword?.focus();
+    });
 
+    deleteAccountPhrase?.addEventListener("input", () => {
+        if (confirmDeleteAccount) confirmDeleteAccount.disabled = deleteAccountPhrase.value.trim() !== "DELETE";
+    });
+
+    cancelDeleteAccount?.addEventListener("click", () => deleteAccountDialog?.close());
+
+    deleteAccountForm?.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!deleteAccountPassword?.value || deleteAccountPhrase?.value.trim() !== "DELETE") return;
+        if (confirmDeleteAccount) confirmDeleteAccount.disabled = true;
         deleteAccountBtn.disabled = true;
         try {
-            await apiDeleteAccount(password);
+            await apiDeleteAccount(deleteAccountPassword.value);
             showToast("Account deleted successfully.");
+            deleteAccountDialog?.close();
             setTimeout(() => {
                 window.location.href = "homepage.html";
             }, 1200);
         } catch (error) {
             showToast(error.message || "Unable to delete your account.", true);
             deleteAccountBtn.disabled = false;
+            if (confirmDeleteAccount) confirmDeleteAccount.disabled = false;
         }
     });
 

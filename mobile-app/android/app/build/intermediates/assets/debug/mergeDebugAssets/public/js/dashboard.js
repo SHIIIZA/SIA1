@@ -42,6 +42,9 @@
     const contentTitle = document.getElementById("contentTitle");
     const walletBalance = document.getElementById("walletBalance");
     const walletTransactions = document.getElementById("walletTransactions");
+    const savedTripGrid = document.getElementById("savedTripGrid");
+    const savedTripEmpty = document.getElementById("savedTripEmpty");
+    const savedTripStatus = document.getElementById("savedTripStatus");
     const sidebarTabs = document.querySelectorAll(".sidebar-tab");
     const mobileMenuBtn = document.getElementById("mobileMenuBtn");
     const sidebar = document.getElementById("sidebar");
@@ -74,6 +77,51 @@
         window.location.href = "login.html?redirect=dashboard.html";
         return;
     }
+
+    const savedTripKey = `tripmate_saved_trip:${user.id}`;
+
+    function renderSavedTrip() {
+        if (!savedTripGrid || !savedTripEmpty) return;
+        if (savedTripStatus) savedTripStatus.textContent = "";
+        let items;
+        try {
+            const stored = JSON.parse(localStorage.getItem(savedTripKey) || "[]");
+            if (!Array.isArray(stored)) throw new Error("Saved trip data is invalid.");
+            items = stored.filter(item => item && typeof item === "object" && item.propertyId != null);
+        } catch (error) {
+            console.error("Unable to load the saved trip plan:", error);
+            if (savedTripStatus) savedTripStatus.textContent = "Your saved trip could not be read from this browser.";
+            items = [];
+        }
+        savedTripGrid.innerHTML = items.map(item => `
+            <article class="saved-trip-card">
+                <img src="${escapeHtml(item.image || "")}" alt="${escapeHtml(item.name || "Saved stay")}" loading="lazy">
+                <div>
+                    <h3>${escapeHtml(item.name || "Saved stay")}</h3>
+                    <p>${escapeHtml(item.location || "")}</p>
+                    <strong>${escapeHtml(peso(item.price))} / night</strong>
+                </div>
+                <button type="button" class="btn-secondary btn-sm" data-remove-trip-id="${escapeHtml(item.propertyId)}">Remove</button>
+            </article>
+        `).join("");
+        savedTripEmpty.hidden = items.length > 0;
+    }
+
+    savedTripGrid?.addEventListener("click", event => {
+        const button = event.target.closest("[data-remove-trip-id]");
+        if (!button) return;
+        try {
+            const items = JSON.parse(localStorage.getItem(savedTripKey) || "[]");
+            if (!Array.isArray(items)) throw new Error("Saved trip data is invalid.");
+            const remaining = items.filter(item => String(item.propertyId) !== String(button.dataset.removeTripId));
+            localStorage.setItem(savedTripKey, JSON.stringify(remaining));
+            renderSavedTrip();
+        } catch (error) {
+            console.error("Unable to remove a stay from the saved trip:", error);
+            if (savedTripStatus) savedTripStatus.textContent = "The stay could not be removed. Check available browser storage and try again.";
+        }
+    });
+    renderSavedTrip();
 
     // Populate user info
     if (dropdownName) dropdownName.textContent = user.name || "Guest";

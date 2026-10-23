@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Create Listing - TripMate Host</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/host-listings.css">
+    <link rel="stylesheet" href="/css/mobile-native.css">
+    <script src="/js/mobile-bootstrap.js"></script>
+</head>
+<body class="wizard-page">
+
+    <!-- Navbar -->
+    <nav class="wizard-nav">
+        <a href="dashboard.html" class="logo">
+            <img src="images/tripmate.svg#svgView(viewBox(89,207,1442,599))" alt="TripMate" class="logo-img">
+            <span class="host-badge">Host</span>
+        </a>
+        <button class="btn btn-secondary btn-sm" id="saveExitBtn">Save & Exit</button>
+    </nav>
+
+    <!-- Stepper -->
+    <div class="wizard-stepper">
+        <div class="stepper-container">
+            <div class="stepper-line"></div>
+            <div class="stepper-progress" id="stepperProgress" style="width: 0%;"></div>
+            
+            <div class="stepper-step active" data-step-indicator="1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Basics</div>
+            </div>
+            <div class="stepper-step" data-step-indicator="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Pricing</div>
+            </div>
+            <div class="stepper-step" data-step-indicator="3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Photos</div>
+            </div>
+            <div class="stepper-step" data-step-indicator="4">
+                <div class="step-circle">4</div>
+                <div class="step-label">Amenities</div>
+            </div>
+            <div class="stepper-step" data-step-indicator="5">
+                <div class="step-circle">5</div>
+                <div class="step-label">Rules</div>
+            </div>
+            <div class="stepper-step" data-step-indicator="6">
+                <div class="step-circle">6</div>
+                <div class="step-label">Calendar</div>
+            </div>
+            <div class="stepper-step" data-step-indicator="7">
+                <div class="step-circle">7</div>
+                <div class="step-label">Publish</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content (Forms) -->
+    <main class="wizard-main">
+        <div class="wizard-content">
+            <form id="listingForm">
+                
+                <!-- Step 1: Basics -->
+                <section class="wizard-step active" data-step="1">
+                    <h2>The Basics</h2>
+                    <p class="step-description">Tell guests what your property is all about.</p>
+                    
+                    <div class="form-group">
+                        <label for="propertyName">Property Name</label>
+                        <input type="text" id="propertyName" class="form-input" placeholder="e.g. Sunny Beachfront Villa" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propertyDescription">Property Description <span class="label-hint">Optional</span></label>
+                        <textarea id="propertyDescription" class="form-input" rows="5" maxlength="1000" aria-describedby="propertyDescriptionHint" placeholder="Describe what makes this property special, its amenities, and what guests can expect."></textarea>
+                        <p class="form-hint" id="propertyDescriptionHint">This description appears on this property's detail page. Up to 1,000 characters.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propertyType">Property Type</label>
+                        <select id="propertyType" class="form-select" required>
+                            <option value="">Select type...</option>
+                            <option value="house">House</option>
+                            <option value="apartment">Apartment / Condo</option>
+                            <option value="hotel">Hotel Room</option>
+                            <option value="guesthouse">Guesthouse</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Capacity & Rooms</label>
+                        <div class="counters-list">
+                            <div class="counter-item">
+                                <span>Max Guests</span>
+                                <div class="stepper-control">
+                                    <button type="button" class="stepper-btn minus" data-target="guests">-</button>
+                                    <input type="number" id="guests" value="1" min="1" max="16" readonly>
+                                    <button type="button" class="stepper-btn plus" data-target="guests">+</button>
+                                </div>
+                            </div>
+                            <div class="counter-item">
+                                <span>Bedrooms</span>
+                                <div class="stepper-control">
+                                    <button type="button" class="stepper-btn minus" data-target="bedrooms">-</button>
+                                    <input type="number" id="bedrooms" value="1" min="0" max="10" readonly>
+                                    <button type="button" class="stepper-btn plus" data-target="bedrooms">+</button>
+                                </div>
+                            </div>
+                            <div class="counter-item">
+                                <span>Bathrooms</span>
+                                <div class="stepper-control">
+                                    <button type="button" class="stepper-btn minus" data-target="bathrooms">-</button>
+                                    <input type="number" id="bathrooms" value="1" min="0" max="10" readonly>
+                                    <button type="button" class="stepper-btn plus" data-target="bathrooms">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="propertyAddress">Location / Address <span class="required">*</span></label>
+                        <input type="text" id="propertyAddress" class="form-input" placeholder="Enter full address (street, city, country)" required>
+                        <p class="form-hint">Enter the complete address including city and country</p>
+                    </div>
+                </section>
+
+                <!-- Step 2: Pricing -->
+                <section class="wizard-step" data-step="2">
+                    <h2>Pricing Setup</h2>
+                    <p class="step-description">Set your base nightly rate and additional fees.</p>
+                    
+                    <div class="pricing-layout">
+                        <!-- Pricing Inputs -->
+                        <div class="pricing-inputs">
+                            <div class="form-group">
+                                <label for="basePrice">Base Price / Night (₱)</label>
+                                <input type="number" id="basePrice" class="form-input price-calc" placeholder="0" min="0" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="cleaningFee">Cleaning Fee (₱) <span class="label-hint">One-time fee per stay</span></label>
+                                <input type="number" id="cleaningFee" class="form-input price-calc" placeholder="0" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="securityDeposit">Security Deposit (₱) <span class="label-hint">Refundable after checkout</span></label>
+                                <input type="number" id="securityDeposit" class="form-input price-calc" placeholder="0" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Weekly Discount (%)</label>
+                                <input type="number" id="weeklyDiscount" class="form-input" placeholder="e.g. 10" min="0" max="100">
+                            </div>
+                        </div>
+
+                        <!-- Pricing Preview Card -->
+                        <div class="pricing-preview">
+                            <h4>Guest Price Preview</h4>
+                            <p class="preview-subtitle">For a 1-night stay</p>
+                            
+                            <div class="preview-row">
+                                <span>Base rate</span>
+                                <span id="previewBase">₱0</span>
+                            </div>
+                            <div class="preview-row">
+                                <span>Cleaning fee</span>
+                                <span id="previewCleaning">₱0</span>
+                            </div>
+                            <div class="preview-row">
+                                <span>Service fee (10%)</span>
+                                <span id="previewService">₱0</span>
+                            </div>
+                            
+                            <hr class="preview-divider">
+                            
+                            <div class="preview-row total">
+                                <span>Guest pays</span>
+                                <span id="previewTotal">₱0</span>
+                            </div>
+                            <div class="preview-row earn">
+                                <span>You earn</span>
+                                <span id="previewEarn">₱0</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 3: Photos -->
+                <section class="wizard-step" data-step="3">
+                    <h2>Photos</h2>
+                    <p class="step-description">Showcase your property with high-quality images. The first image will be your cover photo.</p>
+                    
+                    <div class="photo-uploader">
+                        <div class="dropzone" id="photoDropzone">
+                            <input type="file" id="photoInput" multiple accept="image/jpeg, image/png, image/webp" style="display: none;">
+                            <div class="dropzone-content">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                                <h3>Drag & drop your photos here</h3>
+                                <p>or click to browse from your device</p>
+                                <span>Supports JPG, PNG, WEBP (Max 20 photos)</span>
+                            </div>
+                        </div>
+
+                        <div class="photo-preview-grid" id="photoPreviewGrid">
+                            <!-- Previews will be injected here by JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 4: Amenities -->
+                <section class="wizard-step" data-step="4">
+                    <h2>Amenities</h2>
+                    <p class="step-description">What amenities do you offer your guests?</p>
+                    
+                    <div class="amenities-group">
+                        <h4 class="amenities-title">Choose what guests can count on</h4>
+                        <div class="amenity-grid">
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Wifi"><span class="amenity-card-icon" aria-hidden="true">⌁</span><span class="amenity-card-copy"><strong>Wifi</strong><small>Stay connected</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Pool"><span class="amenity-card-icon" aria-hidden="true">◌</span><span class="amenity-card-copy"><strong>Pool</strong><small>Make a splash</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Kitchen"><span class="amenity-card-icon" aria-hidden="true">⌂</span><span class="amenity-card-copy"><strong>Kitchen</strong><small>Cook with ease</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Air conditioning"><span class="amenity-card-icon" aria-hidden="true">✣</span><span class="amenity-card-copy"><strong>Air conditioning</strong><small>Keep it cool</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Beachfront"><span class="amenity-card-icon" aria-hidden="true">≈</span><span class="amenity-card-copy"><strong>Beachfront</strong><small>Steps from the shore</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                            <label class="amenity-card"><input type="checkbox" name="amenity" value="Pet friendly"><span class="amenity-card-icon" aria-hidden="true">♡</span><span class="amenity-card-copy"><strong>Pet friendly</strong><small>Bring the whole family</small></span><span class="amenity-card-check" aria-hidden="true">✓</span></label>
+                        </div>
+                    </div>
+
+                </section>
+
+                <!-- Step 5: House Rules -->
+                <section class="wizard-step" data-step="5">
+                    <h2>House Rules</h2>
+                    <p class="step-description">Set expectations for your guests.</p>
+                    
+                    <div class="rules-grid">
+                        <div class="form-group">
+                            <label for="checkInTime">Check-in Time</label>
+                            <input type="time" id="checkInTime" class="form-input" value="14:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="checkOutTime">Check-out Time</label>
+                            <input type="time" id="checkOutTime" class="form-input" value="11:00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="customRules">Guest notes (Optional)</label>
+                        <textarea id="customRules" class="form-input" rows="4" placeholder="Share any important information guests should know before booking."></textarea>
+                    </div>
+                </section>
+
+                <!-- Step 6: Calendar -->
+                <section class="wizard-step" data-step="6">
+                    <h2>Calendar & Availability</h2>
+                    <p class="step-description">Block dates to prevent bookings, and set your stay requirements.</p>
+                    
+                    <div class="calendar-settings-layout">
+                        <div class="calendar-sidebar">
+                            <div class="form-group">
+                                <label for="minStay">Minimum Stay (Nights)</label>
+                                <input type="number" id="minStay" class="form-input" value="1" min="1" max="30">
+                            </div>
+                            <div class="form-group">
+                                <label for="maxStay">Maximum Stay (Nights)</label>
+                                <input type="number" id="maxStay" class="form-input" value="30" min="1" max="90">
+                            </div>
+                            
+                            <div class="calendar-legend">
+                                <h4>Legend</h4>
+                                <div class="legend-item">
+                                    <span class="legend-color available"></span> Available
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color blocked"></span> Blocked
+                                </div>
+                            </div>
+                            <p style="font-size: 13px; color: #8C8677; margin-top: 16px;">Click on dates in the calendar to toggle availability.</p>
+                        </div>
+                        
+                        <div class="calendar-container">
+                            <div class="calendar-header">
+                                <h3 id="calendarMonthLabel">Current Month</h3>
+                            </div>
+                            <div class="calendar-weekdays">
+                                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+                            <div class="calendar-grid" id="hostCalendarGrid">
+                                <!-- Calendar days injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 7: Publish -->
+                <section class="wizard-step" data-step="7">
+                    <h2>Review & Publish</h2>
+                    <p class="step-description">Ready to share your property with the world?</p>
+                    
+                    <div class="publish-card">
+                        <div class="publish-ready-panel">
+                            <div>
+                                <h4>Ready to publish?</h4>
+                                <p id="statusHint" style="color: #6B6659; font-size: 13px;">Your completed listing will appear on the Stays page.</p>
+                            </div>
+                            <span class="publish-ready-badge">Public listing</span>
+                        </div>
+
+                        <div id="reviewSummary" class="review-summary" aria-live="polite"></div>
+                        
+                        <div class="seo-preview">
+                            <h4>Public Link</h4>
+                            <p style="font-size: 13px; color: #8C8677; margin-bottom: 8px;">Guests can find your property at this URL once published:</p>
+                            <div class="url-bar">
+                                <span>tripmate.com/stays/</span><span id="seoSlug">your-property-name</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </form>
+        </div>
+    </main>
+
+    <!-- Footer Controls -->
+    <footer class="wizard-footer">
+        <div class="wizard-footer-inner">
+            <button type="button" class="btn btn-secondary" id="backBtn" disabled>Back</button>
+            <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/host-listings.js"></script>
+</body>
+</html>

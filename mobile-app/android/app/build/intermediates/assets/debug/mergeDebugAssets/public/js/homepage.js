@@ -217,31 +217,6 @@
     }
 
     // ==========================================
-    // 3. HOMEPAGE SEARCH & DATA FLOW
-    // ==========================================
-    function initSearch() {
-        const homeSearchBtn = document.getElementById('homeSearchBtn') || document.querySelector('.search-btn');
-        if (homeSearchBtn) {
-            homeSearchBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                const dest = document.getElementById('destinationSelect')?.value || document.querySelector('.search-field input[type="text"]')?.value || '';
-                const checkin = document.getElementById('checkinInput')?.value || '';
-                const checkout = document.getElementById('checkoutInput')?.value || '';
-
-                if (checkin) localStorage.setItem('trip_checkin', checkin);
-                if (checkout) localStorage.setItem('trip_checkout', checkout);
-
-                const params = new URLSearchParams();
-                if (dest) params.set('search', dest);
-                if (checkin) params.set('checkin', checkin);
-                if (checkout) params.set('checkout', checkout);
-
-                window.location.href = `stays.html?${params.toString()}`;
-            });
-        }
-    }
-
-    // ==========================================
     // 4. MOBILE NAVIGATION
     // ==========================================
     function initMobileNav() {
@@ -268,7 +243,6 @@
     function initAll() {
         const carousel = new StayCardCarousel();
         carousel.init();
-        initSearch();
         initMobileNav();
     }
 

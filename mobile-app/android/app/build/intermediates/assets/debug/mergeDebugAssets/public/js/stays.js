@@ -158,7 +158,12 @@
         favorites: new Set()
     };
 
-    const currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+    let currentUser = null;
+    try {
+        currentUser = JSON.parse(localStorage.getItem("tripmate_user") || "null");
+    } catch (error) {
+        console.warn("Unable to read the current TripMate user:", error.message);
+    }
     try {
         const saved = JSON.parse(localStorage.getItem("tripmate_wishlist") || "[]");
         saved.filter(item => currentUser && String(item.userId) === String(currentUser.id))
@@ -177,6 +182,15 @@
     const priceMinLabel = document.getElementById("priceMinLabel");
     const priceMaxLabel = document.getElementById("priceMaxLabel");
     const filterGuestCount = document.getElementById("filterGuestCount");
+    const loadMoreStays = document.getElementById("loadMoreStays");
+    const pageSize = 6;
+    let visibleCount = pageSize;
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, character => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        }[character]));
+    }
 
     document.querySelectorAll("#typeList .checkbox-row").forEach((row) => {
         const input = row.querySelector("input");
@@ -255,12 +269,17 @@
         return out;
     }
 
-    function render() {
+    function render(resetVisibleCount = true) {
         const results = applyFilters();
+        if (resetVisibleCount) visibleCount = pageSize;
         if (resultsCount) resultsCount.textContent = `${results.length} stay${results.length === 1 ? "" : "s"}`;
         if (grid) {
-            grid.innerHTML = results.map(cardHTML).join("");
+            grid.innerHTML = results.slice(0, visibleCount).map(cardHTML).join("");
             grid.style.display = results.length === 0 ? "none" : "grid";
+        }
+        if (loadMoreStays) {
+            loadMoreStays.hidden = results.length <= visibleCount;
+            loadMoreStays.textContent = `Show more stays (${Math.min(pageSize, results.length - visibleCount)} more)`;
         }
         if (emptyState) emptyState.hidden = results.length !== 0;
         renderChips();
@@ -269,8 +288,21 @@
         if (state.sort !== "recommended") params.set("sort", state.sort);
         if (state.minPrice !== priceBounds.min) params.set("minPrice", state.minPrice);
         if (state.maxPrice !== priceBounds.max) params.set("maxPrice", state.maxPrice);
+        if (state.minRating > 0) params.set("rating", state.minRating);
+        if (state.guests > 1) params.set("guests", state.guests);
+        if (state.types.size) params.set("type", [...state.types].join(","));
+        if (state.amenities.size) params.set("amenity", [...state.amenities].join(","));
+        const checkin = localStorage.getItem("trip_checkin");
+        const checkout = localStorage.getItem("trip_checkout");
+        if (checkin) params.set("checkin", checkin);
+        if (checkout) params.set("checkout", checkout);
         window.history.replaceState({}, "", `${window.location.pathname}${params.toString() ? `?${params}` : ""}`);
     }
+
+    loadMoreStays?.addEventListener("click", () => {
+        visibleCount += pageSize;
+        render(false);
+    });
 
     function renderChips() {
         if (!activeChips) return;
@@ -317,19 +349,6 @@
         document.querySelector(".stays-main")?.scrollIntoView({ behavior: "smooth" });
     });
 
-    document.getElementById("saveSearchBtn")?.addEventListener("click", async () => {
-        if (!currentUser) {
-            window.location.href = `login.html?redirect=${encodeURIComponent("stays.html")}`;
-            return;
-        }
-        try {
-            await apiRequest("/saved-searches", { method: "POST", body: JSON.stringify({ search_name: state.search || "Trip search", filters: { search: state.search, minPrice: state.minPrice, maxPrice: state.maxPrice, sort: state.sort, guests: state.guests } }) });
-            showToast("Search saved.");
-        } catch (error) {
-            showToast(error.message || "Unable to save search.", true);
-        }
-    });
-
     sortSelect?.addEventListener("change", () => {
         state.sort = sortSelect.value;
         render();
@@ -372,12 +391,32 @@
 
     function updatePriceUI() {
         if (!priceMin || !priceMax || !priceFill) return;
+
         let lo = Number(priceMin.value);
         let hi = Number(priceMax.value);
-        if (lo > hi - 200) {
-            lo = hi - 200;
-            priceMin.value = lo;
+
+        lo = Math.min(Math.max(lo, priceBounds.min), priceBounds.max);
+        hi = Math.min(Math.max(hi, priceBounds.min), priceBounds.max);
+
+        if (lo > hi) {
+            [lo, hi] = [hi, lo];
         }
+
+        if (hi - lo < 200) {
+            if (lo <= priceBounds.min) {
+                hi = Math.min(priceBounds.max, lo + 200);
+            } else if (hi >= priceBounds.max) {
+                lo = Math.max(priceBounds.min, hi - 200);
+            } else {
+                const adjust = 200 - (hi - lo);
+                lo = Math.max(priceBounds.min, lo - adjust / 2);
+                hi = Math.min(priceBounds.max, hi + adjust / 2);
+            }
+        }
+
+        priceMin.value = String(lo);
+        priceMax.value = String(hi);
+
         state.minPrice = lo;
         state.maxPrice = hi;
         if (priceMinLabel) priceMinLabel.textContent = lo.toLocaleString("en-PH");
@@ -444,7 +483,8 @@
                     userSaved.push({
                         userId: currentUser.id,
                         propertyId: key,
-                        savedAt: new Date().toISOString()
+                        savedAt: new Date().toISOString(),
+                        savedPrice: Number(selected.price)
                     });
                 }
                 const otherUsers = saved.filter(item => String(item.userId) !== String(currentUser.id));
@@ -562,6 +602,10 @@
     const incomingSort = urlParams.get('sort');
     const incomingMinPrice = Number(urlParams.get('minPrice'));
     const incomingMaxPrice = Number(urlParams.get('maxPrice'));
+    const incomingTypes = (urlParams.get("type") || "").split(",").filter(Boolean);
+    const incomingAmenities = (urlParams.get("amenity") || "").split(",").filter(Boolean);
+    const incomingRating = Number(urlParams.get("rating"));
+    const incomingGuests = Number(urlParams.get("guests"));
 
     if (incomingSearch && searchInput) {
         state.search = incomingSearch;
@@ -575,6 +619,15 @@
     }
     if (incomingMinPrice >= priceBounds.min && incomingMinPrice <= priceBounds.max && priceMin) priceMin.value = incomingMinPrice;
     if (incomingMaxPrice >= priceBounds.min && incomingMaxPrice <= priceBounds.max && priceMax) priceMax.value = incomingMaxPrice;
+    incomingTypes.forEach(type => state.types.add(type));
+    incomingAmenities.forEach(amenity => state.amenities.add(amenity));
+    if (incomingRating > 0 && incomingRating <= 5) state.minRating = incomingRating;
+    if (Number.isInteger(incomingGuests) && incomingGuests > 1 && incomingGuests <= 10) state.guests = incomingGuests;
+    syncCheckboxes("#typeList", state.types);
+    syncCheckboxes("#amenityList", state.amenities);
+    const selectedRating = document.querySelector(`input[name="rating"][value="${state.minRating}"]`);
+    if (selectedRating) selectedRating.checked = true;
+    if (filterGuestCount) filterGuestCount.textContent = String(state.guests);
 
     updatePriceUI();
     render();

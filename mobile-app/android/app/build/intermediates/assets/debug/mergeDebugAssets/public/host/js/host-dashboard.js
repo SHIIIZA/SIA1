@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
             return Array.isArray(value) ? value : [];
         } catch { return []; }
     };
+    const bookingsPageSize = 10;
+    let allBookings = [];
+    let bookingsPage = 0;
     const formatMoney = value => `₱${Math.round(Number(value) || 0).toLocaleString("en-PH")}`;
     const formatDate = value => new Date(value).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
     const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -63,6 +66,18 @@ document.addEventListener("DOMContentLoaded", () => {
             ? `<button class="btn btn-secondary btn-sm booking-action" data-id="${booking.id}" data-status="confirmed">Accept</button><button class="btn btn-sm booking-action" data-id="${booking.id}" data-status="cancelled">Decline</button>`
             : "";
         return `<tr><td><strong>${escapeHtml(booking.guestName || "Guest")}</strong></td><td>${escapeHtml(booking.propertyName || "Property")}</td><td>${formatDate(booking.checkin)} - ${formatDate(booking.checkout)}</td><td><span class="status-badge ${status}">${status}</span></td><td>${formatMoney(booking.total)} ${actions}</td></tr>`;
+    }
+
+    function renderBookingsPage() {
+        const pageCount = Math.max(1, Math.ceil(allBookings.length / bookingsPageSize));
+        bookingsPage = Math.min(bookingsPage, pageCount - 1);
+        const start = bookingsPage * bookingsPageSize;
+        document.getElementById("allBookingsTableBody").innerHTML = allBookings.length
+            ? allBookings.slice(start, start + bookingsPageSize).map(bookingRow).join("")
+            : "<tr><td colspan=5>No bookings found.</td></tr>";
+        document.getElementById("bookingsPageLabel").textContent = `Page ${bookingsPage + 1} of ${pageCount}`;
+        document.getElementById("previousBookingsPage").disabled = bookingsPage === 0;
+        document.getElementById("nextBookingsPage").disabled = bookingsPage >= pageCount - 1;
     }
 
     function earningsRow(booking) {
@@ -118,10 +133,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const completed = bookings
             .filter(item => item.status === "completed")
             .sort((a, b) => new Date(b.checkout) - new Date(a.checkout));
+        const publishedListings = listings.filter(item => item.status === "published" || item.status === "active").length;
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const bookedNights = bookings.reduce((sum, booking) => {
+            if (!["confirmed", "completed"].includes(booking.status)) return sum;
+            const checkin = new Date(booking.checkin);
+            const checkout = new Date(booking.checkout);
+            if (!Number.isFinite(checkin.getTime()) || !Number.isFinite(checkout.getTime())) return sum;
+            const overlapStart = Math.max(checkin.getTime(), monthStart.getTime());
+            const overlapEnd = Math.min(checkout.getTime(), nextMonth.getTime());
+            return sum + Math.max(0, (overlapEnd - overlapStart) / 86400000);
+        }, 0);
+        const daysInMonth = (nextMonth.getTime() - monthStart.getTime()) / 86400000;
         document.getElementById("statTotalListings").textContent = listings.filter(item => item.status === "published" || item.status === "active").length;
         document.getElementById("statActiveBookings").textContent = active.length;
         document.getElementById("statEarnings").textContent = formatMoney(earnings);
-        document.getElementById("statOccupancy").textContent = listings.length ? `${Math.min(100, Math.round(active.length / listings.length * 20))}%` : "0%";
+        document.getElementById("statOccupancy").textContent = publishedListings
+            ? `${Math.min(100, Math.round(bookedNights / (publishedListings * daysInMonth) * 100))}%`
+            : "0%";
         document.getElementById("totalEarnings").textContent = formatMoney(earnings);
         document.getElementById("monthEarnings").textContent = formatMoney(monthEarnings);
         document.getElementById("pendingPayout").textContent = formatMoney(pendingPayout);
@@ -129,7 +159,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const recent = bookings.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
         document.getElementById("recentBookingsTableBody").innerHTML = recent.length ? recent.slice(0, 5).map(bookingRow).join("") : "<tr><td colspan=5>No recent bookings.</td></tr>";
-        document.getElementById("allBookingsTableBody").innerHTML = recent.length ? recent.map(bookingRow).join("") : "<tr><td colspan=5>No bookings found.</td></tr>";
+        allBookings = recent;
+        renderBookingsPage();
         document.getElementById("allListingsGrid").innerHTML = listings.map(listingCard).join("");
         document.getElementById("listingsEmpty").style.display = listings.length ? "none" : "block";
         document.querySelectorAll(".delete-listing-btn").forEach(button => button.addEventListener("click", () => {
@@ -172,6 +203,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("earningsNavLink")?.addEventListener("click", event => {
         event.preventDefault();
         showTab("earnings");
+    });
+    document.getElementById("previousBookingsPage")?.addEventListener("click", () => {
+        if (bookingsPage > 0) {
+            bookingsPage -= 1;
+            renderBookingsPage();
+        }
+    });
+    document.getElementById("nextBookingsPage")?.addEventListener("click", () => {
+        if ((bookingsPage + 1) * bookingsPageSize < allBookings.length) {
+            bookingsPage += 1;
+            renderBookingsPage();
+        }
     });
 
     render();

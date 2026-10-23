@@ -1,3 +1,8 @@
 R_DEF: Internal format may change without notice
 local
+color tripmate_splash_background
+drawable tripmate_launcher_foreground
+mipmap ic_launcher
+mipmap ic_launcher_round
+style AppTheme
 xml config

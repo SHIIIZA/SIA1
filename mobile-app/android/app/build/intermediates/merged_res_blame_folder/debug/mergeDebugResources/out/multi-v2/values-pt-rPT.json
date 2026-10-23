@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-24:/values-pt-rPT/values-pt-rPT.xml",
+            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-26:/values-pt-rPT/values-pt-rPT.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\setsa\\.gradle\\caches\\8.11.1\\transforms\\681a94c836dd4d203c875c71107643fd\\transformed\\core-1.15.0\\res\\values-pt-rPT\\values-pt-rPT.xml",
+                    "source": "C:\\Users\\zen\\.gradle\\caches\\8.13\\transforms\\05c03cbe3b8c88c5e25bb9b2af331eda\\transformed\\core-1.17.0\\res\\values-pt-rPT\\values-pt-rPT.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",
@@ -21,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\setsa\\.gradle\\caches\\8.11.1\\transforms\\3c7457cdb6fb77b982c7077db2ad9499\\transformed\\appcompat-1.7.0\\res\\values-pt-rPT\\values-pt-rPT.xml",
+                    "source": "C:\\Users\\zen\\.gradle\\caches\\8.13\\transforms\\7dca12621e51b24c992afa59ac19dbdf\\transformed\\appcompat-1.7.1\\res\\values-pt-rPT\\values-pt-rPT.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",

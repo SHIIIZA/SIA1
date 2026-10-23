@@ -7,6 +7,5 @@
         <item name="android:windowBackground">@color/tripmate_splash_background</item>
         <item name="android:windowSplashScreenBackground">@color/tripmate_splash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/tripmate_launcher_foreground</item>
-        <item name="android:postSplashScreenTheme">@style/AppTheme</item>
     </style>
 </resources>
