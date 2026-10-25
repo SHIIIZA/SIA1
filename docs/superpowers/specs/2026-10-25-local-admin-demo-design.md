@@ -2,36 +2,37 @@
 
 ## Goal
 
-Allow the TripMate admin interface to be opened locally without connecting to
-Neon, while keeping the demo account isolated from deployed environments and
-real user data.
+Let a developer enter the existing browser-local TripMate admin demo from the
+login page when running the site on localhost, without configuring or changing
+Neon.
 
-## Scope
+## Approach
 
-- Add an opt-in local demo authentication mode to the existing Node API.
-- Configure the demo username and password through the developer's local
-  `.env`; never commit or expose those credentials in frontend code.
-- In demo mode, bind the server to `127.0.0.1` and issue the same kind of
-  authenticated session the admin page expects.
-- Leave regular Neon-backed authentication and API behavior unchanged when
-  demo mode is disabled.
-- Keep the admin interface's existing browser-local settings, content, and
-  audit data usable in demo mode.
+- Add a clearly labeled local-demo entry to the login page, visible only when
+  the page hostname is `localhost` or `127.0.0.1`.
+- The entry creates the existing `local-demo-admin` browser token and a
+  browser-local admin user/session, then opens `admin.html`.
+- Update the shared auth helper so it preserves this explicit demo session
+  instead of immediately clearing it.
+- Reuse the admin page's existing localStorage-backed demo behavior, which
+  already skips Neon-backed admin-data synchronization for this token.
+- Keep remote-host login and normal Neon-backed authentication unchanged.
 
-## Explicit limitations
+## Security and limitations
 
-Demo mode does not create or promote a Neon account, write to Neon, or provide
-database-backed listings, bookings, or account management. Those API-backed
-views remain unavailable without a configured Neon connection. The deployed
-site is unaffected unless someone separately enables demo mode in its
-environment, which must not be done.
+This is a UI-only demo session, not an authenticated Neon account and not a
+way to grant production privileges. It is available only on loopback hostnames
+and stores its demo state in the current browser. Listings, bookings, account
+management, and other Neon-backed operations remain unavailable in this mode.
+No database credentials, account roles, or Neon data are read or modified.
 
 ## Verification
 
-- Test that demo credentials authenticate and return an admin user and token.
-- Test that incorrect credentials are rejected.
-- Test that demo mode is disabled by default and does not change existing
-  Neon-backed login behavior.
-- Test that the local server binds to loopback when demo mode is enabled.
-- Start the local server in demo mode and verify `/api/health`, login, and the
-  admin page; confirm database-backed API operations still report unavailable.
+- Test that the demo entry is available on `localhost` and `127.0.0.1`, but
+  hidden for remote hostnames.
+- Test that choosing demo entry stores the expected admin user, session, and
+  `local-demo-admin` token, then navigates to `admin.html`.
+- Test that loading the shared auth helper preserves this demo session.
+- Test that regular API login and normal auth refresh behavior are unchanged.
+- Run the focused UI regression tests and manually verify the localhost demo
+  flow; confirm Neon is not contacted by the demo entry.
