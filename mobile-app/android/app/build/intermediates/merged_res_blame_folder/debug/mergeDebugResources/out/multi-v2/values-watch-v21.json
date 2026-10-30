@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-24:/values-watch-v21/values-watch-v21.xml",
+            "outputFile": "com.tripmate.mobile.app-mergeDebugResources-26:/values-watch-v21/values-watch-v21.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\setsa\\.gradle\\caches\\8.11.1\\transforms\\3c7457cdb6fb77b982c7077db2ad9499\\transformed\\appcompat-1.7.0\\res\\values-watch-v21\\values-watch-v21.xml",
+                    "source": "C:\\Users\\zen\\.gradle\\caches\\8.13\\transforms\\7dca12621e51b24c992afa59ac19dbdf\\transformed\\appcompat-1.7.1\\res\\values-watch-v21\\values-watch-v21.xml",
                     "from": {
                         "startLines": "2,6,10",
                         "startColumns": "4,4,4",

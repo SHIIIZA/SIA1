@@ -5,6 +5,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <script src="/js/mobile-navigation.js" defer></script>
+  <meta name="theme-color" content="#faf7ef">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <script src="/js/pwa.js" defer></script>
   <title>TripMate — Log In</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,7 +76,8 @@
         </div>
 
         <div class="checkbox-row remember">
-          <a href="forgot-password.html" style="margin-left:auto;">Forgot password?</a>
+          <label for="rememberMe"><input type="checkbox" id="rememberMe"> Remember me</label>
+          <a href="forgot-password.html">Forgot password?</a>
         </div>
 
         <button type="submit" class="btn-primary" id="submit-btn">
@@ -83,7 +87,6 @@
           </svg>
         </button>
       </form>
-
       <p class="foot-link">Don't have an account? <a href="signup.html">Sign Up</a></p>
     </div>
   </main>
@@ -146,10 +149,16 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "Logging in…";
       try {
-        const user = await apiLogin({ identifier: email, password, role: mode });
+        const user = await apiLogin({
+          identifier: email,
+          password,
+          role: mode,
+          rememberMe: document.getElementById("rememberMe").checked
+        });
         showToast(`Welcome back, ${user.name.split(" ")[0]}!`);
         const redirectParam = new URLSearchParams(location.search).get("redirect");
-        const destination = redirectParam || (user.role === "admin" ? "admin.html" : user.role === "host" ? "host/dashboard.html" : "dashboard.html");
+        const fallback = user.role === "admin" ? "admin.html" : user.role === "host" ? "host/dashboard.html" : "dashboard.html";
+        const destination = getSafeRedirectPath(redirectParam, fallback);
         setTimeout(() => { window.location.href = destination; }, 700);
       } catch (error) {
         setFieldError(emailField, error.message || "Unable to log in.");

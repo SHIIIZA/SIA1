@@ -25,6 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterAmenities = amenities => [...new Set(
         (Array.isArray(amenities) ? amenities : []).map(normalizeAmenity).filter(Boolean)
     )];
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[character]));
     const normalizePropertyType = value => {
         const normalized = String(value || '').trim().toLowerCase();
         if (normalized === 'house' || normalized.includes('house')) return 'house';
@@ -167,20 +170,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = document.getElementById('propertyName').value.trim() || 'Untitled property';
         const type = document.getElementById('propertyType').selectedOptions[0]?.textContent || 'Property';
         const address = document.getElementById('propertyAddress').value.trim() || 'Address not added';
+        const description = document.getElementById('propertyDescription').value.trim();
         const price = Number(document.getElementById('basePrice').value) || 0;
         const guests = Number(document.getElementById('guests').value) || 0;
         const amenities = filterAmenities([...document.querySelectorAll('input[name="amenity"]:checked')].map(input => input.value));
         summary.innerHTML = `
             <div class="review-summary-heading">
                 <span>Listing summary</span>
-                <strong>${name.replace(/[<>&"']/g, '')}</strong>
+                <strong>${escapeHtml(name)}</strong>
             </div>
             <dl class="review-summary-list">
-                <div><dt>Type</dt><dd>${type}</dd></div>
-                <div><dt>Location</dt><dd>${address.replace(/[<>&"']/g, '')}</dd></div>
+                <div><dt>Type</dt><dd>${escapeHtml(type)}</dd></div>
+                <div><dt>Location</dt><dd>${escapeHtml(address)}</dd></div>
+                <div class="review-summary-description"><dt>Description</dt><dd>${description ? escapeHtml(description) : 'Not provided'}</dd></div>
                 <div><dt>Nightly price</dt><dd>₱${price.toLocaleString()}</dd></div>
                 <div><dt>Capacity</dt><dd>${guests} guest${guests === 1 ? '' : 's'}</dd></div>
-                <div><dt>Amenities</dt><dd>${amenities.length ? amenities.join(', ') : 'None selected'}</dd></div>
+                <div><dt>Amenities</dt><dd>${amenities.length ? escapeHtml(amenities.join(', ')) : 'None selected'}</dd></div>
                 <div><dt>Photos</dt><dd>${uploadedPhotos.length} photo${uploadedPhotos.length === 1 ? '' : 's'}${uploadedPhotos.length ? ' · first photo is the cover' : ''}</dd></div>
             </dl>
         `;
@@ -201,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 createdAt: previousData.createdAt,
                 basics: {
                     title: document.getElementById('propertyName').value,
+                    description: document.getElementById('propertyDescription').value.trim().slice(0, 1000),
                     propertyType: document.getElementById('propertyType').value,
                     maxGuests: document.getElementById('guests').value,
                     bedrooms: document.getElementById('bedrooms').value,
@@ -317,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         createdAt: existingListing.createdAt,
                         basics: {
                             title: existingListing.title,
+                            description: existingListing.description || '',
                             propertyType: normalizePropertyType(existingListing.propertyType),
                             maxGuests: existingListing.maxGuests,
                             bedrooms: existingListing.bedrooms,
@@ -359,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (value !== undefined && value !== null) document.getElementById(id).value = value;
         };
         setValue('propertyName', basics.title);
+        setValue('propertyDescription', basics.description);
         setValue('propertyType', normalizePropertyType(basics.propertyType));
         setValue('guests', basics.maxGuests);
         setValue('bedrooms', basics.bedrooms);
@@ -397,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const localListing = {
             id: String(listingId),
             title: basics.title,
+            description: String(basics.description || '').trim().slice(0, 1000),
             propertyType: basics.propertyType || 'house',
             location: basics.location,
             address: basics.location,
@@ -424,6 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const requestBody = JSON.stringify({
             title: localListing.title,
+            description: localListing.description,
             property_type: localListing.propertyType,
             location: localListing.location,
             price_per_night: localListing.pricePerNight,

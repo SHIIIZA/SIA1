@@ -1,30 +1,33 @@
-com.tripmate.mobile.app-lifecycle-viewmodel-savedstate-2.6.2-0 C:\Users\setsa\.gradle\caches\8.11.1\transforms\0681f255e4df9da4c4b82db170ba327f\transformed\lifecycle-viewmodel-savedstate-2.6.2\res
-com.tripmate.mobile.app-lifecycle-livedata-2.6.2-1 C:\Users\setsa\.gradle\caches\8.11.1\transforms\10a874107c3b392b095b727b7df7291c\transformed\lifecycle-livedata-2.6.2\res
-com.tripmate.mobile.app-emoji2-views-helper-1.3.0-2 C:\Users\setsa\.gradle\caches\8.11.1\transforms\117fbcf7f6cab5b48ba838aeac8559a4\transformed\emoji2-views-helper-1.3.0\res
-com.tripmate.mobile.app-startup-runtime-1.1.1-3 C:\Users\setsa\.gradle\caches\8.11.1\transforms\19ebfa5572cfcc4c003d7ddc20f7f611\transformed\startup-runtime-1.1.1\res
-com.tripmate.mobile.app-lifecycle-viewmodel-2.6.2-4 C:\Users\setsa\.gradle\caches\8.11.1\transforms\1bd836242b0805caa24419cabb9c726b\transformed\lifecycle-viewmodel-2.6.2\res
-com.tripmate.mobile.app-annotation-experimental-1.4.1-5 C:\Users\setsa\.gradle\caches\8.11.1\transforms\368e366272cd05aaa0f0f0a85df6469a\transformed\annotation-experimental-1.4.1\res
-com.tripmate.mobile.app-appcompat-1.7.0-6 C:\Users\setsa\.gradle\caches\8.11.1\transforms\3c7457cdb6fb77b982c7077db2ad9499\transformed\appcompat-1.7.0\res
-com.tripmate.mobile.app-activity-1.9.2-7 C:\Users\setsa\.gradle\caches\8.11.1\transforms\3efcc5dd3aa784762e77425074f7a996\transformed\activity-1.9.2\res
-com.tripmate.mobile.app-savedstate-1.2.1-8 C:\Users\setsa\.gradle\caches\8.11.1\transforms\3f9dbbc4651957c560dd5873c3bfdcc2\transformed\savedstate-1.2.1\res
-com.tripmate.mobile.app-core-runtime-2.2.0-9 C:\Users\setsa\.gradle\caches\8.11.1\transforms\3fc918c7ef11e4e74952315a05306604\transformed\core-runtime-2.2.0\res
-com.tripmate.mobile.app-tracing-1.2.0-10 C:\Users\setsa\.gradle\caches\8.11.1\transforms\4f99dd3ff182cbeaccaabef5a9bb0914\transformed\tracing-1.2.0\res
-com.tripmate.mobile.app-lifecycle-runtime-2.6.2-11 C:\Users\setsa\.gradle\caches\8.11.1\transforms\4fbc6e0d6ab266f9ce5e7366d6745495\transformed\lifecycle-runtime-2.6.2\res
-com.tripmate.mobile.app-emoji2-1.3.0-12 C:\Users\setsa\.gradle\caches\8.11.1\transforms\5110abaf7317d45faea3f429ae754fe1\transformed\emoji2-1.3.0\res
-com.tripmate.mobile.app-fragment-1.8.4-13 C:\Users\setsa\.gradle\caches\8.11.1\transforms\5774e856762528ec1d53cf6312d8fa24\transformed\fragment-1.8.4\res
-com.tripmate.mobile.app-core-1.15.0-14 C:\Users\setsa\.gradle\caches\8.11.1\transforms\681a94c836dd4d203c875c71107643fd\transformed\core-1.15.0\res
-com.tripmate.mobile.app-appcompat-resources-1.7.0-15 C:\Users\setsa\.gradle\caches\8.11.1\transforms\898f480215bb0d485ed9d7ac64e7d74c\transformed\appcompat-resources-1.7.0\res
-com.tripmate.mobile.app-profileinstaller-1.3.1-16 C:\Users\setsa\.gradle\caches\8.11.1\transforms\8cee324f08a1e3ad44dd8a9e02041d99\transformed\profileinstaller-1.3.1\res
-com.tripmate.mobile.app-coordinatorlayout-1.2.0-17 C:\Users\setsa\.gradle\caches\8.11.1\transforms\8edd827a7ab96ee2f491aba0486b949c\transformed\coordinatorlayout-1.2.0\res
-com.tripmate.mobile.app-core-ktx-1.15.0-18 C:\Users\setsa\.gradle\caches\8.11.1\transforms\c905c0800f1f57d10606fa737e4e4520\transformed\core-ktx-1.15.0\res
-com.tripmate.mobile.app-lifecycle-process-2.6.2-19 C:\Users\setsa\.gradle\caches\8.11.1\transforms\ccf6ae2c0b53f87fed2081df8cd58094\transformed\lifecycle-process-2.6.2\res
-com.tripmate.mobile.app-lifecycle-livedata-core-2.6.2-20 C:\Users\setsa\.gradle\caches\8.11.1\transforms\d2de5a1a8652ce4af8d1f6228d85036c\transformed\lifecycle-livedata-core-2.6.2\res
-com.tripmate.mobile.app-webkit-1.12.1-21 C:\Users\setsa\.gradle\caches\8.11.1\transforms\e0b64ce8070d59be22c71574893babef\transformed\webkit-1.12.1\res
-com.tripmate.mobile.app-pngs-22 D:\systems integration and architecture\SIA1\mobile-app\android\app\build\generated\res\pngs\debug
-com.tripmate.mobile.app-resValues-23 D:\systems integration and architecture\SIA1\mobile-app\android\app\build\generated\res\resValues\debug
-com.tripmate.mobile.app-packageDebugResources-24 D:\systems integration and architecture\SIA1\mobile-app\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
-com.tripmate.mobile.app-packageDebugResources-25 D:\systems integration and architecture\SIA1\mobile-app\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
-com.tripmate.mobile.app-debug-26 D:\systems integration and architecture\SIA1\mobile-app\android\app\build\intermediates\merged_res\debug\mergeDebugResources
-com.tripmate.mobile.app-debug-27 D:\systems integration and architecture\SIA1\mobile-app\android\app\src\debug\res
-com.tripmate.mobile.app-main-28 D:\systems integration and architecture\SIA1\mobile-app\android\app\src\main\res
-com.tripmate.mobile.app-debug-29 D:\systems integration and architecture\SIA1\mobile-app\node_modules\@capacitor\android\capacitor\build\intermediates\packaged_res\debug\packageDebugResources
+com.tripmate.mobile.app-savedstate-1.2.1-0 C:\Users\zen\.gradle\caches\8.13\transforms\03c146060e3d4c16a826bfa1f4cbb875\transformed\savedstate-1.2.1\res
+com.tripmate.mobile.app-core-1.17.0-1 C:\Users\zen\.gradle\caches\8.13\transforms\05c03cbe3b8c88c5e25bb9b2af331eda\transformed\core-1.17.0\res
+com.tripmate.mobile.app-webkit-1.14.0-2 C:\Users\zen\.gradle\caches\8.13\transforms\0f82d9aa65d2fc501a4fbd8d62dcc34b\transformed\webkit-1.14.0\res
+com.tripmate.mobile.app-core-viewtree-1.0.0-3 C:\Users\zen\.gradle\caches\8.13\transforms\26e3db925cd3fc83df2dc7670aa228c8\transformed\core-viewtree-1.0.0\res
+com.tripmate.mobile.app-lifecycle-livedata-2.6.2-4 C:\Users\zen\.gradle\caches\8.13\transforms\2bb3e09ad01818e2df13bfbc5a720f4c\transformed\lifecycle-livedata-2.6.2\res
+com.tripmate.mobile.app-fragment-1.8.9-5 C:\Users\zen\.gradle\caches\8.13\transforms\430ee24cdb5b5ed919be9396f1b0578f\transformed\fragment-1.8.9\res
+com.tripmate.mobile.app-lifecycle-runtime-2.6.2-6 C:\Users\zen\.gradle\caches\8.13\transforms\59360f0aa22020e08b1737e29c99fd44\transformed\lifecycle-runtime-2.6.2\res
+com.tripmate.mobile.app-emoji2-1.3.0-7 C:\Users\zen\.gradle\caches\8.13\transforms\5ebbda2aea1a9c141eb1fced99ab754a\transformed\emoji2-1.3.0\res
+com.tripmate.mobile.app-appcompat-resources-1.7.1-8 C:\Users\zen\.gradle\caches\8.13\transforms\75157edcbe2125cef47980d043635d6f\transformed\appcompat-resources-1.7.1\res
+com.tripmate.mobile.app-core-runtime-2.2.0-9 C:\Users\zen\.gradle\caches\8.13\transforms\760271c1be6ee8eb92cdcdda54cbec95\transformed\core-runtime-2.2.0\res
+com.tripmate.mobile.app-tracing-1.2.0-10 C:\Users\zen\.gradle\caches\8.13\transforms\7a5290b2ae357e0174c549442ad22b71\transformed\tracing-1.2.0\res
+com.tripmate.mobile.app-appcompat-1.7.1-11 C:\Users\zen\.gradle\caches\8.13\transforms\7dca12621e51b24c992afa59ac19dbdf\transformed\appcompat-1.7.1\res
+com.tripmate.mobile.app-lifecycle-viewmodel-2.6.2-12 C:\Users\zen\.gradle\caches\8.13\transforms\965d2514ff02a7db223df96540fb96e8\transformed\lifecycle-viewmodel-2.6.2\res
+com.tripmate.mobile.app-lifecycle-livedata-core-2.6.2-13 C:\Users\zen\.gradle\caches\8.13\transforms\99d72b0fa1038dc2fc6652a90bd46df7\transformed\lifecycle-livedata-core-2.6.2\res
+com.tripmate.mobile.app-core-ktx-1.17.0-14 C:\Users\zen\.gradle\caches\8.13\transforms\9c665d5a0bcbe50ad0db92181711468f\transformed\core-ktx-1.17.0\res
+com.tripmate.mobile.app-activity-1.11.0-15 C:\Users\zen\.gradle\caches\8.13\transforms\9cc8578f8c700142d4ef07eebc588c0d\transformed\activity-1.11.0\res
+com.tripmate.mobile.app-lifecycle-process-2.6.2-16 C:\Users\zen\.gradle\caches\8.13\transforms\c9310d50e842bd41829c6474192fe9e0\transformed\lifecycle-process-2.6.2\res
+com.tripmate.mobile.app-coordinatorlayout-1.3.0-17 C:\Users\zen\.gradle\caches\8.13\transforms\ce96f678ddcef07e7360a10b66b5f2e2\transformed\coordinatorlayout-1.3.0\res
+com.tripmate.mobile.app-startup-runtime-1.1.1-18 C:\Users\zen\.gradle\caches\8.13\transforms\d4abcbd69790774a976c2bc3b1513bfd\transformed\startup-runtime-1.1.1\res
+com.tripmate.mobile.app-annotation-experimental-1.4.1-19 C:\Users\zen\.gradle\caches\8.13\transforms\da281c11d729a390f9b52865bb10e17a\transformed\annotation-experimental-1.4.1\res
+com.tripmate.mobile.app-profileinstaller-1.4.0-20 C:\Users\zen\.gradle\caches\8.13\transforms\e97ac65b114c1fb130fe4d45a32cbb52\transformed\profileinstaller-1.4.0\res
+com.tripmate.mobile.app-core-splashscreen-1.0.1-21 C:\Users\zen\.gradle\caches\8.13\transforms\ea421350dcb667c2b1a84589a66aa409\transformed\core-splashscreen-1.0.1\res
+com.tripmate.mobile.app-emoji2-views-helper-1.3.0-22 C:\Users\zen\.gradle\caches\8.13\transforms\ebcd65553985db597c0e29695780e684\transformed\emoji2-views-helper-1.3.0\res
+com.tripmate.mobile.app-lifecycle-viewmodel-savedstate-2.6.2-23 C:\Users\zen\.gradle\caches\8.13\transforms\f18c6e922bcc72ed0ad2472306ae41ed\transformed\lifecycle-viewmodel-savedstate-2.6.2\res
+com.tripmate.mobile.app-pngs-24 D:\SIA\SIA1\mobile-app\android\app\build\generated\res\pngs\debug
+com.tripmate.mobile.app-resValues-25 D:\SIA\SIA1\mobile-app\android\app\build\generated\res\resValues\debug
+com.tripmate.mobile.app-updated_navigation_xml-26 D:\SIA\SIA1\mobile-app\android\app\build\generated\updated_navigation_xml\debug
+com.tripmate.mobile.app-packageDebugResources-27 D:\SIA\SIA1\mobile-app\android\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.tripmate.mobile.app-packageDebugResources-28 D:\SIA\SIA1\mobile-app\android\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.tripmate.mobile.app-debug-29 D:\SIA\SIA1\mobile-app\android\app\build\intermediates\merged_res\debug\mergeDebugResources
+com.tripmate.mobile.app-debug-30 D:\SIA\SIA1\mobile-app\android\app\src\debug\res
+com.tripmate.mobile.app-main-31 D:\SIA\SIA1\mobile-app\android\app\src\main\res
+com.tripmate.mobile.app-debug-32 D:\SIA\SIA1\node_modules\@capacitor\android\capacitor\build\intermediates\packaged_res\debug\packageDebugResources

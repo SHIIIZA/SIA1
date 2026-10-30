@@ -5,11 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <script src="/js/mobile-navigation.js" defer></script>
+    <meta name="theme-color" content="#faf7ef">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <script src="/js/pwa.js" defer></script>
     <title>TripMate — Profile Settings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/profile.css">
     <link rel="stylesheet" href="/css/mobile-native.css">
     <script src="/js/mobile-bootstrap.js"></script>
 </head>
@@ -116,6 +120,7 @@
                                 <div class="form-group">
                                     <label for="newPassword">New Password</label>
                                     <input type="password" id="newPassword" name="newPassword" class="form-input" required>
+                                    <p class="form-hint password-strength" id="profilePasswordStrength" aria-live="polite">Password strength: not entered</p>
                                 </div>
                                 <div class="form-group">
                                     <label for="confirmPassword">Confirm Password</label>
@@ -170,6 +175,21 @@
             </section>
         </div>
     </main>
+
+    <dialog class="account-confirm-dialog" id="deleteAccountDialog" aria-labelledby="deleteAccountTitle">
+        <form id="deleteAccountForm">
+            <h2 id="deleteAccountTitle">Delete your account?</h2>
+            <p>This action cannot be undone. Enter your current password and type <strong>DELETE</strong> to confirm.</p>
+            <label for="deleteAccountPassword">Current password</label>
+            <input type="password" class="form-input" id="deleteAccountPassword" autocomplete="current-password" required>
+            <label for="deleteAccountPhrase">Type DELETE to confirm</label>
+            <input type="text" class="form-input" id="deleteAccountPhrase" autocomplete="off" required>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="cancelDeleteAccount">Cancel</button>
+                <button type="submit" class="btn btn-danger" id="confirmDeleteAccount" disabled>Delete account</button>
+            </div>
+        </form>
+    </dialog>
 
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>

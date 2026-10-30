@@ -4,7 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#faf7ef">
+    <link rel="manifest" href="/manifest.webmanifest">
     <script src="/js/mobile-navigation.js" defer></script>
+    <script src="/js/pwa.js" defer></script>
     <title>Stays — TripMate</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -197,6 +200,7 @@
                 <div class="active-chips" id="activeChips"></div>
 
                 <div class="stays-grid" id="staysGrid"></div>
+                <button type="button" class="btn-ghost load-more-stays" id="loadMoreStays" hidden>Show more stays</button>
 
                 <div class="empty-state" id="emptyState" hidden>
                     <p class="empty-title">No stays match those filters.</p>

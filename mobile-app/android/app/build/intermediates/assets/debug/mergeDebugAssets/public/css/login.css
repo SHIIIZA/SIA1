@@ -242,7 +242,8 @@ main {
 .checkbox-row input { margin-top: 2px; accent-color: var(--coral); }
 .checkbox-row.remember { align-items: center; margin: 6px 0 18px; }
 .checkbox-row.remember a { color: var(--gold); font-size: 0.83rem; font-weight: 600; }
-
+.checkbox-row.remember label { display: inline-flex; align-items: center; gap: 7px; }
+.checkbox-row.remember label input { margin: 0; }
 .btn-primary {
   width: 100%;
   background: var(--coral);
