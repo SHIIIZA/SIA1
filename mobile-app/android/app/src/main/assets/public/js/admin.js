@@ -35,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const MAX_AUDIT_EVENTS = 500;
 
   const DEFAULT_AMENITIES = ['Free WiFi', 'Air Conditioning', 'Hot Shower', '24/7 Front Desk'];
+  const COMMISSION_RATE = 0.12;
+  const TAX_RATE = 0.12;
 
   const FALLBACK_IMAGE =
     'data:image/svg+xml;utf8,' + encodeURIComponent(
@@ -112,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     clearTimeout(syncTimer);
     syncTimer = setTimeout(async () => {
       try {
-        await apiRequest('/admin/sync', { method: 'POST', body: JSON.stringify({ listings }) });
+        await apiRequest('/admin/sync', { method: 'POST', body: JSON.stringify({ listings, bookings }) });
         const fresh = await apiRequest('/admin/data');
         listings = fresh.listings || [];
         bookings = fresh.bookings || [];
@@ -132,7 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     recordAudit(action, details);
     syncAdminData();
   };
-
+  const persistBookings = (action = 'Bookings updated', details = `${bookings.length} booking(s) in admin records`) => {
+    save(BOOKINGS_KEY, bookings);
+    recordAudit(action, details);
+    syncAdminData();
+  };
 
   const hydrateAdminData = async () => {
     if (localStorage.getItem('tripmate_access_token') === 'local-demo-admin') return;
@@ -175,8 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cmsContent = content;
     recordAudit('Homepage content updated', 'Saved homepage headline, description, featured image, or announcement settings.');
   };
-  const persistPromotions = async (nextPromotions, action, details) => {
-    await apiRequest('/admin/promotions', { method: 'PATCH', body: JSON.stringify({ promotions: nextPromotions }) });
+  const persistPromotions = (nextPromotions, action, details) => {
     localStorage.setItem(PROMOTIONS_KEY, JSON.stringify(nextPromotions));
     promotions = nextPromotions;
     recordAudit(action, details);
@@ -201,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* =========================================================
      GENERAL HELPERS
   ========================================================= */
-  const formatPeso = (value) => '₱' + (Number(value) || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const formatPeso = (value) => '₱' + Math.round(Number(value) || 0).toLocaleString('en-PH');
 
   const formatDate = (isoStr) => {
     const d = new Date(isoStr + 'T00:00:00');
@@ -251,20 +256,20 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${days}d ago`;
   };
 
+  // Transaction math: base rate (nights × nightly price) plus taxes/fees and
+  // platform commission, each 12% of the base — mirrors the booking checkout math.
   const transactionBreakdown = (booking) => {
-    const total = Number(booking.amount) || 0;
-    const base = Number(booking.subtotal ?? total);
-    const taxesFees = Number(booking.cleaningFee || 0) + Number(booking.taxes || 0);
-    const commission = Number(booking.serviceFee || 0);
+    const base = Number(booking.amount) || 0;
+    const taxesFees = base * TAX_RATE;
+    const commission = base * COMMISSION_RATE;
+    const total = base + taxesFees + commission;
     return { base, taxesFees, commission, total };
   };
 
   const TX_STATUS_META = {
-    Confirmed: { label: 'Confirmed', cls: 'green' },
-    Completed: { label: 'Completed', cls: 'green' },
-    'Cancellation requested': { label: 'Cancellation requested', cls: 'amber' },
-    Pending: { label: 'Pending', cls: 'amber' },
-    Cancelled: { label: 'Cancelled', cls: 'red' },
+    Confirmed: { label: 'Completed', cls: 'green' },
+    Pending: { label: 'Pending Review', cls: 'amber' },
+    Cancelled: { label: 'Action Required', cls: 'red' },
   };
 
   const LISTING_STATUS_META = {
@@ -357,7 +362,6 @@ document.addEventListener('DOMContentLoaded', () => {
     a.addEventListener('click', (e) => { e.preventDefault(); notImplemented(); });
   });
 
-  let serverNotifications = [];
   const NOTIF_SEEN_KEY = 'tripmate_admin_seen_notifications';
   let seenNotificationIds = new Set(loadJSON(NOTIF_SEEN_KEY, []));
   const persistSeenNotifications = () => save(NOTIF_SEEN_KEY, [...seenNotificationIds]);
@@ -365,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Real, derived notifications — nothing fabricated: pending host/listing
   // applications and bookings still awaiting confirmation.
   const getNotifications = () => {
-    const items = [...serverNotifications];
+    const items = [];
 
     getPendingApplications().forEach((application) => {
       items.push({
@@ -381,6 +385,19 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
 
+    bookings.filter((b) => b.status === 'Pending').forEach((b) => {
+      const listing = listingById(b.listingId);
+      items.push({
+        id: `booking-${b.id}`,
+        kind: 'booking',
+        title: 'Booking awaiting confirmation',
+        subtitle: `${b.guestName} · ${listing ? listing.name : 'Unknown property'}`,
+        time: b.createdAt,
+        goto: 'transactions',
+        bookingId: b.id,
+      });
+    });
+
     return items.sort((a, b) => (b.time || 0) - (a.time || 0));
   };
 
@@ -391,8 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const renderNotifications = () => {
     const items = getNotifications();
-    const unreadCount = items.filter((it) => it.serverId ? !it.isRead : !seenNotificationIds.has(it.id)).length;
-    notifDot.hidden = unreadCount === 0;
+    const unreadCount = items.filter((it) => !seenNotificationIds.has(it.id)).length;
+    notifDot.hidden = unreadCount === 0 || !adminSettings.showVerificationAlerts;
 
     if (!items.length) {
       notifList.innerHTML = `<div class="notif-empty">You're all caught up.</div>`;
@@ -400,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     notifList.innerHTML = items.map((it) => {
-      const unread = it.serverId ? !it.isRead : !seenNotificationIds.has(it.id);
+      const unread = !seenNotificationIds.has(it.id);
       const iconSVG = it.kind === 'booking'
         ? '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>'
         : '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg>';
@@ -417,22 +434,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   };
 
-  const refreshServerNotifications = async () => {
-    try {
-      const data = await apiRequest('/notifications');
-      serverNotifications = data.items.map(item => ({ id: `server-${item.id}`, serverId: item.id, isRead: item.is_read,
-        kind: 'booking', title: item.title, subtitle: item.message, time: new Date(item.created_at).getTime(),
-        goto: 'transactions', bookingId: String(item.booking_id || '') }));
-      renderNotifications();
-    } catch (error) {
-      notifList.textContent = error.message || 'Unable to load notifications.';
-    }
-  };
-  window.tripmateRefreshNotifications = refreshServerNotifications;
-  window.addEventListener('focus', refreshServerNotifications);
-  setInterval(() => { if (!document.hidden) refreshServerNotifications(); }, 30000);
-  refreshServerNotifications();
-
   const closeNotifMenu = () => {
     notifMenu.hidden = true;
     bellBtn.setAttribute('aria-expanded', 'false');
@@ -441,30 +442,24 @@ document.addEventListener('DOMContentLoaded', () => {
   bellBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const willOpen = notifMenu.hidden;
-    if (willOpen) refreshServerNotifications();
+    if (willOpen) renderNotifications();
     notifMenu.hidden = !willOpen;
     bellBtn.setAttribute('aria-expanded', String(willOpen));
   });
   notifMenu.addEventListener('click', (e) => e.stopPropagation());
 
-  document.getElementById('notifMarkAllBtn').addEventListener('click', async () => {
-    try { await apiRequest('/notifications/all/read', { method: 'PATCH' }); }
-    catch (error) { showToast(error.message, 'error'); return; }
+  document.getElementById('notifMarkAllBtn').addEventListener('click', () => {
     getNotifications().forEach((it) => seenNotificationIds.add(it.id));
     persistSeenNotifications();
-    await refreshServerNotifications();
+    renderNotifications();
   });
 
-  notifList.addEventListener('click', async (e) => {
+  notifList.addEventListener('click', (e) => {
     const item = e.target.closest('.notif-item');
     if (!item) return;
     const notif = getNotifications().find((it) => it.id === item.dataset.id);
     if (!notif) return;
 
-    if (notif.serverId) {
-      try { await apiRequest(`/notifications/${notif.serverId}/read`, { method: 'PATCH' }); notif.isRead = true; }
-      catch (error) { showToast(error.message, 'error'); return; }
-    }
     seenNotificationIds.add(notif.id);
     persistSeenNotifications();
     closeNotifMenu();
@@ -1509,39 +1504,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   };
 
-  const cancellationQueue = document.getElementById('cancellationQueue');
-  const renderCancellationQueue = () => {
-    const pending = bookings.filter(booking => booking.status === 'Cancellation requested');
-    cancellationQueue.innerHTML = pending.length ? pending.map(booking => `
-      <div class="cancellation-request">
-        <p><strong>Booking #${escapeHTML(booking.id)}</strong> · ${escapeHTML(booking.guestName)} · ${escapeHTML(booking.checkIn)}</p>
-        <button class="btn-primary" type="button" data-cancellation="approve" data-id="${escapeHTML(booking.id)}">Review refund &amp; approve</button>
-        <button class="btn-secondary" type="button" data-cancellation="reject" data-id="${escapeHTML(booking.id)}">Decline request</button>
-      </div>`).join('') : '<p>No cancellation requests awaiting review.</p>';
-  };
-  cancellationQueue.addEventListener('click', async event => {
-    const button = event.target.closest('[data-cancellation]');
-    if (!button || button.disabled) return;
-    button.disabled = true;
-    try {
-      const quote = await apiRequest(`/bookings/${button.dataset.id}/cancellation-quote`);
-      const approve = button.dataset.cancellation === 'approve';
-      const message = approve
-        ? `Paid: ${formatPeso(quote.paid_amount)}\nCancellation fee: ${formatPeso(quote.cancellation_fee)}\nWallet refund: ${formatPeso(quote.refund_amount)}\n\nApprove this cancellation and credit the refund?`
-        : 'Decline this cancellation request? The booking will remain active and the guest will be notified.';
-      if (!confirm(message)) return;
-      await apiRequest(`/admin/bookings/${button.dataset.id}/cancellation`, { method: 'PATCH',
-        body: JSON.stringify({ action: button.dataset.cancellation, expected_refund: quote.refund_amount }) });
-      await hydrateAdminData();
-      renderTransactions(); renderDashboard();
-      await refreshServerNotifications();
-      showToast(approve ? 'Cancellation approved. Any eligible refund was credited.' : 'Cancellation declined. Guest notified.', 'success');
-    } catch (error) { showToast(error.message, 'error'); }
-    finally { button.disabled = false; }
-  });
-
   const renderTransactions = () => {
-    renderCancellationQueue();
     const nonCancelled = bookings.filter((b) => b.status !== 'Cancelled');
     const totalVolume = nonCancelled.reduce((sum, b) => sum + transactionBreakdown(b).total, 0);
     const totalCommissions = nonCancelled.reduce((sum, b) => sum + transactionBreakdown(b).commission, 0);
@@ -1610,7 +1573,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     downloadCSV(
       `tripmate-bookings-${new Date().toISOString().split('T')[0]}.csv`,
-      ['Transaction ID', 'Partner/Host', 'Guest', 'Check-in', 'Check-out', 'Base Rate', 'Taxes/Fees', 'Service fee', 'Total', 'Status'],
+      ['Transaction ID', 'Partner/Host', 'Guest', 'Check-in', 'Check-out', 'Base Rate', 'Taxes/Fees', 'Commission (12%)', 'Total', 'Status'],
       filtered.map((b) => {
         const listing = listingById(b.listingId);
         const host = (listing && (listing.host || listing.name)) || 'Unknown partner';
@@ -1635,7 +1598,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const summaryRows = [
       ['Statement generated', new Date().toLocaleString('en-US')],
       ['Total platform volume', formatPeso(totalVolume)],
-      ['Service fees', formatPeso(totalCommissions)],
+      ['Net commissions (12%)', formatPeso(totalCommissions)],
       ['Pending payouts', formatPeso(pendingTotal)],
       ['Total bookings', String(bookings.length)],
       [],
@@ -1684,7 +1647,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="tx-detail-row"><span>Check-out</span><span>${formatDate(b.checkOut)}</span></div>
       <div class="tx-detail-row"><span>Base rate</span><span>${formatPeso(base)}</span></div>
       <div class="tx-detail-row"><span>Taxes / fees</span><span>${formatPeso(taxesFees)}</span></div>
-      <div class="tx-detail-row"><span>Service fee</span><span>${formatPeso(commission)}</span></div>
+      <div class="tx-detail-row"><span>Commission (12%)</span><span>${formatPeso(commission)}</span></div>
       <div class="tx-detail-row tx-detail-total"><span>Total</span><span>${formatPeso(total)}</span></div>
       <div class="tx-detail-row"><span>Status</span><span>${statusBadgeHTML(meta.label, meta.cls)}</span></div>`;
 
@@ -1785,11 +1748,6 @@ document.addEventListener('DOMContentLoaded', () => {
       bStatus.value = 'Pending';
     }
 
-    [bGuestName, bGuestEmail, bGuestPhone, bListing, bCheckIn, bCheckOut, bGuestsCount].forEach(field => { field.disabled = Boolean(booking); });
-    bStatus.disabled = !booking || ['Cancelled', 'Completed', 'Cancellation requested'].includes(booking.status);
-    document.getElementById('bookingEditNote').textContent = booking
-      ? 'Existing stay details are locked to preserve payment and refund records. Review cancellation requests in Bookings.'
-      : 'New admin bookings start pending payment. Use an existing guest account email.';
     recomputeBookingAmount();
     bookingModalOverlay.hidden = false;
     bGuestName.focus();
@@ -1806,7 +1764,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('bookingCancelBtn').addEventListener('click', closeBookingModal);
   bookingModalOverlay.addEventListener('click', (e) => { if (e.target === bookingModalOverlay) closeBookingModal(); });
 
-  bookingForm.addEventListener('submit', async (e) => {
+  bookingForm.addEventListener('submit', (e) => {
     e.preventDefault();
     clearBookingErrors();
 
@@ -1858,28 +1816,17 @@ document.addEventListener('DOMContentLoaded', () => {
       amount,
     };
 
-    const submit = bookingForm.querySelector('[type="submit"]');
-    if (submit) submit.disabled = true;
-    try {
-      const id = bookingIdInput.value;
-      if (id) {
-        const existing = bookingById(id);
-        if (payload.status === 'Cancelled' && existing.status !== 'Cancelled') {
-          const quote = await apiRequest(`/bookings/${id}/cancellation-quote`);
-          if (!confirm(`Cancel booking #${id}? The guest will receive a full wallet refund of ${formatPeso(quote.paid_amount)}.`)) return;
-          await apiRequest(`/admin/bookings/${id}/cancellation`, { method: 'PATCH', body: JSON.stringify({ action: 'cancel', expected_refund: quote.paid_amount }) });
-        } else if (payload.status !== existing.status) {
-          await apiRequest(`/admin/bookings/${id}`, { method: 'PATCH', body: JSON.stringify({ status: payload.status.toLowerCase() }) });
-        }
-      } else {
-        await apiRequest('/admin/bookings', { method: 'POST', body: JSON.stringify(payload) });
-      }
-      await hydrateAdminData();
-      await refreshServerNotifications();
-      recordAudit(id ? 'Booking updated' : 'Booking created', id || payload.guestEmail);
-      showToast(id ? 'Booking updated.' : 'Booking added as pending payment.', 'success');
-    } catch (error) { showToast(error.message || 'Unable to save booking.', 'error'); return; }
-    finally { if (submit) submit.disabled = false; }
+    if (bookingIdInput.value) {
+      const booking = bookingById(bookingIdInput.value);
+      if (booking) Object.assign(booking, payload);
+      persistBookings('Booking updated', `${bookingIdInput.value}; status ${payload.status}.`);
+      showToast('Booking updated.', 'success');
+    } else {
+      const booking = { id: genId('b'), createdAt: Date.now(), ...payload };
+      bookings.unshift(booking);
+      persistBookings('Booking created', `${booking.id}; status ${payload.status}.`);
+      showToast('Booking added.', 'success');
+    }
 
     closeBookingModal();
     renderTransactions();
@@ -2028,29 +1975,6 @@ document.addEventListener('DOMContentLoaded', () => {
   /* =========================================================
      SETTINGS
   ========================================================= */
-  const policyForm = document.getElementById('cancellationPolicyForm');
-  const policyStatus = document.getElementById('cancellationPolicyStatus');
-  const loadCancellationPolicy = async () => {
-    try {
-      const policy = await apiRequest('/cancellation-policy');
-      policyForm.elements.free_cancel_days.value = policy.free_cancel_days;
-      policyForm.elements.late_fee_nights.value = policy.late_fee_nights;
-      policyStatus.textContent = 'Changes apply to new bookings. Existing bookings retain their original rules.';
-    } catch (error) { policyStatus.textContent = error.message; }
-  };
-  policyForm.addEventListener('submit', async event => {
-    event.preventDefault();
-    const submit = policyForm.querySelector('[type="submit"]'); submit.disabled = true;
-    try {
-      await apiRequest('/admin/cancellation-policy', { method: 'PATCH', body: JSON.stringify({
-        free_cancel_days: Number(policyForm.elements.free_cancel_days.value), late_fee_nights: Number(policyForm.elements.late_fee_nights.value)
-      }) });
-      policyStatus.textContent = 'Policy saved for new bookings. Existing bookings keep their original rules.';
-    } catch (error) { policyStatus.textContent = error.message; }
-    finally { submit.disabled = false; }
-  });
-  loadCancellationPolicy();
-
   const settingsForm = document.getElementById('settingsForm');
   const settingsRowsPerPageSelect = document.getElementById('settingsRowsPerPage');
   const settingsShowAlertsInput = document.getElementById('settingsShowAlerts');
@@ -2241,7 +2165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
-  promotionForm.addEventListener('submit', async (event) => {
+  promotionForm.addEventListener('submit', (event) => {
     event.preventDefault();
     const code = document.getElementById('promotionCode').value.trim().toUpperCase();
     const discount = Number(document.getElementById('promotionDiscount').value);
@@ -2266,7 +2190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const nextPromotions = [{ code, discount, expiresAt, active: true, createdAt: new Date().toISOString() }, ...promotions];
     try {
-      await persistPromotions(nextPromotions, 'Promotion created', `${code} gives ${discount}% off${expiresAt ? ` through ${expiresAt}` : ''}.`);
+      persistPromotions(nextPromotions, 'Promotion created', `${code} gives ${discount}% off${expiresAt ? ` through ${expiresAt}` : ''}.`);
       promotionForm.reset();
       renderPromotions();
       showToast('Promo code created and activated.', 'success');
@@ -2275,7 +2199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  promotionsBody.addEventListener('click', async (event) => {
+  promotionsBody.addEventListener('click', (event) => {
     const button = event.target.closest('[data-promo-action]');
     if (!button) return;
     const promotion = promotions.find((item) => item.code === button.dataset.code);
@@ -2293,7 +2217,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ? 'Promotion deleted'
       : `Promotion ${promotion.active ? 'deactivated' : 'activated'}`;
     try {
-      await persistPromotions(nextPromotions, action, promotion.code);
+      persistPromotions(nextPromotions, action, promotion.code);
       renderPromotions();
       showToast(button.dataset.promoAction === 'delete' ? 'Promo code deleted.' : 'Promo code status updated.', 'success');
     } catch (error) {
@@ -2320,8 +2244,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   RENDERERS.audit = renderAudit;
   renderCms();
-  apiRequest('/promotions').then(items => { promotions = items; renderPromotions(); })
-    .catch(error => showToast(error.message || 'Unable to load promotions.', 'error'));
   renderPromotions();
 
   document.getElementById('auditExportBtn').addEventListener('click', () => {

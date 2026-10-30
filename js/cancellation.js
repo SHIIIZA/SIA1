@@ -1,7 +1,7 @@
 (function () {
     "use strict";
 
-    let policy = null;
+    const FREE_CANCEL_DAYS = 7; 
     class DeadlineCalculator {
         constructor() {
             this.input = document.getElementById("checkinDate");
@@ -30,8 +30,8 @@
         }
 
         startOfToday() {
-            const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-            return this.parseLocalDate(date);
+            const now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate());
         }
 
         formatDate(date) {
@@ -55,7 +55,6 @@
 
         handleChange() {
             this.clearError();
-            if (!policy) { this.showError('Current policy is unavailable. Please try again later.'); return; }
             const value = this.input.value;
 
             if (!value) {
@@ -78,7 +77,7 @@
                 return;
             }
 
-            const deadline = this.addDays(checkin, -policy.free_cancel_days);
+            const deadline = this.addDays(checkin, -FREE_CANCEL_DAYS);
             const isEligible = today <= deadline;
             this.renderResult({ checkin, deadline, isEligible });
         }
@@ -97,14 +96,14 @@
                 this.panel.innerHTML = `
                     <span class="result-status">Full refund available</span>
                     <p class="result-detail">Cancel by <b>${deadlineText}</b> and you'll get a full refund.
-                    After that date, a fee of ${policy.late_fee_nights} night(s) applies, capped at the amount paid. Refunds are wallet credit after admin approval.</p>
+                    After that date, your first night becomes non-refundable.</p>
                 `;
             } else {
                 this.panel.className = "result-panel is-past";
                 this.panel.innerHTML = `
                     <span class="result-status">Free window has passed</span>
                     <p class="result-detail">The full-refund deadline was <b>${deadlineText}</b>. Cancelling now
-                    deducts ${policy.late_fee_nights} night(s), capped at the amount paid. Any remaining refund is wallet credit after admin approval.</p>
+                    keeps your first night's rate as a cancellation fee — the rest of your stay is refunded.</p>
                 `;
             }
         }
@@ -137,15 +136,7 @@
     // Safe initialisation
     // ==========================================
     function initAll() {
-        const calculator = new DeadlineCalculator();
-        calculator.init();
-        apiRequest('/cancellation-policy').then(value => {
-            policy = value;
-            document.getElementById('currentCancellationPolicy').textContent = `For new bookings: full wallet refund at least ${policy.free_cancel_days} days before check-in. Later cancellations deduct ${policy.late_fee_nights} night(s), capped at the amount paid. Existing bookings keep their original policy.`;
-            if (calculator.input?.value) calculator.handleChange();
-        }).catch(() => {
-            document.getElementById('currentCancellationPolicy').textContent = 'Current rules could not be loaded. Check your booking’s cancellation quote in My Trips or try again later.';
-        });
+        new DeadlineCalculator().init();
         new FaqAccordion(document.getElementById("pfaqList")).init();
     }
 

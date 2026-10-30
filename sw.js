@@ -1,4 +1,4 @@
-const CACHE_NAME = "tripmate-shell-v4";
+const CACHE_NAME = "tripmate-shell-v1";
 const APP_SHELL = [
     "/homepage.html",
     "/offline.html",

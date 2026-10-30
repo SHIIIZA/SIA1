@@ -104,15 +104,3 @@ function apiLogout() {
     localStorage.removeItem("tripmate_session");
     window.dispatchEvent(new CustomEvent("tripmate-user-updated", { detail: null }));
 }
-
-// Share the notification inbox across signed-in pages, including mobile pages.
-const notificationScriptUrl = new URL('notifications.js', document.currentScript.src).href;
-const loadNotificationInbox = () => {
-    if (!localStorage.getItem(TRIPMATE_TOKEN_KEY) || document.querySelector('script[data-notification-inbox]')) return;
-    const script = document.createElement('script');
-    script.src = notificationScriptUrl;
-    script.dataset.notificationInbox = 'true';
-    document.body.append(script);
-};
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadNotificationInbox);
-else loadNotificationInbox();

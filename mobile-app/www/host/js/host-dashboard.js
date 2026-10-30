@@ -13,51 +13,33 @@ document.addEventListener("DOMContentLoaded", () => {
             return Array.isArray(value) ? value : [];
         } catch { return []; }
     };
-    const formatMoney = value => `₱${(Number(value) || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const bookingsPageSize = 10;
+    let allBookings = [];
+    let bookingsPage = 0;
+    const formatMoney = value => `₱${Math.round(Number(value) || 0).toLocaleString("en-PH")}`;
     const formatDate = value => new Date(value).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
     const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     }[character]));
-    const DEFAULT_LISTING_IMAGE = "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80";
-    const getListingImage = listing => {
-        const gallery = Array.isArray(listing?.images) ? listing.images : [];
-        const image = gallery.find(item => typeof item === "string" && item.trim());
-        return image || DEFAULT_LISTING_IMAGE;
-    };
-    const normalizeListing = item => ({
-        ...item,
-        source: item.source || "database",
-        images: Array.isArray(item.images) && item.images.length ? item.images.filter(Boolean) : [DEFAULT_LISTING_IMAGE],
-        pricePerNight: Number(item.price_per_night ?? item.pricePerNight ?? 0)
-    });
     const getData = async () => {
         try {
             const [listings, bookings] = await Promise.all([apiRequest("/host/listings"), apiRequest("/host/bookings")]);
             return {
-                listings: listings.map(normalizeListing),
+                listings: listings.map(item => ({ ...item, source: "database", pricePerNight: Number(item.price_per_night) })),
                 bookings: bookings.map(item => ({
                     ...item,
                     checkin: item.check_in,
                     checkout: item.check_out,
                     total: Number(item.total_amount),
                     propertyName: item.listings?.title,
-                    propertyImage: item.listings?.image || item.listings?.images?.[0] || DEFAULT_LISTING_IMAGE,
                     createdAt: item.created_at
                 }))
             };
         } catch (error) {
             console.warn("Host dashboard API unavailable; showing saved browser data:", error.message);
-            const listings = read("tripmate_listings").filter(item => String(item.hostId) === String(user.id)).map(normalizeListing);
+            const listings = read("tripmate_listings").filter(item => String(item.hostId) === String(user.id));
             const listingIds = new Set(listings.map(item => item.id));
-            return {
-                listings,
-                bookings: read("tripmate_bookings")
-                    .filter(item => listingIds.has(item.propertyId))
-                    .map(item => ({
-                        ...item,
-                        propertyImage: item.propertyImage || item.image || item.images?.[0] || listings.find(listing => String(listing.id) === String(item.propertyId))?.images?.[0] || DEFAULT_LISTING_IMAGE
-                    }))
-            };
+            return { listings, bookings: read("tripmate_bookings").filter(item => listingIds.has(item.propertyId)) };
         }
     };
 
@@ -79,20 +61,32 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function bookingRow(booking) {
-        const status = escapeHtml((booking.status || "pending").replaceAll("_", " "));
-        const actions = ["pending", "confirmed"].includes(booking.status)
-            ? `<button class="btn btn-sm booking-action" data-id="${booking.id}" data-status="cancelled">Cancel stay</button>`
+        const status = escapeHtml(booking.status || "pending");
+        const actions = booking.status === "pending"
+            ? `<button class="btn btn-secondary btn-sm booking-action" data-id="${booking.id}" data-status="confirmed">Accept</button><button class="btn btn-sm booking-action" data-id="${booking.id}" data-status="cancelled">Decline</button>`
             : "";
         return `<tr><td><strong>${escapeHtml(booking.guestName || "Guest")}</strong></td><td>${escapeHtml(booking.propertyName || "Property")}</td><td>${formatDate(booking.checkin)} - ${formatDate(booking.checkout)}</td><td><span class="status-badge ${status}">${status}</span></td><td>${formatMoney(booking.total)} ${actions}</td></tr>`;
     }
 
+    function renderBookingsPage() {
+        const pageCount = Math.max(1, Math.ceil(allBookings.length / bookingsPageSize));
+        bookingsPage = Math.min(bookingsPage, pageCount - 1);
+        const start = bookingsPage * bookingsPageSize;
+        document.getElementById("allBookingsTableBody").innerHTML = allBookings.length
+            ? allBookings.slice(start, start + bookingsPageSize).map(bookingRow).join("")
+            : "<tr><td colspan=5>No bookings found.</td></tr>";
+        document.getElementById("bookingsPageLabel").textContent = `Page ${bookingsPage + 1} of ${pageCount}`;
+        document.getElementById("previousBookingsPage").disabled = bookingsPage === 0;
+        document.getElementById("nextBookingsPage").disabled = bookingsPage >= pageCount - 1;
+    }
+
     function earningsRow(booking) {
-        const status = escapeHtml((booking.status || "pending").replaceAll("_", " "));
+        const status = escapeHtml(booking.status || "pending");
         return `<tr><td>${escapeHtml(booking.propertyName || "Property")}</td><td>${formatDate(booking.checkin)} - ${formatDate(booking.checkout)}</td><td><span class="status-badge ${status}">${status}</span></td><td>${formatMoney(booking.total)}</td></tr>`;
     }
 
     function listingCard(listing) {
-        const image = getListingImage(listing);
+        const image = listing.images?.[0] || "";
         const status = listing.status || "draft";
         const actions = listing.source === "database"
             ? ""
@@ -101,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <button type="button" class="btn btn-sm delete-listing-btn" data-listing-id="${escapeHtml(listing.id)}">Delete</button>
             </div>`;
         return `<article class="host-listing-card">
-            <div class="listing-img-container"><img src="${escapeHtml(image)}" alt="${escapeHtml(listing.title || "Property")}"><span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></div>
+            <div class="listing-img-container">${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(listing.title || "Property")}">` : ""}<span class="status-badge ${escapeHtml(status)}">${escapeHtml(status)}</span></div>
             <div class="listing-content">
                 <h3>${escapeHtml(listing.title || "Untitled property")}</h3>
                 <p class="price">${formatMoney(listing.pricePerNight)} <span>/ night</span></p>
@@ -139,10 +133,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const completed = bookings
             .filter(item => item.status === "completed")
             .sort((a, b) => new Date(b.checkout) - new Date(a.checkout));
+        const publishedListings = listings.filter(item => item.status === "published" || item.status === "active").length;
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const bookedNights = bookings.reduce((sum, booking) => {
+            if (!["confirmed", "completed"].includes(booking.status)) return sum;
+            const checkin = new Date(booking.checkin);
+            const checkout = new Date(booking.checkout);
+            if (!Number.isFinite(checkin.getTime()) || !Number.isFinite(checkout.getTime())) return sum;
+            const overlapStart = Math.max(checkin.getTime(), monthStart.getTime());
+            const overlapEnd = Math.min(checkout.getTime(), nextMonth.getTime());
+            return sum + Math.max(0, (overlapEnd - overlapStart) / 86400000);
+        }, 0);
+        const daysInMonth = (nextMonth.getTime() - monthStart.getTime()) / 86400000;
         document.getElementById("statTotalListings").textContent = listings.filter(item => item.status === "published" || item.status === "active").length;
         document.getElementById("statActiveBookings").textContent = active.length;
         document.getElementById("statEarnings").textContent = formatMoney(earnings);
-        document.getElementById("statOccupancy").textContent = listings.length ? `${Math.min(100, Math.round(active.length / listings.length * 20))}%` : "0%";
+        document.getElementById("statOccupancy").textContent = publishedListings
+            ? `${Math.min(100, Math.round(bookedNights / (publishedListings * daysInMonth) * 100))}%`
+            : "0%";
         document.getElementById("totalEarnings").textContent = formatMoney(earnings);
         document.getElementById("monthEarnings").textContent = formatMoney(monthEarnings);
         document.getElementById("pendingPayout").textContent = formatMoney(pendingPayout);
@@ -150,7 +159,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const recent = bookings.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
         document.getElementById("recentBookingsTableBody").innerHTML = recent.length ? recent.slice(0, 5).map(bookingRow).join("") : "<tr><td colspan=5>No recent bookings.</td></tr>";
-        document.getElementById("allBookingsTableBody").innerHTML = recent.length ? recent.map(bookingRow).join("") : "<tr><td colspan=5>No bookings found.</td></tr>";
+        allBookings = recent;
+        renderBookingsPage();
         document.getElementById("allListingsGrid").innerHTML = listings.map(listingCard).join("");
         document.getElementById("listingsEmpty").style.display = listings.length ? "none" : "block";
         document.querySelectorAll(".delete-listing-btn").forEach(button => button.addEventListener("click", () => {
@@ -172,11 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
             : "<tr><td colspan=4>No completed or confirmed stays yet.</td></tr>";
         document.querySelectorAll(".booking-action").forEach(button => button.addEventListener("click", async () => {
             try {
-                const quote = await apiRequest(`/bookings/${button.dataset.id}/cancellation-quote`);
-                if (!confirm(`Cancel this stay? The guest will receive a full wallet refund of ${formatMoney(quote.paid_amount)}.`)) return;
-                button.disabled = true;
-                await apiRequest(`/host/bookings/${button.dataset.id}/status`, { method: "PATCH", body: JSON.stringify({ status: button.dataset.status, expected_refund: quote.paid_amount }) });
-                window.tripmateRefreshNotifications?.();
+                await apiRequest(`/host/bookings/${button.dataset.id}/status`, { method: "PATCH", body: JSON.stringify({ status: button.dataset.status }) });
                 render();
             } catch (error) {
                 alert(error.message || "Unable to update booking.");
@@ -197,6 +203,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("earningsNavLink")?.addEventListener("click", event => {
         event.preventDefault();
         showTab("earnings");
+    });
+    document.getElementById("previousBookingsPage")?.addEventListener("click", () => {
+        if (bookingsPage > 0) {
+            bookingsPage -= 1;
+            renderBookingsPage();
+        }
+    });
+    document.getElementById("nextBookingsPage")?.addEventListener("click", () => {
+        if ((bookingsPage + 1) * bookingsPageSize < allBookings.length) {
+            bookingsPage += 1;
+            renderBookingsPage();
+        }
     });
 
     render();

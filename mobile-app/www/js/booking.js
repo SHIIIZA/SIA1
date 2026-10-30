@@ -34,23 +34,35 @@
         maxGuests: parsedStay?.guests || 6
     };
 
-    const PROMO_CODES = {};
-    apiRequest('/promotions').then(promotions => {
-        const today = new Intl.DateTimeFormat('en-CA', {timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-        promotions.filter(item => item.active && (!item.expiresAt || item.expiresAt >= today)).forEach(item => { PROMO_CODES[item.code] = item.discount / 100; });
-    }).catch(() => { /* Checkout still works without a promotion. */ });
-
-    let currentCancellationPolicy = null;
-    apiRequest('/cancellation-policy').then(policy => {
-        currentCancellationPolicy = policy;
-        document.getElementById('bookingPolicy').textContent = `Full wallet refund at least ${policy.free_cancel_days} days before check-in. After that, a fee of ${policy.late_fee_nights} night(s) applies, capped at the amount paid. Paid cancellations require admin approval. Your booking keeps these rules.`;
-    }).catch(() => { document.getElementById('bookingPolicy').textContent = 'Cancellation policy is currently unavailable. Please try again before booking.'; });
+    const PROMO_CODES = {
+        "TRIPMATE10": 0.10,
+        "WELCOME05": 0.05
+    };
+    try {
+        const savedPromotions = localStorage.getItem("tripmate_promotions");
+        const promotions = savedPromotions === null ? null : JSON.parse(savedPromotions);
+        const today = new Date().toISOString().slice(0, 10);
+        if (Array.isArray(promotions)) {
+            Object.keys(PROMO_CODES).forEach(code => delete PROMO_CODES[code]);
+            promotions.forEach(promotion => {
+                const code = String(promotion?.code || "").trim().toUpperCase();
+                const discount = Number(promotion?.discount);
+                const isUnexpired = !promotion?.expiresAt || promotion.expiresAt >= today;
+                if (/^[A-Z0-9][A-Z0-9_-]{2,23}$/.test(code) && promotion.active === true &&
+                    isUnexpired && Number.isFinite(discount) && discount >= 1 && discount <= 50) {
+                    PROMO_CODES[code] = discount / 100;
+                }
+            });
+        }
+    } catch (error) {
+        console.warn("Unable to load saved promo codes:", error.message);
+    }
 
     // --- Utility Functions ---
-    const todayStr = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const todayStr = () => new Date().toISOString().split("T")[0];
     const addDays = (dateStr, days) => {
-        const d = new Date(dateStr + "T00:00:00Z");
-        d.setUTCDate(d.getUTCDate() + days);
+        const d = new Date(dateStr + "T00:00:00");
+        d.setDate(d.getDate() + days);
         return d.toISOString().split("T")[0];
     };
     const fmtDate = (dateStr) => {
@@ -388,22 +400,13 @@
         });
     });
 
-    document.getElementById("toPaymentBtn")?.addEventListener("click", async (event) => {
+    document.getElementById("toPaymentBtn")?.addEventListener("click", () => {
         if (new Date(state.checkOut) <= new Date(state.checkIn)) {
             alert("Please make sure your check-out date is after your check-in date.");
             return;
         }
-        const button = event.currentTarget;
-        button.disabled = true;
-        try {
-            const id = await resolvePublishedListingId();
-            if (!id) throw new Error('This stay is not available for booking.');
-            const result = await apiRequest(`/listings/${id}/availability?check_in=${encodeURIComponent(state.checkIn)}&check_out=${encodeURIComponent(state.checkOut)}`);
-            if (!result.available) throw new Error('These dates are already booked. Choose different dates.');
-            highestUnlocked = Math.max(highestUnlocked, 2);
-            goToStep(2);
-        } catch (error) { showToast(error.message, true); }
-        finally { button.disabled = false; }
+        highestUnlocked = Math.max(highestUnlocked, 2);
+        goToStep(2);
     });
 
     document.getElementById("backToReviewBtn")?.addEventListener("click", () => goToStep(1));
@@ -533,11 +536,12 @@
         if (label) label.style.opacity = "0";
         if (spinner) spinner.hidden = false;
 
-        completeBooking().finally(() => {
+        setTimeout(() => {
             if (spinner) spinner.hidden = true;
-            if (label) label.style.opacity = '1';
+            if (label) label.style.opacity = "1";
             payBtn.disabled = false;
-        });
+            completeBooking();
+        }, 1100);
     });
 
     async function completeBooking() {
@@ -599,8 +603,6 @@
                     taxes: p.taxes,
                     total_amount: p.total,
                     payment_method: state.payMethod
-                    ,promo_code: state.promoCode
-                    ,cancellation_policy: currentCancellationPolicy
                     ,special_requests: document.getElementById("specialRequests")?.value.trim() || null
                     ,terms_accepted: document.getElementById("termsAccepted")?.checked === true
                 })
@@ -683,15 +685,7 @@
 
         if (paymentState === "cancelled") {
             localStorage.removeItem("tripmate_pending_payment");
-            try {
-                const id = Number(params.get('booking_id'));
-                if (id) {
-                    const quote = await apiRequest(`/bookings/${id}/cancellation-quote`);
-                    if (quote.paid_amount > 0 || !quote.can_cancel) throw new Error('The booking is already paid or cannot be cancelled automatically.');
-                    await apiRequest(`/bookings/${id}/cancel`, { method: 'PATCH', body: JSON.stringify({ expected_refund: 0 }) });
-                }
-                showToast('Payment was not completed. The unpaid reservation was released. You can choose dates and try again.', true);
-            } catch (error) { showToast(`Check My Trips before trying again: ${error.message}`, true); }
+            showToast("Payment was not completed. You can review your trip and try again.", true);
             window.history.replaceState({}, document.title, "booking.html");
             return false;
         }
