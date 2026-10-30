@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return Array.isArray(value) ? value : [];
         } catch { return []; }
     };
-    const formatMoney = value => `₱${Math.round(Number(value) || 0).toLocaleString("en-PH")}`;
+    const formatMoney = value => `₱${(Number(value) || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const formatDate = value => new Date(value).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
     const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({
         "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -79,15 +79,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function bookingRow(booking) {
-        const status = escapeHtml(booking.status || "pending");
-        const actions = booking.status === "pending"
-            ? `<button class="btn btn-secondary btn-sm booking-action" data-id="${booking.id}" data-status="confirmed">Accept</button><button class="btn btn-sm booking-action" data-id="${booking.id}" data-status="cancelled">Decline</button>`
+        const status = escapeHtml((booking.status || "pending").replaceAll("_", " "));
+        const actions = ["pending", "confirmed"].includes(booking.status)
+            ? `<button class="btn btn-sm booking-action" data-id="${booking.id}" data-status="cancelled">Cancel stay</button>`
             : "";
         return `<tr><td><strong>${escapeHtml(booking.guestName || "Guest")}</strong></td><td>${escapeHtml(booking.propertyName || "Property")}</td><td>${formatDate(booking.checkin)} - ${formatDate(booking.checkout)}</td><td><span class="status-badge ${status}">${status}</span></td><td>${formatMoney(booking.total)} ${actions}</td></tr>`;
     }
 
     function earningsRow(booking) {
-        const status = escapeHtml(booking.status || "pending");
+        const status = escapeHtml((booking.status || "pending").replaceAll("_", " "));
         return `<tr><td>${escapeHtml(booking.propertyName || "Property")}</td><td>${formatDate(booking.checkin)} - ${formatDate(booking.checkout)}</td><td><span class="status-badge ${status}">${status}</span></td><td>${formatMoney(booking.total)}</td></tr>`;
     }
 
@@ -172,7 +172,11 @@ document.addEventListener("DOMContentLoaded", () => {
             : "<tr><td colspan=4>No completed or confirmed stays yet.</td></tr>";
         document.querySelectorAll(".booking-action").forEach(button => button.addEventListener("click", async () => {
             try {
-                await apiRequest(`/host/bookings/${button.dataset.id}/status`, { method: "PATCH", body: JSON.stringify({ status: button.dataset.status }) });
+                const quote = await apiRequest(`/bookings/${button.dataset.id}/cancellation-quote`);
+                if (!confirm(`Cancel this stay? The guest will receive a full wallet refund of ${formatMoney(quote.paid_amount)}.`)) return;
+                button.disabled = true;
+                await apiRequest(`/host/bookings/${button.dataset.id}/status`, { method: "PATCH", body: JSON.stringify({ status: button.dataset.status, expected_refund: quote.paid_amount }) });
+                window.tripmateRefreshNotifications?.();
                 render();
             } catch (error) {
                 alert(error.message || "Unable to update booking.");

@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "netlify:dev": "npx netlify dev",
-    "mobile:build": "node mobile-app/scripts/build-web.mjs && node mobile-app/scripts/build-apk.mjs"
+    "mobile:build": "node mobile-app/scripts/build-web.mjs && node mobile-app/scripts/build-apk.mjs",
+    "test": "node --test server.test.js tests/*.test.js"
   },
   "engines": {
     "node": ">=18"
@@ -16,5 +17,8 @@
     "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^8.5.3",
     "@neondatabase/serverless": "^1.1.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13"
   }
 }

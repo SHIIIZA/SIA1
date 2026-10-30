@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TripMate Admin</title>
 <link rel="stylesheet" href="css/admin.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#153e35">
 </head>
 <body>
 
@@ -418,9 +420,9 @@
             <span class="stat-delta" id="txVolumeDelta">Across 0 bookings</span>
           </div>
           <div class="stat-card">
-            <span class="stat-label stat-label-caps">Net Commissions</span>
+            <span class="stat-label stat-label-caps">Service Fees</span>
             <span class="stat-value stat-value-lg stat-value-blue" id="txCommissions">₱0</span>
-            <span class="stat-delta">12% platform commission rate</span>
+            <span class="stat-delta">Fees recorded at checkout</span>
           </div>
           <div class="stat-card">
             <span class="stat-label stat-label-caps">Pending Payouts</span>
@@ -430,6 +432,12 @@
               <a class="stat-link" id="txPendingReviewLink">Review all</a>
             </div>
           </div>
+        </div>
+
+        <div class="panel">
+          <h2>Cancellation requests</h2>
+          <p>Review the refund before approving. Approval releases the dates and credits the guest's wallet.</p>
+          <div id="cancellationQueue" aria-live="polite"></div>
         </div>
 
         <div class="panel">
@@ -443,9 +451,11 @@
               <div class="select-wrap">
                 <select id="transactionStatusFilter">
                   <option value="all">All Statuses</option>
-                  <option value="Confirmed">Completed</option>
-                  <option value="Pending">Pending Review</option>
-                  <option value="Cancelled">Action Required</option>
+                  <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancellation requested">Cancellation requested</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Cancelled">Cancelled</option>
                 </select>
               </div>
               <button type="button" class="icon-square-btn" id="addTransactionBtn" title="New booking" aria-label="New booking">
@@ -462,7 +472,7 @@
                   <th>Partner / Host</th>
                   <th>Base Rate</th>
                   <th>Taxes / Fees</th>
-                  <th>Comm. (12%)</th>
+                  <th>Service fee</th>
                   <th>Total</th>
                   <th>Status</th>
                   <th></th>
@@ -713,11 +723,22 @@
               <span class="field-label-plain">Notifications</span>
               <label class="checkbox-row">
                 <input type="checkbox" id="settingsShowAlerts">
-                Show pending alerts in the sidebar and bell icon
+                Show pending verification alerts in the sidebar
               </label>
             </div>
 
             <button type="submit" class="btn-primary">Save Settings</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2 class="settings-panel-title">Cancellation &amp; refund policy</h2>
+          <form id="cancellationPolicyForm">
+            <div class="field"><label for="freeCancelDays">Days before check-in for a full refund</label><input id="freeCancelDays" name="free_cancel_days" type="number" min="0" max="365" required></div>
+            <div class="field"><label for="lateFeeNights">Nights charged for late cancellation</label><input id="lateFeeNights" name="late_fee_nights" type="number" min="0" max="30" required></div>
+            <p>Refunds are TripMate Wallet credit. Paid guest cancellations require admin approval. Host or admin cancellations receive a full refund.</p>
+            <p id="cancellationPolicyStatus" role="status">Loading policy…</p>
+            <button type="submit" class="btn-primary">Save cancellation policy</button>
           </form>
         </div>
 
@@ -925,10 +946,13 @@
         </div>
         <div class="field">
           <label for="bStatus">Status</label>
+          <p id="bookingEditNote" class="support-form-sub"></p>
           <select id="bStatus">
-            <option value="Pending">Pending Review</option>
-            <option value="Confirmed">Completed</option>
-            <option value="Cancelled">Action Required</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancellation requested">Cancellation requested</option>
+            <option value="Cancelled">Cancelled</option>
           </select>
         </div>
       </div>
@@ -987,5 +1011,6 @@
 
 <script src="js/api.js"></script>
 <script src="js/admin.js"></script>
+<script src="/js/pwa.js" defer></script>
 </body>
 </html>

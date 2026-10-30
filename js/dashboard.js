@@ -183,8 +183,9 @@
                 propertyImage: booking.listings?.images?.[0] || ""
             }));
         } catch (error) {
-            allBookingsRaw = readAllBookings();
-            myBookings = allBookingsRaw.filter(b => b.userId === user.id);
+            upcomingEmpty.hidden = false;
+            upcomingEmpty.textContent = error.message || 'Unable to load bookings.';
+            return;
         }
         renderAllSections();
     }
@@ -204,7 +205,7 @@
 
             if (booking.status === "cancelled") {
                 categories.cancelled.push(booking);
-            } else if (booking.status === "pending") {
+            } else if (["pending", "cancellation_requested"].includes(booking.status)) {
                 categories.pending.push(booking);
             } else if (!isNaN(checkout.getTime()) && checkout < now) {
                 categories.past.push(booking);
@@ -224,12 +225,13 @@
 
         const status = booking.status || "confirmed";
         const statusClass = `status-${status}`;
-        const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+        const statusLabel = status === "cancellation_requested" ? "Cancellation awaiting review" : status.charAt(0).toUpperCase() + status.slice(1);
 
         const checkoutDate = new Date(booking.checkout);
         const isUpcoming = !isNaN(checkoutDate.getTime()) && checkoutDate >= new Date();
         const isPastCategory = status !== "cancelled" && status !== "pending" && !isUpcoming;
-        const canCancel = status !== "cancelled" && !isPastCategory && isUpcoming;
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+        const canCancel = ['pending', 'confirmed'].includes(status) && booking.checkin >= today;
         const guestCount = Number(booking.guests) || 1;
 
         card.innerHTML = `
@@ -420,18 +422,24 @@
         });
     }
 
-    // Cancel booking — updates the FULL bookings array (not the
-    // per-user filtered copy) so other users' bookings are preserved.
     async function handleCancel(bookingId) {
-        if (!confirm("Cancel this booking? Any refund for a paid booking will be credited to your TripMate Wallet according to the cancellation policy. Unpaid bookings do not receive a refund.")) return;
-
         try {
-            await apiRequest(`/bookings/${encodeURIComponent(bookingId)}/cancel`, { method: "PATCH" });
+            const quote = await apiRequest(`/bookings/${encodeURIComponent(bookingId)}/cancellation-quote`);
+            if (!quote.can_cancel) throw new Error('This booking cannot be cancelled online.');
+            const money = value => Number(value).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' });
+            const nextStep = quote.requires_approval
+                ? 'Submit for admin approval? Your booking stays reserved until approved.'
+                : 'Cancel this unpaid booking now? No refund will be issued.';
+            if (!confirm(`Paid: ${money(quote.paid_amount)}\nCancellation fee: ${money(quote.cancellation_fee)}\nRefund to TripMate Wallet: ${money(quote.refund_amount)}\n\n${nextStep}`)) return;
+            const result = await apiRequest(`/bookings/${encodeURIComponent(bookingId)}/cancel`, {
+                method: 'PATCH', body: JSON.stringify({ expected_refund: quote.refund_amount })
+            });
             await Promise.all([loadBookings(), loadWallet()]);
-            alert("Booking cancelled. Any eligible refund is now shown in your TripMate Wallet.");
-        } catch (error) {
-            alert(error.message || "Unable to cancel this booking. Please try again.");
-        }
+            window.tripmateRefreshNotifications?.();
+            alert(result.status === 'cancellation_requested'
+                ? 'Cancellation submitted for admin review. You will receive an in-app notification with the decision.'
+                : 'Booking cancelled. Any eligible refund is shown in your TripMate Wallet.');
+        } catch (error) { alert(error.message || 'Unable to cancel this booking. Please try again.'); }
     }
 
     // Write review (placeholder)

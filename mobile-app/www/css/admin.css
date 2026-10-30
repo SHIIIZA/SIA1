@@ -2685,3 +2685,6 @@ body {
 .badge-amber { background: var(--amber-light); color: var(--amber); border-color: rgba(183, 121, 31, 0.24); }
 .badge-red { background: var(--red-light); color: var(--red); border-color: rgba(224, 81, 47, 0.24); }
 .app-footer { color: var(--muted-light); border-top-color: var(--border); }
+
+.cancellation-request { padding: 16px 0; border-bottom: 1px solid var(--border, #e2e8f0); }
+.cancellation-request button { margin: 4px 8px 4px 0; }

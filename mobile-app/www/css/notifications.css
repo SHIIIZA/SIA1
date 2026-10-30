@@ -1,0 +1,13 @@
+.tripmate-notification-launcher { position: fixed; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 90; padding: 12px 18px; border: 1px solid #cbd5d1; border-radius: 24px; color: #fff; background: #153e35; box-shadow: 0 4px 18px #0002; font: inherit; cursor: pointer; }
+.tripmate-notifications { width: min(480px, calc(100vw - 32px)); max-height: 80vh; margin: auto; padding: 24px; border: 1px solid #d6dfdb; border-radius: 16px; color: #172f29; background: #fff; font: 15px/1.5 system-ui, sans-serif; }
+.tripmate-notifications::backdrop { background: #102b2380; }
+.tripmate-notifications header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.tripmate-notifications h2 { font-size: 22px; margin: 0 0 16px; }
+.tripmate-notifications h3 { font-size: 16px; margin: 0 0 8px; }
+.tripmate-notifications article { padding: 16px 0; border-top: 1px solid #e5e9e7; }
+.tripmate-notifications article.is-unread { border-left: 3px solid #16795d; padding-left: 12px; }
+.tripmate-notifications p { margin: 6px 0; }
+.tripmate-notifications time { display: block; font-size: 12px; color: #51675f; }
+.tripmate-notifications button { font: inherit; color: #174e3d; background: #edf5f1; border: 1px solid #bbd0c6; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin: 8px 0; }
+.tripmate-notifications button:focus-visible, .tripmate-notification-launcher:focus-visible { outline: 3px solid #df9a29; outline-offset: 3px; }
+.tripmate-notifications button:disabled { opacity: .6; cursor: wait; }

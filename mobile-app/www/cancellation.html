@@ -9,7 +9,7 @@
     <link rel="manifest" href="/manifest.webmanifest">
     <script src="/js/pwa.js" defer></script>
     <title>Cancellation policy — TripMate</title>
-    <meta name="description" content="TripMate's cancellation policy: free cancellation up to a week before check-in, first night held after that.">
+    <meta name="description" content="TripMate cancellation rules, admin review, and wallet refunds.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -83,8 +83,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Mobile menu button (shown below 900px by homepage.css) -->
-            <button class="nav-toggle" id="navToggle" type="button" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
         </nav>
 
         <div class="page-hero-body">
@@ -101,36 +99,11 @@
             <div class="policy-layout">
                 <div class="rule-card">
                     <span class="rule-eyebrow">Our policy</span>
-                    <h2>Free cancellation up to <span class="hl">1 week</span> before check-in.</h2>
-                    <p>Cancel any time up until 7 days before your check-in date and get a full refund. Cancel
-                        after that, and your first night becomes non-refundable — everything else you paid for
-                        the stay is still refunded.</p>
-
+                    <h2>Review your refund before cancelling.</h2>
+                    <p id="currentCancellationPolicy" role="status">Loading current cancellation rules…</p>
                     <div class="rule-points">
-                        <div class="rule-point">
-                            <span class="rule-icon" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M20 6L9 17l-5-5" />
-                                </svg>
-                            </span>
-                            <div>
-                                <h3>7 days or more before check-in</h3>
-                                <p>Full refund, no questions asked. Cancel from <a href="dashboard.html">My Trips</a>.</p>
-                            </div>
-                        </div>
-                        <div class="rule-point">
-                            <span class="rule-icon warn" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="9" />
-                                    <path d="M12 7v5l3 2" />
-                                </svg>
-                            </span>
-                            <div>
-                                <h3>Less than 7 days before check-in</h3>
-                                <p>The first night's rate is kept as a cancellation fee. The rest of your stay is
-                                    refunded.</p>
-                            </div>
-                        </div>
+                        <div class="rule-point"><div><h3>Paid bookings</h3><p>Request cancellation from <a href="dashboard.html">My Trips</a>. We show your exact fee and wallet refund before you submit. Your booking stays reserved until admin approves.</p></div></div>
+                        <div class="rule-point"><div><h3>Unpaid bookings</h3><p>Cancellation is immediate and no refund is issued. Requests must be made no later than your check-in date, using Philippine time.</p></div></div>
                     </div>
                 </div>
 
@@ -171,7 +144,7 @@
                         <div class="pfaq-a" id="pfaq-a1" role="region" aria-labelledby="pfaq-q1">
                             <div class="pfaq-a-inner">
                                 <p>It's the first night of your booking, shown on your confirmation and in
-                                    <a href="dashboard.html">My Trips</a>. The 7-day window is counted back from
+                                    <a href="dashboard.html">My Trips</a>. Your booking’s free-cancellation window is counted back from
                                     this date, not from the day you booked.</p>
                             </div>
                         </div>
@@ -184,9 +157,7 @@
                         </button>
                         <div class="pfaq-a" id="pfaq-a2" role="region" aria-labelledby="pfaq-q2">
                             <div class="pfaq-a-inner">
-                                <p>Refunds go back to your original payment method — GCash, Maya, or bank
-                                    transfer — and usually land within 3 to 7 business days, depending on your
-                                    provider.</p>
+                                <p>Eligible refunds are added to your TripMate Wallet when admin approves the cancellation. They are wallet credits; money is not sent back to GCash, Maya, or your bank. You will receive an in-app notification when credit is added.</p>
                             </div>
                         </div>
                     </div>
@@ -198,8 +169,7 @@
                         </button>
                         <div class="pfaq-a" id="pfaq-a3" role="region" aria-labelledby="pfaq-q3">
                             <div class="pfaq-a-inner">
-                                <p>Yes, this standard policy applies across TripMate. If a listing ever shows
-                                    different terms, whatever's stated on that listing's page applies instead.</p>
+                                <p>Each booking keeps the cancellation rules in effect when it was made. Later admin policy changes apply to new bookings. My Trips shows the exact refund for your booking.</p>
                             </div>
                         </div>
                     </div>
@@ -211,8 +181,8 @@
                         </button>
                         <div class="pfaq-a" id="pfaq-a4" role="region" aria-labelledby="pfaq-q4">
                             <div class="pfaq-a-inner">
-                                <p>You get a full refund every time, no matter how close it is to check-in. This
-                                    first-night rule only applies when you're the one cancelling.</p>
+                                <p>You get a full refund of the amount paid as TripMate Wallet credit. This
+                                    late cancellation fee only applies when you're the one cancelling.</p>
                             </div>
                         </div>
                     </div>
@@ -269,6 +239,7 @@
 
     <script src="js/auth.js"></script>
     <script src="js/nav-auth.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/cancellation.js"></script>
 </body>
 

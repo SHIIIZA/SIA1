@@ -1,10 +1,13 @@
+import { createBookingService, BOOKING_LABELS } from "./bookings.js";
 import { createServer } from "node:http";
 import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { createHash, createHmac, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
-import { neon as neonClient } from "@neondatabase/serverless";
+import { neon as neonClient, types as pgTypes } from "@neondatabase/serverless";
 
+// Calendar dates must stay YYYY-MM-DD across server time zones.
+pgTypes.setTypeParser(1082, value => value);
 const scrypt = promisify(scryptCallback);
 const root = process.cwd();
 const env = {};
@@ -93,6 +96,8 @@ if (config.databaseUrl) {
         databaseConfigError = "Neon database URL is invalid.";
     }
 }
+
+const bookingService = createBookingService(sql);
 
 if (!sql && (!config.apiUrl || !config.apiKey)) {
     console.warn("Missing Neon DATABASE_URL/NEON_DATABASE_URL or NEON_API_URL/NEON_API_KEY. Add a Neon connection setting to .env before starting the server.");
@@ -306,57 +311,12 @@ async function databaseHealth() {
     return { configured: Boolean(config.apiUrl && config.apiKey) };
 }
 
-async function creditCancelledBooking(paymentId, bookingId) {
-    if (!sql) {
-        throw Object.assign(new Error("Cancellation refunds require the Neon database connection."), { status: 503 });
-    }
-    await sql.query(`
-        INSERT INTO wallet_transactions (user_id, booking_id, amount, description)
-        SELECT b.guest_id,
-            b.id,
-            ROUND(GREATEST(
-                0,
-                p.amount - CASE
-                    WHEN b.check_in >= CURRENT_DATE + 7 THEN 0::numeric
-                    ELSE b.subtotal / GREATEST(1, b.check_out - b.check_in)
-                END
-            ), 2),
-            'Cancellation refund for booking #' || b.id
-        FROM bookings b
-        JOIN payments p ON p.booking_id = b.id
-        WHERE b.id = $1 AND p.id = $2
-            AND b.status = 'cancelled' AND p.status = 'paid'
-            AND ROUND(GREATEST(
-                0,
-                p.amount - CASE
-                    WHEN b.check_in >= CURRENT_DATE + 7 THEN 0::numeric
-                    ELSE b.subtotal / GREATEST(1, b.check_out - b.check_in)
-                END
-            ), 2) > 0
-        ON CONFLICT (booking_id) DO NOTHING
-    `, [bookingId, paymentId]);
+async function creditCancelledBooking(_paymentId, bookingId) {
+    await bookingService.query('SELECT tripmate_credit_refund($1)', [bookingId]);
 }
 
-async function recordVerifiedPayment(payment, booking) {
-    if (payment.status !== "paid") {
-        await neon(`/payments?id=eq.${payment.id}`, {
-            method: "PATCH",
-            body: JSON.stringify({ status: "paid", paid_at: new Date().toISOString() })
-        });
-    }
-
-    const bookingStatus = String(booking.status || "").toLowerCase();
-    if (bookingStatus === "cancelled") {
-        await creditCancelledBooking(payment.id, payment.booking_id);
-        return false;
-    }
-    if (bookingStatus === "completed") return false;
-
-    const updatedBookings = await neon(`/bookings?id=eq.${payment.booking_id}&status=in.(pending,confirmed)`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: "confirmed", updated_at: new Date().toISOString() })
-    });
-    return updatedBookings.length > 0;
+async function recordVerifiedPayment(payment) {
+    return bookingService.verifyPayment(payment.id);
 }
 
 async function hashPassword(password) {
@@ -474,6 +434,7 @@ export async function routeApi(req, res, url) {
     res.requestOrigin = req.headers.origin;
     const body = ["POST", "PATCH", "PUT", "DELETE"].includes(req.method) ? await readBody(req) : {};
     const user = authUser(req);
+    if (sql) await bookingService.initialize();
     const requireAuth = () => { if (!user) throw Object.assign(new Error("Authentication required"), { status: 401 }); return user; };
     const requireHost = () => { const current = requireAuth(); if (current.role !== "host" && current.role !== "admin") throw Object.assign(new Error("Host access required"), { status: 403 }); return current; };
     const requireAdmin = () => { const current = requireAuth(); if (current.role !== "admin") throw Object.assign(new Error("Admin access required"), { status: 403 }); return current; };
@@ -539,7 +500,8 @@ export async function routeApi(req, res, url) {
                 id: String(item.id), guestName: item.users?.name || String(item.guest_id), guestEmail: item.users?.email || "",
                 guestPhone: item.users?.phone || "", listingId: String(item.listing_id), checkIn: item.check_in,
                 checkOut: item.check_out, guests: item.guest_count, amount: Number(item.total_amount),
-                status: item.status === "confirmed" ? "Confirmed" : item.status === "cancelled" ? "Cancelled" : "Pending",
+                subtotal: Number(item.subtotal), cleaningFee: Number(item.cleaning_fee), taxes: Number(item.taxes), serviceFee: Number(item.service_fee),
+                status: BOOKING_LABELS[item.status] || item.status,
                 createdAt: new Date(item.created_at).getTime()
             }))
         });
@@ -616,16 +578,20 @@ export async function routeApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/admin/sync") {
         const admin = requireAdmin();
         const listings = Array.isArray(body.listings) ? body.listings : [];
-        const bookings = Array.isArray(body.bookings) ? body.bookings : [];
+
         const users = await neon("/users?role=eq.host&select=id");
         const defaultHostId = users[0]?.id || admin.id;
         const existingListings = await neon("/listings?select=id");
-        const existingBookings = await neon("/bookings?select=id");
-        const listingIds = new Set(listings.filter((item) => /^\d+$/.test(String(item.id))).map((item) => Number(item.id)));
-        const bookingIds = new Set(bookings.filter((item) => /^\d+$/.test(String(item.id))).map((item) => Number(item.id)));
 
-        for (const item of existingBookings) if (!bookingIds.has(item.id)) await neon(`/bookings?id=eq.${item.id}`, { method: "DELETE" });
-        for (const item of existingListings) if (!listingIds.has(item.id)) await neon(`/listings?id=eq.${item.id}`, { method: "DELETE" });
+        const listingIds = new Set(listings.filter((item) => /^\d+$/.test(String(item.id))).map((item) => Number(item.id)));
+
+
+
+        for (const item of existingListings) if (!listingIds.has(item.id)) {
+            const reservations = await neon(`/bookings?listing_id=eq.${item.id}&select=id`);
+            if (reservations.length) throw Object.assign(new Error("A listing with booking history cannot be deleted. Unpublish it instead."), { status: 409 });
+            await neon(`/listings?id=eq.${item.id}`, { method: "DELETE" });
+        }
         for (const item of listings) {
             const payload = {
                 title: item.name, description: item.description || "", property_type: item.type || "House Rental",
@@ -636,19 +602,6 @@ export async function routeApi(req, res, url) {
             };
             if (!payload.host_id) continue;
             const path = /^\d+$/.test(String(item.id)) ? `/listings?id=eq.${item.id}` : "/listings";
-            await neon(path, { method: /^\d+$/.test(String(item.id)) ? "PATCH" : "POST", body: JSON.stringify(payload) });
-        }
-        for (const item of bookings) {
-            if (!/^\d+$/.test(String(item.listingId))) continue;
-            const payload = {
-                listing_id: Number(item.listingId), check_in: item.checkIn, check_out: item.checkOut,
-                guest_count: Number(item.guests) || 1, subtotal: Number(item.amount) || 0,
-                total_amount: Number(item.amount) || 0, status: item.status === "Confirmed" ? "confirmed" : item.status === "Cancelled" ? "cancelled" : "pending"
-            };
-            const guest = await neon(`/users?email=eq.${encodeURIComponent(String(item.guestEmail || "admin@tripmate.local"))}&select=id`);
-            payload.guest_id = guest[0]?.id || (await neon("/users?role=eq.guest&select=id"))[0]?.id;
-            if (!payload.guest_id) continue;
-            const path = /^\d+$/.test(String(item.id)) ? `/bookings?id=eq.${item.id}` : "/bookings";
             await neon(path, { method: /^\d+$/.test(String(item.id)) ? "PATCH" : "POST", body: JSON.stringify(payload) });
         }
         return json(res, 200, { ok: true });
@@ -742,6 +695,31 @@ export async function routeApi(req, res, url) {
         return json(res, 200, { ok: true });
     }
 
+    if (req.method === 'GET' && url.pathname === '/api/promotions') return json(res, 200, await bookingService.promotions());
+    if (req.method === 'PATCH' && url.pathname === '/api/admin/promotions') {
+        requireAdmin();
+        return json(res, 200, await bookingService.savePromotions(body.promotions));
+    }
+    if (req.method === 'GET' && url.pathname === '/api/cancellation-policy') return json(res, 200, await bookingService.policy());
+    if (req.method === 'PATCH' && url.pathname === '/api/admin/cancellation-policy') {
+        requireAdmin();
+        return json(res, 200, await bookingService.savePolicy(body));
+    }
+    const availability = url.pathname.match(/^\/api\/listings\/(\d+)\/availability$/);
+    if (req.method === 'GET' && availability) return json(res, 200, await bookingService.availability(Number(availability[1]), url.searchParams.get('check_in'), url.searchParams.get('check_out')));
+    if (req.method === 'GET' && url.pathname === '/api/notifications') {
+        const current = requireAuth();
+        const items = await bookingService.query("SELECT id, title, message, notification_type, booking_id, is_read, created_at FROM notifications WHERE user_id=$1 AND notification_type IS DISTINCT FROM 'preferences' ORDER BY created_at DESC, id DESC LIMIT 50", [current.id]);
+        const [count] = await bookingService.query("SELECT count(*)::int AS unread FROM notifications WHERE user_id=$1 AND is_read=false AND notification_type IS DISTINCT FROM 'preferences'", [current.id]);
+        return json(res, 200, { items, unread: count.unread });
+    }
+    const readNotifications = url.pathname.match(/^\/api\/notifications\/(all|\d+)\/read$/);
+    if (req.method === 'PATCH' && readNotifications) {
+        const current = requireAuth();
+        await bookingService.query("UPDATE notifications SET is_read=true WHERE user_id=$1 AND notification_type IS DISTINCT FROM 'preferences' AND ($2::int IS NULL OR id=$2)", [current.id, readNotifications[1] === 'all' ? null : Number(readNotifications[1])]);
+        return json(res, 200, { ok: true });
+    }
+
     if (url.pathname === "/api/notifications/preferences" && req.method === "GET") {
         const current = requireAuth();
         const rows = await neon(`/notifications?user_id=eq.${current.id}&notification_type=eq.preferences&select=message`);
@@ -760,7 +738,8 @@ export async function routeApi(req, res, url) {
         const current = requireAuth();
         const existing = await neon(`/notifications?user_id=eq.${current.id}&notification_type=eq.preferences&select=id`);
         const preferences = body.preferences;
-        if (!preferences || typeof preferences !== "object" || Array.isArray(preferences)) {
+        if (!preferences || typeof preferences !== "object" || Array.isArray(preferences) ||
+            Object.keys(preferences).some(key => !['booking', 'payment', 'reminders', 'promo'].includes(key) || typeof preferences[key] !== 'boolean')) {
             return json(res, 400, { error: "Notification preferences must be an object." });
         }
         const payload = { user_id: current.id, title: "Notification preferences", message: JSON.stringify(preferences), notification_type: "preferences", is_read: true };
@@ -852,7 +831,7 @@ export async function routeApi(req, res, url) {
 
     if (req.method === "GET" && url.pathname === "/api/bookings") {
         const current = requireAuth();
-        return json(res, 200, await neon(`/bookings?guest_id=eq.${current.id}&select=*&order=created_at.desc`));
+        return json(res, 200, await neon(`/bookings?guest_id=eq.${current.id}&select=*,listings(title,images)&order=created_at.desc`));
     }
 
     if (req.method === "GET" && url.pathname === "/api/wallet") {
@@ -871,45 +850,11 @@ export async function routeApi(req, res, url) {
 
     if (req.method === "POST" && url.pathname === "/api/payments/checkout") {
         const current = requireAuth();
-        const listingId = Number(body.listing_id);
-        const totalAmount = Math.round(Number(body.total_amount));
-        const checkIn = String(body.check_in || "");
-        const checkOut = String(body.check_out || "");
-        if (!Number.isInteger(listingId) || listingId <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(checkIn) || !/^\d{4}-\d{2}-\d{2}$/.test(checkOut) || totalAmount <= 0) {
-            return json(res, 400, { error: "A valid listing, stay dates, and booking amount are required." });
-        }
-
-        const listingRows = await neon(`/listings?id=eq.${listingId}&status=eq.published&select=id,title`);
-        if (!listingRows[0]) return json(res, 404, { error: "This stay is no longer available." });
-
-        const bookingRows = await neon("/bookings", {
-            method: "POST",
-            body: JSON.stringify({
-                listing_id: listingId,
-                guest_id: current.id,
-                check_in: checkIn,
-                check_out: checkOut,
-                guest_count: Number(body.guest_count) || 1,
-                subtotal: Number(body.subtotal) || 0,
-                cleaning_fee: Number(body.cleaning_fee) || 0,
-                service_fee: Number(body.service_fee) || 0,
-                taxes: Number(body.taxes) || 0,
-                total_amount: totalAmount,
-                payment_method: body.payment_method || "qrph",
-                special_requests: body.special_requests || null,
-                terms_accepted: body.terms_accepted === true,
-                status: "pending"
-            })
-        });
-        const booking = bookingRows[0];
-        if (!booking) return json(res, 500, { error: "Unable to create the booking." });
-
-        const paymentMethodTypes = { qrph: "qrph" };
-        const paymentMethod = String(body.payment_method || "qrph").toLowerCase();
-        if (!paymentMethodTypes[paymentMethod]) {
-            await neon(`/bookings?id=eq.${booking.id}`, { method: "DELETE" }).catch(() => {});
-            return json(res, 400, { error: "Choose QR Ph as the payment method." });
-        }
+        if (String(body.payment_method || "qrph").toLowerCase() !== "qrph") return json(res, 400, { error: "Choose QR Ph as the payment method." });
+        if (isPlaceholder(config.paymongoSecretKey)) return json(res, 503, { error: "PayMongo is not configured." });
+        const booking = await bookingService.create(body, current.id);
+        const totalAmount = Number(booking.total_amount);
+        const listingRows = await neon(`/listings?id=eq.${booking.listing_id}&select=id,title`);
         try {
             const session = await paymongo("/checkout_sessions", {
                 method: "POST",
@@ -918,11 +863,11 @@ export async function routeApi(req, res, url) {
                         attributes: {
                             line_items: [{
                                 currency: "PHP",
-                                amount: totalAmount * 100,
+                                amount: Math.round(totalAmount * 100),
                                 name: listingRows[0].title,
                                 quantity: 1
                             }],
-                            payment_method_types: [paymentMethodTypes[paymentMethod]],
+                            payment_method_types: ["qrph"],
                             description: `TripMate booking ${booking.id}`,
                             success_url: `${getFrontendUrl(req)}/booking.html?payment=success&booking_id=${booking.id}`,
                             cancel_url: `${getFrontendUrl(req)}/booking.html?payment=cancelled&booking_id=${booking.id}`,
@@ -939,7 +884,7 @@ export async function routeApi(req, res, url) {
                 method: "POST",
                 body: JSON.stringify({
                     booking_id: booking.id,
-                    payment_method: paymentMethod,
+                    payment_method: "qrph",
                     amount: totalAmount,
                     status: "pending",
                     transaction_reference: sessionId
@@ -996,81 +941,42 @@ export async function routeApi(req, res, url) {
 
     if (req.method === "POST" && url.pathname === "/api/bookings") {
         const current = requireAuth();
-        const booking = { ...body, guest_id: current.id, status: "pending" };
-        const rows = await neon("/bookings", { method: "POST", body: JSON.stringify(booking) });
-        return json(res, 201, rows[0]);
+        return json(res, 201, await bookingService.create(body, current.id));
     }
 
+    const cancelQuote = url.pathname.match(/^\/api\/bookings\/(\d+)\/cancellation-quote$/);
+    if (req.method === "GET" && cancelQuote) {
+        return json(res, 200, await bookingService.quote(Number(cancelQuote[1]), requireAuth()));
+    }
     const cancelBooking = url.pathname.match(/^\/api\/bookings\/(\d+)\/cancel$/);
     if (req.method === "PATCH" && cancelBooking) {
-        const current = requireAuth();
-        if (!sql) throw Object.assign(new Error("Cancellation refunds require the Neon database connection."), { status: 503 });
-        const bookingId = Number(cancelBooking[1]);
-        const cancelled = await sql.query(`
-            WITH target AS MATERIALIZED (
-                SELECT b.*,
-                    (
-                        SELECT p.amount
-                        FROM payments p
-                        WHERE p.booking_id = b.id AND p.status = 'paid'
-                        ORDER BY p.paid_at DESC NULLS LAST, p.id DESC
-                        LIMIT 1
-                    ) AS paid_amount
-                FROM bookings b
-                WHERE b.id = $1 AND b.guest_id = $2
-                FOR UPDATE
-            ),
-            cancelled AS (
-                UPDATE bookings b
-                SET status = 'cancelled', updated_at = now()
-                FROM target t
-                WHERE b.id = t.id
-                    AND t.status NOT IN ('cancelled', 'completed')
-                    AND t.check_out >= CURRENT_DATE
-                RETURNING b.id, b.guest_id, b.check_in, b.check_out, b.subtotal
-            ),
-            wallet_refund AS (
-                INSERT INTO wallet_transactions (user_id, booking_id, amount, description)
-                SELECT c.guest_id,
-                    c.id,
-                    ROUND(GREATEST(
-                        0,
-                        t.paid_amount - CASE
-                            WHEN c.check_in >= CURRENT_DATE + 7 THEN 0::numeric
-                            ELSE c.subtotal / GREATEST(1, c.check_out - c.check_in)
-                        END
-                    ), 2),
-                    'Cancellation refund for booking #' || c.id
-                FROM cancelled c
-                JOIN target t ON t.id = c.id
-                WHERE t.paid_amount IS NOT NULL
-                    AND ROUND(GREATEST(
-                        0,
-                        t.paid_amount - CASE
-                            WHEN c.check_in >= CURRENT_DATE + 7 THEN 0::numeric
-                            ELSE c.subtotal / GREATEST(1, c.check_out - c.check_in)
-                        END
-                    ), 2) > 0
-                ON CONFLICT (booking_id) DO NOTHING
-                RETURNING id
-            )
-            SELECT id FROM cancelled
-        `, [bookingId, current.id]);
-        const rows = await neon(`/bookings?id=eq.${bookingId}&guest_id=eq.${current.id}&select=*`);
-        if (!rows[0]) return json(res, 404, { error: "Booking not found." });
-        if (!cancelled.length && rows[0].status !== "cancelled") {
-            return json(res, 409, { error: "This booking cannot be cancelled because it is completed or has already ended." });
-        }
-        return json(res, 200, rows[0]);
+        return json(res, 200, await bookingService.cancel(Number(cancelBooking[1]), requireAuth(), 'request', body.expected_refund));
     }
-
+    const reviewCancellation = url.pathname.match(/^\/api\/admin\/bookings\/(\d+)\/cancellation$/);
+    if (req.method === "PATCH" && reviewCancellation) {
+        const current = requireAdmin();
+        if (!['approve', 'reject', 'cancel'].includes(body.action)) return json(res, 400, { error: "Choose approve, reject, or cancel." });
+        return json(res, 200, await bookingService.cancel(Number(reviewCancellation[1]), current, body.action, body.expected_refund));
+    }
+    const adminBooking = url.pathname.match(/^\/api\/admin\/bookings(?:\/(\d+))?$/);
+    if (adminBooking) {
+        requireAdmin();
+        if (req.method === 'PATCH' && adminBooking[1]) return json(res, 200, await bookingService.updateStatus(Number(adminBooking[1]), body.status));
+        if (req.method === 'POST' && !adminBooking[1]) {
+            const guests = await neon(`/users?email=eq.${encodeURIComponent(String(body.guestEmail || '').trim())}&select=id`);
+            if (!guests[0]) return json(res, 400, { error: "Choose the email of an existing guest account." });
+            return json(res, 201, await bookingService.create({ listing_id: body.listingId, check_in: body.checkIn, check_out: body.checkOut, guest_count: body.guests }, guests[0].id, true));
+        }
+    }
     const bookingStatus = url.pathname.match(/^\/api\/host\/bookings\/(\d+)\/status$/);
     if (req.method === "PATCH" && bookingStatus) {
         const current = requireHost();
-        const bookingRows = await neon(`/bookings?id=eq.${bookingStatus[1]}&select=*,listings!inner(host_id)`);
-        if (!bookingRows[0] || String(bookingRows[0].listings.host_id) !== String(current.id)) return json(res, 404, { error: "Booking not found." });
-        const rows = await neon(`/bookings?id=eq.${bookingStatus[1]}`, { method: "PATCH", body: JSON.stringify({ status: body.status, updated_at: new Date().toISOString() }) });
-        return json(res, 200, rows[0]);
+        const id = Number(bookingStatus[1]);
+        await bookingService.quote(id, current);
+        const rows = await neon(`/bookings?id=eq.${id}&select=*,listings!inner(host_id)`);
+        if (rows[0]?.listings?.host_id !== current.id) return json(res, 404, { error: "Booking not found." });
+        if (body.status === 'cancelled') return json(res, 200, await bookingService.cancel(id, current, 'cancel', body.expected_refund));
+        return json(res, 200, await bookingService.updateStatus(id, body.status));
     }
 
     if (req.method === "GET" && url.pathname === "/api/wishlist") {
@@ -1095,7 +1001,7 @@ export async function routeApi(req, res, url) {
 
 function serveStatic(req, res, url) {
     const requested = url.pathname === "/" ? "/homepage.html" : url.pathname;
-    const blocked = new Set(["/.env", "/.env.example", "/server.js", "/schema.sql"]);
+    const blocked = new Set(["/.env", "/.env.example", "/server.js", "/schema.sql", "/bookings.js", "/booking-migration.sql"]);
     if (blocked.has(requested) || requested.split("/").some(segment => segment.startsWith("."))) return json(res, 404, { error: "Not found" });
     const file = normalize(join(root, requested));
     if (!file.startsWith(root) || !existsSync(file) || statSync(file).isDirectory()) return json(res, 404, { error: "Not found" });
